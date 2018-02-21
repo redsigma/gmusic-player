@@ -1,14 +1,21 @@
-
 if (SERVER) then
-	AddCSLuaFile("gmpl/cl_gmpl.lua")
-	AddCSLuaFile("vgui/DSeekBar.lua")
-	AddCSLuaFile("vgui/DSeekBarClickLayer.lua")
-	AddCSLuaFile("vgui/DNumSliderNoLabel.lua")
-	include("gmpl/sv_gmpl.lua")
+	AddCSLuaFile("vgui/seekbarclicklayer.lua")
+	AddCSLuaFile("vgui/seekbar.lua")
+	AddCSLuaFile("vgui/numslidernolabel.lua")
+	AddCSLuaFile("vgui/doublelist.lua")
+	AddCSLuaFile("vgui/doptions.lua")
+	AddCSLuaFile("vgui/playerframe.lua")
+	AddCSLuaFile("vgui/dbettercheckbox.lua")
+	AddCSLuaFile("vgui/dbettercblabel.lua")
+	
+	AddCSLuaFile "includes/modules/musicplayerclass.lua"
+	AddCSLuaFile "includes/modules/meth_base.lua"
+	AddCSLuaFile "includes/modules/meth_paint.lua"
 
+	AddCSLuaFile("gmpl/cl_gmpl.lua")
+
+	include("gmpl/sv_gmpl.lua")
 else
+
 	include("gmpl/cl_gmpl.lua")
-	include("vgui/DSeekBar.lua")
-	include("vgui/DSeekBarClickLayer.lua")
-	include("vgui/DNumSliderNoLabel.lua")
 end
