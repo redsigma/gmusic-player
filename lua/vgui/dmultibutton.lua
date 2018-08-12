@@ -7,6 +7,7 @@ Derma_Hook( PANEL, "Paint", "Paint", "MenuBar" )
 local colorServerState = Color(255, 150, 0, 255)
 
 function PANEL:Init()
+	self.missing = false
 	self:SetDisabled(false)
 	self:SetVisible(false)
 	self.length = ""
@@ -14,13 +15,14 @@ function PANEL:Init()
 	self.title = vgui.Create("DLabel",self)
 	self.title:SetText("")
 	self.title:SetContentAlignment(5) -- center
-    self.title:Dock(FILL)
+	self.title:Dock(FILL)
 
-    self.seek = vgui.Create("DLabel",self)
-    self.seek:SetVisible(false)
-    self.seek:SetContentAlignment(5) -- center
-    self.seek:Dock(BOTTOM)
-    self.seek.Paint = function(panel, w, h)
+	self.seek = vgui.Create("DLabel",self)
+	self.seek:SetTextColor(Color(255, 255, 255))
+	self.seek:SetVisible(false)
+	self.seek:SetContentAlignment(5) -- center
+	self.seek:Dock(BOTTOM)
+	self.seek.Paint = function(panel, w, h)
 		surface.SetDrawColor(colorServerState)
 		surface.DrawRect(0, 0, w, h-1)
 	end
@@ -33,7 +35,7 @@ function PANEL:SetTSS( bool )
 	else
 		colorServerState = Color(255, 150, 0, 255) -- client
 	end
-    self.seek.Paint = function(panel, w, h)
+	self.seek.Paint = function(panel, w, h)
 		surface.SetDrawColor(colorServerState)
 		surface.DrawRect(0, 0, w, h-1)
 	end
@@ -47,6 +49,15 @@ function PANEL:SizeToContents()
 	self:InvalidateLayout(true)
 end
 
+function PANEL:IsMissing()
+	local tmp = self.missing
+	self.missing = false
+	return tmp
+end
+
+function PANEL:SetMissing( bool )
+	self.missing = bool
+end
 
 function PANEL:SetFont( font )
 	self.title:SetFont(font)
@@ -58,7 +69,7 @@ function PANEL:SetColor( color )
 	self.seek:SetColor(color)
 end
 
-function PANEL:SetTitleColor( color )
+function PANEL:SetTextColor( color )
 	self.title:SetColor(color)
 end
 
@@ -78,6 +89,10 @@ function PANEL:SetSeekTime( timeFloat )
 	self.seek:SizeToContents()
 end
 
+function PANEL:SetSeekEnabled(bool)
+	self.seek:SetVisible(bool)
+end
+
 function PANEL:SetSeekLength( lengthFloat )
 	self.length = string.ToMinutesSeconds(lengthFloat)
 end
@@ -94,8 +109,13 @@ function PANEL:DoMiddleClick()
 	-- override
 end
 
--- function PANEL:OnMousePressed( mousecode ) -- before released, not used
--- end
+function PANEL:DoM4Click()
+	-- override
+end
+function PANEL:DoRightLeftClick()
+	-- override
+end
+
 
 function PANEL:OnMouseReleased( mousecode )
 	if mousecode == MOUSE_LEFT then
@@ -104,6 +124,8 @@ function PANEL:OnMouseReleased( mousecode )
 		self:DoRightClick()
 	elseif mousecode == MOUSE_MIDDLE then
 		self:DoMiddleClick()
+	elseif mousecode == MOUSE_4 then
+		self:DoM4Click()
 	end
 end
 

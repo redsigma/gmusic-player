@@ -9,18 +9,16 @@ AccessorFunc(PANEL, "m_iMinHeight", "MinHeight")
 local titleMargin
 local serverOn = false
 local colorServerState = Color(255, 150, 0, 255)
-local defaultTitle = true
-local titleServerStateOn = false
+local isTSS = false
 
 function PANEL:Init()
 
 	self:SetMouseInputEnabled( true )
 	self:MouseCapture( true )
-	
-	self:SetSize(100, 100)
 	self:SetFocusTopLevel(false)
 	self:SetCursor("sizeall")
 
+	self:SetSizeDynamic(120,300)
 
 	self.TSS = vgui.Create( "Panel", self )
 	self.TSS:SetVisible(false)
@@ -106,28 +104,25 @@ function PANEL:Init()
 end
 
 function PANEL:SetFont(font)
-  self.labelTitle:SetFont(font)
-  self.buttonClose:SetFont(font)
-  self.buttonMode:SetFont(font)
+	self.labelTitle:SetFont(font)
+	self.buttonClose:SetFont(font)
+	self.buttonMode:SetFont(font)
 end
 
-function PANEL:isDefaultTitle()
-	return defaultTitle
+function PANEL:isTSS()
+	return isTSS
 end
+
 function PANEL:SetTSSEnabled(bool)
 	if bool then
-		self.TSS:SetVisible(bool)
 		self.labelTitle:SetPos(10,0)
 	else
-		self.TSS:SetVisible(bool)
 		self.labelTitle:SetPos(0,0)
 	end
-	defaultTitle = !bool
+	self.TSS:SetVisible(bool)
+	isTSS = bool
 end
 
-function PANEL:isTitleServerStateOn()
-	return titleServerStateOn
-end
 function PANEL:SetTitleServerState(bool)
 	if bool then
 		colorServerState = Color(20, 150, 240, 255)
@@ -138,7 +133,6 @@ function PANEL:SetTitleServerState(bool)
 		surface.SetDrawColor(colorServerState)
 		surface.DrawRect(0, 0, w, h)
 	end
-	titleServerStateOn = bool
 end
 
 function PANEL:SetBGColor(r, g, b)
@@ -168,6 +162,10 @@ end
 
 function PANEL:SetTitle(strTitle)
 	self.labelTitle:SetText(strTitle)
+end
+
+function PANEL:SetTitleColor(color)
+	self.labelTitle:SetTextColor(color)
 end
 
 function PANEL:Close()
@@ -251,7 +249,6 @@ function PANEL:Think()
 	end
 
 	if (self.Sizing) then
-		self:OnResizing()
 		local x = mousex - self.Sizing[1]
 		local y = mousey - self.Sizing[2]
 		local px, py = self:GetPos()
@@ -271,8 +268,6 @@ function PANEL:Think()
 		self:SetSize(x, y)
 		self:SetCursor("sizenwse")
 		return
-	else
-		self:AfterResizing()
 	end
 	if (self.Hovered and self.m_bSizable and mousex > (self.x + self:GetWide() - 20) and mousey > (self.y + self:GetTall() - 20)) then
 		self:SetCursor("sizenwse")
@@ -294,7 +289,6 @@ end
 
 function PANEL:Paint(w, h)
 	derma.SkinHook("Paint", "Frame", self, w, h)
-
 	return true
 end
 
@@ -302,7 +296,7 @@ function PANEL:OnMousePressed()
 	if (self.m_bSizable and gui.MouseX() > (self.x + self:GetWide() - 20) and gui.MouseY() > (self.y + self:GetTall() - 20)) then
 		self.Sizing = {gui.MouseX() - self:GetWide(), gui.MouseY() - self:GetTall()}
 		self:MouseCapture(true)
-
+		self:OnResizing()
 		return
 	end
 
@@ -319,9 +313,17 @@ end
 
 function PANEL:OnMouseReleased()
 	self.Dragging = nil
+	if self.Sizing then
+		self:AfterResizing()
+	end
 	self.Sizing = nil
 	self:MouseCapture(false)
 	self:IsMouseReleased()
+end
+function PANEL:HasParents(panel)
+	if IsValid(panel) then
+		return self:HasParent(panel)
+	end
 end
 
 function PANEL:OnLayoutChange()

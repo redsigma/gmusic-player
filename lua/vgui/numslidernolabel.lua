@@ -1,13 +1,31 @@
 local PANEL = {}
+local textColor = Color(255, 255, 255)
+local slideColor = Color(0, 0, 0, 100)
+
+AccessorFunc( PANEL, "m_bMute", "Mute", FORCE_BOOL )
 
 function PANEL:Init()
 
-	self.TextArea = self:Add( "DTextEntry" )
+	self.prevVol = 0
+
+	self.TextArea = self:Add("DLabel")
+	self.TextArea:SetMouseInputEnabled( true )
+	self.TextArea:SetTextInset( 10, 0 )
+	self.TextArea:DockMargin(0, 0, 15, 0)
 	self.TextArea:Dock( RIGHT )
-	self.TextArea:SetPaintBackground( false )
 	self.TextArea:SetWide( 45 )
-	self.TextArea:SetNumeric( true )
+	self.TextArea:SetTextColor(textColor)
 	self.TextArea.OnChange = function( textarea, val ) self:SetValue( self.TextArea:GetText() ) end
+	self.TextArea.DoClick = function()
+		self.m_bMute = !self.m_bMute
+		if self.m_bMute then
+			self.TextArea:SetText("  --")
+		else
+			self.TextArea:SetText(self.Scratch:GetTextValue())
+		end
+		self.prevVol = self.Scratch:GetFraction()
+		self:OnVolumeClick(self.prevVol)
+	end
 
 	self.Slider = self:Add( "DSlider", self )
 	self.Slider:SetLockY( 0.5 )
@@ -15,7 +33,19 @@ function PANEL:Init()
 	self.Slider:SetTrapInside( true )
 	self.Slider:Dock( FILL )
 	self.Slider:SetHeight( 16 )
-	Derma_Hook( self.Slider, "Paint", "Paint", "NumSlider" )
+	self.Slider.Paint = function( panel, w, h )
+		surface.SetDrawColor(slideColor)
+		surface.DrawRect( 0, h / 2 - 1, w, 1 )
+
+		surface.DrawRect( w / 4, h / 2 + 3, 1, 5 )
+		surface.DrawRect( w / 2, h / 2 + 3, 1, 5 )
+		surface.DrawRect( w - (w / 4), h / 2 + 3, 1, 5 )
+	end
+	self.Slider.Knob:SetSize( 8, 15 )
+	self.Slider.Knob.Paint = function(panel, w, h)
+		surface.SetDrawColor(textColor)
+		surface.DrawRect( 0, 0, w, h)
+	end
 
 	self.Scratch = self:Add( "DNumberScratch" )
 	self.Scratch:SetImageVisible( false )
@@ -34,9 +64,20 @@ function PANEL:Init()
 	self.Wang = self.Scratch
 end
 
-function PANEL:SetTextColor( value )
-	self.TextArea:SetTextColor(value)
+function PANEL:OnVolumeClick(lastVolume)
+	-- For override
 end
+
+function PANEL:SetTextColor( color )
+	textColor = color
+	self.TextArea:SetTextColor(color)
+	self.Slider.Knob.Paint(self.Slider.Knob, self.Slider.Knob:GetWide(), self.Slider.Knob:GetTall())
+end
+
+function PANEL:SetSliderColor(color)
+	slideColor = color
+end
+
 function PANEL:SetFont( value )
 	self.TextArea:SetFont(value)
 end
@@ -103,14 +144,13 @@ end
 
 function PANEL:SetConVar( cvar )
 	self.Scratch:SetConVar( cvar )
-	self.TextArea:SetConVar( cvar )
 end
 
 function PANEL:ValueChanged( val )
 
 	val = math.Clamp( tonumber( val ) || 0, self:GetMin(), self:GetMax() )
 	if ( self.TextArea != vgui.GetKeyboardFocus() ) then
-		self.TextArea:SetValue( self.Scratch:GetTextValue() )
+		self.TextArea:SetText( self.Scratch:GetTextValue() )
 	end
 
 	self.Slider:SetSlideX( self.Scratch:GetFraction( val ) )

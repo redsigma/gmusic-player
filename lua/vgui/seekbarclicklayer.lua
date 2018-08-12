@@ -4,6 +4,8 @@ AccessorFunc(PANEL, "m_numMax", "Max")
 AccessorFunc(PANEL, "m_fFloatValue", "FloatValue")
 AccessorFunc(PANEL, "Dragging", "Dragging")
 
+local round = math.Round
+
 function PANEL:Init()
 	self:SetMouseInputEnabled(true)
 	self:SetMin(0)
@@ -12,20 +14,24 @@ function PANEL:Init()
 
 end
 
-function PANEL:OnValueChanged()
+function PANEL:OnValueChanged(x)
 	-- changes goes here and not in the seekbar
 end
 
-function PANEL:OnCursorMoved(x, y)
-	if (not self.Dragging) then
+function PANEL:OnCursorMoved(x)
+	if not self.Dragging then
 		return
 	end
 
-	local w, h = self:GetSize()
-	x = math.Clamp(x, 0, w) / w
-	y = math.Clamp(y, 0, h) / h
-	x, y = self:TranslateValues(x, y)
-	self:OnValueChanged()
+	local w = self:GetWide()
+	local min = self:GetMin()
+
+	x = round(x, 3) / w or 0
+	x = x * (self:GetMax() - min)
+	x = min + x
+
+	self:OnValueChanged(x)
+	self:SetFloatValue(x)
 end
 
 function PANEL:SetFraction(fFraction)
@@ -52,7 +58,7 @@ function PANEL:OnMousePressed(mcode)
 	self:SetDragging(true)
 	self:MouseCapture(true)
 	local x, y = self:CursorPos()
-	self:OnCursorMoved(x, y)
+	self:OnCursorMoved(x)
 end
 
 function PANEL:OnMouseReleased(mcode)

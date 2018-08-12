@@ -4,24 +4,53 @@ local leftList = {}
 local rightList = {}
 
 local midPanelH = 0
+
+local bgHeader = Color(20, 150, 240)
+local bgColor = Color(255, 255, 255)
+local textColor = Color(255, 255, 255)
+
 function PANEL:Init()
 
 	self.midPanel = vgui.Create("Panel", self)
 	self.midPanel:Dock(TOP)
-	self.midPanel.Paint = function(panel, w, h)
-		surface.SetDrawColor( 255, 255, 255, 255 )
-		surface.DrawOutlinedRect( 0, h-1, w, h )
-	end
 	midPanelH = self.midPanel:GetTall() - 1
 
 	self.list1 = vgui.Create("DListView", self)
 	self.list1:SetPos(0, self.midPanel:GetTall())
 	self.list1:AddColumn( "Folders from ROOT" ).Header.Paint = function(panel, w, h)
-		surface.SetDrawColor( 20, 150, 240, 255  )
+		surface.SetDrawColor( bgHeader )
 		surface.DrawRect(0, 0, w, h)
-		panel:SetFont("default")
-		panel:SetTextColor(Color(255,255,255))
+		panel:SetFontInternal("default")
+		panel:SetColor(textColor)
 	end
+	self.list1.Paint = function(panel, w, h)
+		surface.SetDrawColor( bgHeader )
+		surface.DrawOutlinedRect( w-1, 0, w, h )
+		surface.SetDrawColor( bgColor )
+		surface.DrawRect(0, 0, w-1, h)
+	end
+
+	self.list1.VBar.btnGrip.Paint = function(panel, w, h)
+		surface.SetDrawColor( bgHeader )
+		surface.DrawRect(0, 0, w, h)
+	end
+	self.list1.VBar.btnUp.Paint = function(panel, w, h)
+		surface.SetDrawColor( bgHeader )
+		surface.DrawRect(0, 0, w, h)
+		surface.SetFont("Marlett")
+		surface.SetTextPos( 2, 2 )
+		surface.SetTextColor( textColor )
+		surface.DrawText("5")
+	end
+	self.list1.VBar.btnDown.Paint = function(panel, w, h)
+		surface.SetDrawColor( bgHeader )
+		surface.DrawRect(0, 0, w, h)
+		surface.SetFont("Marlett")
+		surface.SetTextPos( 2, 1 )
+		surface.SetTextColor( textColor )
+		surface.DrawText("6")
+	end
+
 	self.list1.OnRowRightClick = function(line, lineIndex)
 		if self.list1:GetLine(lineIndex):IsSelected() then
 			self.list1:GetLine(lineIndex):SetSelected(false)
@@ -32,11 +61,37 @@ function PANEL:Init()
 	self.list2 = vgui.Create("DListView", self)
 	self.list2:SetPos(self.list1:GetWide(), 0)
 	self.list2:AddColumn( "Active Folders" ).Header.Paint = function(panel, w, h)
-		surface.SetDrawColor( 20, 150, 240, 255  )
+		surface.SetDrawColor(bgHeader)
 		surface.DrawRect(0, 0, w, h)
-		panel:SetFont("default")
-		panel:SetTextColor(Color(255,255,255))
+		panel:SetFontInternal("default")
+		panel:SetColor(textColor)
 	end
+	self.list2.Paint = function(panel, w, h)
+		surface.SetDrawColor( bgColor )
+		surface.DrawRect(0, 0, w, h)
+	end
+
+	self.list2.VBar.btnGrip.Paint = function(panel, w, h)
+		surface.SetDrawColor( bgHeader )
+		surface.DrawRect(0, 0, w, h)
+	end
+	self.list2.VBar.btnUp.Paint = function(panel, w, h)
+		surface.SetDrawColor( bgHeader )
+		surface.DrawRect(0, 0, w, h)
+		surface.SetFont("Marlett")
+		surface.SetTextPos( 2, 2 )
+		surface.SetTextColor( textColor )
+		surface.DrawText("5")
+	end
+	self.list2.VBar.btnDown.Paint = function(panel, w, h)
+		surface.SetDrawColor( bgHeader )
+		surface.DrawRect(0, 0, w, h)
+		surface.SetFont("Marlett")
+		surface.SetTextPos( 2, 1 )
+		surface.SetTextColor( textColor )
+		surface.DrawText("6")
+	end
+
 	self.list2.OnRowRightClick = function(line, lineIndex)
 		if self.list2:GetLine(lineIndex):IsSelected() then
 			self.list2:GetLine(lineIndex):SetSelected(false)
@@ -46,43 +101,74 @@ function PANEL:Init()
 	self.btnRebuildMid = self.midPanel:Add("DButton")
 	self.btnRebuildMid:SetSize(80, midPanelH)
 	self.btnRebuildMid:SetFont("default")
-	self.btnRebuildMid:SetTextColor(Color(255,255,255))
+	self.btnRebuildMid:SetTextColor(textColor)
 	self.btnRebuildMid:SetText("Rebuild List")
 	self.btnRebuildMid.DoClick = function() self:OnButtonRebuild() end
-	self.btnRebuildMid.Paint = function() end
 	self.btnRebuildMid.Paint = function(panel, w, h)
 		if self.btnRebuildMid:IsHovered() then
 			surface.SetDrawColor(255, 255, 0, 255)
-			surface.DrawRect(0, 0, w, h)
+		else
+			surface.SetDrawColor(bgHeader)
 		end
+		surface.DrawRect(0, 0, w, h)
 	end
 
 	self.btnAddMid = self.midPanel:Add("DButton")
 	self.btnAddMid:SetFont("default")
-	self.btnAddMid:SetTextColor(Color(255,255,255))
+	self.btnAddMid:SetTextColor(textColor)
 	self.btnAddMid:SetText("Add Folder")
 	self.btnAddMid:SetPos(self.btnRebuildMid:GetWide(), 0)
 	self.btnAddMid.DoClick = function() self:OnButtonAdd() end
-	self.btnAddMid.Paint = function() end
 	self.btnAddMid.Paint = function(panel, w, h)
 		if self.btnAddMid:IsHovered() then
 			surface.SetDrawColor(0, 255, 0, 255)
-			surface.DrawRect(0, 0, w, h)
+		else
+			surface.SetDrawColor(bgHeader)
 		end
+		surface.DrawRect(0, 0, w, h)
 	end
 
 	self.btnRemMid = self.midPanel:Add("DButton")
 	self.btnRemMid:SetFont("default")
-	self.btnRemMid:SetTextColor(Color(255,255,255))
+	self.btnRemMid:SetTextColor(textColor)
 	self.btnRemMid:SetText("Remove Folder")
 	self.btnRemMid.DoClick = function() self:OnButtonRem() end
-	self.btnRemMid.Paint = function() end
 	self.btnRemMid.Paint = function(panel, w, h)
 		if self.btnRemMid:IsHovered() then
 			surface.SetDrawColor(255, 150, 0, 255)
-			surface.DrawRect(0, 0, w, h)
+		else
+			surface.SetDrawColor(bgHeader)
 		end
+		surface.DrawRect(0, 0, w, h)
 	end
+end
+
+function PANEL:UpdateColors(bgHead, bgCol, textCol)
+	textColor = textCol
+	bgHeader = bgHead
+	bgColor = bgCol
+	self.btnRebuildMid:SetTextColor(textColor)
+	self.btnAddMid:SetTextColor(textColor)
+	self.btnRemMid:SetTextColor(textColor)
+
+	local list1 = self.list1:GetChildren()[2].Header
+	local list2 = self.list2:GetChildren()[2].Header
+
+	list1.Paint(list1, list1:GetWide(), list1:GetTall())
+	list2.Paint(list2, list2:GetWide(), list2:GetTall())
+
+	self.list1.Paint(self.list1, self.list1:GetWide(), self.list1:GetTall())
+	self.list2.Paint(self.list2, self.list2:GetWide(), self.list2:GetTall())
+
+	self.list1.VBar.btnGrip.Paint(self.list1.VBar.btnGrip, self.list1.VBar.btnGrip:GetWide(), self.list1.VBar.btnGrip:GetTall())
+	self.list2.VBar.btnGrip.Paint(self.list1.VBar.btnGrip, self.list1.VBar.btnGrip:GetWide(), self.list1.VBar.btnGrip:GetTall())
+
+	self.list1.VBar.btnUp.Paint(self.list2.VBar.btnUp, self.list2.VBar.btnUp:GetWide(), self.list2.VBar.btnUp:GetTall())
+	self.list2.VBar.btnUp.Paint(self.list2.VBar.btnUp, self.list2.VBar.btnUp:GetWide(), self.list2.VBar.btnUp:GetTall())
+
+	self.list1.VBar.btnDown.Paint(self.list2.VBar.btnDown, self.list2.VBar.btnDown:GetWide(), self.list2.VBar.btnDown:GetTall())
+	self.list2.VBar.btnDown.Paint(self.list2.VBar.btnDown, self.list2.VBar.btnDown:GetWide(), self.list2.VBar.btnDown:GetTall())
+
 end
 
 function PANEL:selectFirstLine()
@@ -127,17 +213,15 @@ function PANEL:OnButtonRebuild()
 	confirmDialog:SetTitle( "Confirm rebuilding the left list!" )
 	confirmDialog:MoveToFront()
 	confirmDialog.Paint = function(panel, w, h)
-		surface.SetDrawColor( 20, 150, 240, 255 )
+		surface.SetDrawColor( bgHeader )
 		surface.DrawRect( 0, 0, w, h )
 	end
 
 	confirmDialog.Label = vgui.Create( "RichText", confirmDialog )
 	confirmDialog.Label:SetVerticalScrollbarEnabled(false)
 	confirmDialog.Label:Dock(FILL)
-	confirmDialog.Label:InsertColorChange( 255, 255, 255, 255 )
+	confirmDialog.Label:InsertColorChange( textColor.r, textColor.g, textColor.b, textColor.a )
 	confirmDialog.Label:AppendText( "Are you sure you want to rebuild the search list?")
-
-	confirmDialog.Label:InsertColorChange( 255, 255, 255, 255 )
 	confirmDialog.Label:AppendText( "\n\nThis might take longer depending on how many folders are there and how fast your cpu is." )
 	confirmDialog.Label.Paint = function(panel)
 		panel:SetFontInternal( "GModNotify" )
@@ -154,7 +238,7 @@ function PANEL:OnButtonRebuild()
 	bottomPanel.btnNo:SetText( "No" )
 	bottomPanel.btnNo:SetFont( "GModNotify" )
 	bottomPanel.btnNo.Paint = function(panel, w, h)
-		surface.SetDrawColor( 255, 255, 255, 255 )
+		surface.SetDrawColor( textColor )
 		surface.DrawRect( 0, 0, w, h )
 	end
 	bottomPanel.btnNo.DoClick = function()
@@ -166,7 +250,7 @@ function PANEL:OnButtonRebuild()
 	bottomPanel.btnYes:SetText( "YES" )
 	bottomPanel.btnYes:SetFont( "GModNotify" )
 	bottomPanel.btnYes.Paint = function(panel, w, h)
-		surface.SetDrawColor( 255, 255, 255, 255 )
+		surface.SetDrawColor( textColor )
 		surface.DrawRect( 0, 0, w, h )
 	end
 	bottomPanel.btnYes.DoClick = function()

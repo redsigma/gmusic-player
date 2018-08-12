@@ -12,9 +12,34 @@ Derma_Hook( PANEL, "PerformLayout", "Layout", "CheckBox" )
 
 Derma_Install_Convar_Functions( PANEL )
 
-function PANEL:Init()
+function PANEL:SetValue( val )
+	if self:GetAdminOnly() then
+		if self:GetIsAdmin() then
+			if ( tonumber( val ) == 0 ) then val = 0 end
+			val = tobool( val )
 
-    self.isAdmin = nil
+			self:SetChecked( val )
+			self.m_bValue = val
+
+			self:UpdateConVar()
+		else
+			self:RevertConVar()
+		end
+	else
+		if ( tonumber( val ) == 0 ) then val = 0 end
+		val = tobool( val )
+		self:SetChecked( val )
+		self.m_bValue = val
+
+		self:UpdateConVar()
+	end
+end
+
+function PANEL:Init()
+	self.child = {}
+	self.id = 0
+
+	self.isAdmin = nil
 	self:SetSize( 15, 15 )
 	self:SetText( "" )
 	self.bID = false
@@ -23,6 +48,14 @@ function PANEL:Init()
 
 end
 
+function PANEL:addCheckbox(index, checkbox)
+	self.id = index
+	self.child[index] = checkbox
+end
+
+function PANEL:SetID(val)
+	self.id = val
+end
 
 function PANEL:AfterChange( val )
 	-- override after a value has changed
@@ -38,16 +71,20 @@ function PANEL:PreAfterConvarChanged(val)
 	self:AfterConvarChanged(val)
 end
 
-function PANEL:PersistConvar( newCvar )
+function PANEL:PersistConvar( newCvar, booleanize )
 	self.cvar = newCvar
-	
 	if !ConVarExists(self.cvar:GetName()) then
 		self.cvar:SetInt(self.cvar:GetDefault())
 	end
-
-	cvars.AddChangeCallback( self.cvar:GetName(), function( convar , oldValue , newValue  )
-		self:PreAfterConvarChanged(tobool(tonumber(newValue)))
-	end )
+	if booleanize then
+		cvars.AddChangeCallback( self.cvar:GetName(), function( convar , oldValue , newValue  )
+			self:PreAfterConvarChanged(tobool(tonumber(newValue)))
+		end )
+	else
+		cvars.AddChangeCallback( self.cvar:GetName(), function( convar , oldValue , newValue  )
+			self:PreAfterConvarChanged(tonumber(newValue))
+		end )
+	end
 
 
 end
@@ -61,7 +98,6 @@ end
 
 
 function PANEL:UpdateConVar()
-	
 	if self:GetChecked() then
 		self:ConVarChanged( "1" )
 	else
@@ -87,11 +123,6 @@ function PANEL:IsEditing()
 	return self.Depressed
 end
 
-function PANEL:GetbID()
-	return self.bID
-end
-
-
 function PANEL:BeforeChange()
 	-- override before a value has changed
 	-- must use the SetBeforeBool method to continue
@@ -106,6 +137,10 @@ function PANEL:SetChecked(bool)
 	self.bID = bool
 end
 
+function PANEL:GetbID()
+	return self.bID
+end
+
 function PANEL:SetIsAdmin( isAdmin )
 	self.isAdmin = isAdmin
 end
@@ -118,40 +153,15 @@ function PANEL:GetIsAdmin()
 	end
 end
 
-function PANEL:SetValue( val )
-	if self:GetAdminOnly() then
-		if self:GetIsAdmin() then -- doesn't work in a separate function T_T
-		
-			if ( tonumber( val ) == 0 ) then val = 0 end
-			val = tobool( val )
 
-			self:SetChecked( val )
-			self.m_bValue = val
-
-			self:UpdateConVar()
-		else
-			self:RevertConVar()
-		end
-	else
-
-		if ( tonumber( val ) == 0 ) then val = 0 end
-		val = tobool( val )
-
-		self:SetChecked( val )
-		self.m_bValue = val
-
-		self:UpdateConVar()
-	end
-
-end
 
 function PANEL:DoClick()
 	self:Toggle()
 end
 
 function PANEL:Toggle()
-	self:BeforeChange()	   		  -- gmod doesn't know the way to return true
-	if self:GetBeforeBool() then  -- so we use a getter as well
+	self:BeforeChange()
+	if self:GetBeforeBool() then
 		if self:GetChecked() then
 			self:SetValue( false )
 		else
@@ -161,16 +171,24 @@ function PANEL:Toggle()
 	else
 		self:SetBeforeBool(true) -- reset it after check to prevent glitches
 	end
-
 end
-
+function PANEL:ToggleOne()
+	for k,checkbox in pairs(self.child) do
+		if k == self.id then
+			self:Toggle()
+			self:GetParent():GetParent():GetChildren()[1]:OnToggleOnce(self.id)
+		else
+			checkbox:SetCheckedSilent(false)
+		end
+	end
+end
 
 function PANEL:ConVarNumberThink()
 
 	if ( !self.m_strConVar ) then -- if nil return false
 	 return end
 
-	local strValue = GetConVarNumber( self.m_strConVar )
+	local strValue = GetConVar(self.cvar:GetName()):GetInt()
 
 	-- In case the convar is a "nan"
 	if ( strValue != strValue ) then return end
