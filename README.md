@@ -1,6 +1,6 @@
 # gMusic player
 
-A Gmod Music Player inspired by the [url=http://steamcommunity.com/sharedfiles/filedetails/?id=699374259]Vocaloid Menu[/url] Player which is based on [url=http://steamcommunity.com/sharedfiles/filedetails/?id=306423885]Garry's Mod Music Player[/url] made by Declivity.
+A Gmod Music Player inspired by the [Vocaloid Menu](http://steamcommunity.com/sharedfiles/filedetails/?id=699374259) Player which is based on [Garry's Mod Music Player](http://steamcommunity.com/sharedfiles/filedetails/?id=306423885) made by [Declivity](https://steamcommunity.com/profiles/76561198024690138).
 
 # License
 
