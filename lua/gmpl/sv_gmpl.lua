@@ -41,6 +41,10 @@ local function initMenu(ply)
 	net.Send(ply)
 end
 
+
+
+
+
 --[[-------------------------------------------------------------------------
 On Player initial spawn update settings.
 ---------------------------------------------------------------------------]]--
@@ -49,6 +53,7 @@ hook.Add("Initialize", "checkUlib", function()
 		hook.Add("ULibLocalPlayerReady", "initPlayer", function(ply)
 			print("[gMusic Player] Initializing - via Ulib")
 			initMenu(ply)
+
 		end)
 	else
 		hook.Add("PlayerInitialSpawn", "initPlayer", function(ply)
@@ -56,14 +61,11 @@ hook.Add("Initialize", "checkUlib", function()
 			initMenu(ply)
 		end)
 	end
-
-	hook.Add( "ShowSpare1", "openMenuF3F", function( ply )
-		net.Start( "requestHotkeyFromServer" )
-		net.Send(ply)
-	end)
 end)
-
-
+hook.Add( "ShowSpare1", "openMenuF3F", function( ply )
+	net.Start( "requestHotkeyFromServer" )
+	net.Send(ply)
+end)
 net.Receive( "toServerHotkey", function(length, sender )
 	if sender:IsValid() then
 		openMenu(sender,"openmenu")

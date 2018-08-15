@@ -36,10 +36,6 @@ function PANEL:Init()
 	self:SetDirty( true )
 
 	self.panelLine = vgui.Create( "Panel", self )
-	self.panelLine.Paint = function(panel, w, h)
-		surface.SetDrawColor( bgColor )
-		surface.DrawRect( 0, 0, w, h )
-	end
 
 	self.VBar = vgui.Create( "DSimpleScroll", self )
 	self.VBar:SetZPos( 20 )
@@ -53,6 +49,10 @@ function PANEL:Init()
 		surface.DrawRect(0, 0, w, h)
 	end
 
+	self.Paint = function(panel, w, h)
+		surface.SetDrawColor(bgColor)
+		surface.DrawRect(0, 0, w, h)
+	end
 end
 
 function PANEL:RefreshLayout(w, h)
@@ -337,7 +337,7 @@ function PANEL:UpdateColors(bgHead, bgCol, textCol)
 		column.Paint(column, column:GetWide(), column:GetTall())
 	end
 	self.VBar.btnGrip.Paint(self.VBar.btnGrip, self.VBar.btnGrip:GetWide(), self.VBar.btnGrip:GetTall())
-	self.panelLine.Paint(self.panelLine, self.panelLine:GetWide(), self.panelLine:GetTall())
+	self.Paint(self, self:GetWide(), self:GetTall())
 end
 
 derma.DefineControl( "DBetterListView", "Better List", PANEL, "Panel" )

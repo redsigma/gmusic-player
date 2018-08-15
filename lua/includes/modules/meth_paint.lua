@@ -13,20 +13,6 @@ end
 return paintMethod
 end
 
-
-local function paintBG(xpos, ypos, w, h, r, g, b, a)
-	surface.SetDrawColor( r, g, b, a )
-	surface.DrawRect( xpos, ypos, w, h )
-end
-
-local function paintHoverBG(panel)
-	panel.PaintOver = function(self, w, h)
-		if panel:IsHovered() then
-			paintBG(0, 0, w, h, 255, 255, 255, 50)
-		end
-	end
-end
-
 local function getColors()
 	local colors = {}
 
@@ -45,6 +31,22 @@ local function getColors()
 	end
 
 	return colors
+end
+
+local function paintBaseList(panel)
+	panel.Paint = function(self, w, h)
+		surface.SetDrawColor( getColors().bglist )
+		surface.DrawRect( 0, 0, w, h )
+	end
+end
+
+local function paintHoverBG(panel)
+	panel.PaintOver = function(self, w, h)
+		if panel:IsHovered() then
+			surface.SetDrawColor( Color(255, 255, 255, 50) )
+			surface.DrawRect( 0, 0, w, h )
+		end
+	end
 end
 
 local function paintBase(panel)
@@ -121,12 +123,12 @@ local function paintDisabled(panel)
 	panel.Paint = function() end
 end
 
-paintMethod.setBG 			=	paintBG
 paintMethod.setBGHover		=	paintHoverBG
 paintMethod.setDisabled 	=	paintDisabled
 paintMethod.paintButton 	=	paintButton
 paintMethod.paintSlider 	=	paintSlider
 paintMethod.paintBase 		=	paintBase
+paintMethod.paintBaseList 	=	paintBaseList
 paintMethod.paintList 		=	paintList
 paintMethod.paintDoubleList =	paintDoubleList
 paintMethod.paintOptions 	=	paintOptions

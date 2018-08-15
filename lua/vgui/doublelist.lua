@@ -303,7 +303,7 @@ end
 
 function PANEL:PerformLayout()
 	local mainX = self:GetWide()
-	local mainY = self:GetTall()
+	local mainY = self:GetTall() - 25
 
 	self.list1:SetSize(mainX / 2, mainY)
 

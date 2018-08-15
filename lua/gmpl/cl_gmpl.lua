@@ -28,8 +28,6 @@ surface.CreateFont( "arialDefault", {
 local function paintMediaPlayer()
 	local ObjPaint = include("includes/modules/meth_paint.lua")(derma.GetSkinTable())
 
-	ObjPaint.setDisabled(dermaBase.musicsheet)
-
 	ObjPaint.paintButton(dermaBase.buttonrefresh)
 	ObjPaint.paintButton(dermaBase.buttonstop)
 	ObjPaint.paintButton(dermaBase.buttonpause)
@@ -39,13 +37,15 @@ local function paintMediaPlayer()
 
 
 	ObjPaint.paintBase(dermaBase.main)
+	ObjPaint.setDisabled(dermaBase.musicsheet)
 	ObjPaint.paintList(dermaBase.songlist)
 	ObjPaint.paintDoubleList(dermaBase.foldersearch)
 	ObjPaint.paintOptions(dermaBase.settingPage)
 	ObjPaint.paintText(dermaBase.contextmedia)
 
 	dermaBase.musicsheet.Navigation.Paint = function(panel, w, h)
-		ObjPaint.setBG(0, 0, w, h, 150, 150, 150, 255)
+		surface.SetDrawColor( Color(150, 150, 150) )
+		surface.DrawRect( 0, 0, w, h )
 	end
 	for k, v in pairs(dermaBase.musicsheet.Items) do
 		if (!v.Button) then continue end
@@ -53,7 +53,8 @@ local function paintMediaPlayer()
 		v.Button:DockMargin( 0, 0, 0, 1 )
 
 		v.Button.Paint = function(panel, w, h)
-			ObjPaint.setBG(0, 0, w, h, 255, 255, 255, 255)
+			surface.SetDrawColor( Color(255, 255, 255) )
+			surface.DrawRect( 0, 0, w, h )
 		end
 	end
 
@@ -179,8 +180,6 @@ net.Receive( "openmenu", function()
 	mediaplayer:SetSongHost(newHost)
 	showMPlayer(adminHost)
 end )
-
-
 
 net.Receive( "openmenucontext", function()
 	mediaplayer:SetSongHost(newHost)

@@ -10,14 +10,13 @@ Media.__index = Media
 -- private fields
 local playerIsAdmin = false
 
-local tsongName = {}
-local tsongFull = {}
-local tmpsongPerFolder  = {}
-local folderTable = {}
+local songsInFolder  = {}
+local folderLeft = {}
+local folderLeftAddon = {}
+local folderRight = {}
+local populatedSongs = {}
 local folderExceptions = { "ambience", "ambient", "ambient_mp3", "beams", "buttons", "coach", "combined", "commentary", "common", "doors", "foley", "friends", "garrysmod", "hl1", "items", "midi",
 							"misc", "mvm", "test", "npc", "passtime", "phx", "physics", "pl_hoodoo", "plats", "player", "replay", "resource", "sfx", "thrusters", "tools", "ui", "vehicles", "vo", "weapons" }
-local tfolderSearch = {}
-local tfolderSearchActive = {}
 
 function Media:new(coreBase)
 	dermaBase = coreBase
@@ -107,43 +106,48 @@ end
 ---------------------------------------------------------------------------]]--
 
 local function getSongName( filePath )
-	table.Empty(tsongName)
-	tsongName = string.Explode( "/", filePath )
-
-	return string.StripExtension(tsongName[#tsongName])
+	local songName = string.GetFileFromFilename(filePath)
+	return string.StripExtension(songName)
 end
 
-local function getSongs( path )
+local function getSongs( path, soundTable )
 	path = string.Trim(path)
-	tmpsongPerFolder, folderTable = file.Find( "sound/" .. path .. "/*", "GAME" )
 
-	for k, songName in pairs( tmpsongPerFolder ) do
-		table.insert( tsongFull, "sound/" .. path .. "/" .. songName )
+	songsInFolder, folderLeft = file.Find( "sound/" .. path .. "/*", "GAME" )
+
+	local songsInFolderAddons, appendFolders = file.Find( "sound/" .. path .. "/*", "WORKSHOP" )
+	if IsValid(appendFolders) then
+		table.Add(folderLeft, appendFolders)
+	end
+	if IsValid(songsInFolderAddons) then
+		table.Add(songsInFolder, songsInFolderAddons)
 	end
 
-	for key, folderName in pairs( folderTable ) do  -- also scan within the first folders
-		tmpsongPerFolder = file.Find( "sound/" .. path .. "/" .. folderName .. "/*", "GAME" )
+	for k, songName in pairs( songsInFolder ) do
+		table.insert( soundTable, "sound/" .. path .. "/" .. songName )
+	end
 
-		for key2, songName in pairs( tmpsongPerFolder ) do
-		table.insert( tsongFull, "sound/" .. path .. "/" .. folderName .. "/" .. songName )
+	for key, folderName in pairs( folderLeft ) do  -- also scan within the first folders
+		songsInFolder = file.Find( "sound/" .. path .. "/" .. folderName .. "/*", "GAME" )
+
+		for key2, songName in pairs( songsInFolder ) do
+		table.insert( soundTable, "sound/" .. path .. "/" .. folderName .. "/" .. songName )
 		end
 	end
+
+	return soundTable
 end
 
-local function clearSongs()
-	table.Empty(tsongFull) table.Empty(tmpsongPerFolder)
+local function getSongList( folderRightTable )
+	table.Empty(populatedSongs)
 	dermaBase.songlist:Clear()
-end
 
-local function getSongList( soundDirs )
-	clearSongs()
-
-	for k,foldername in pairs(soundDirs) do
-		getSongs( foldername )
+	for k,foldername in pairs(folderRightTable) do
+		getSongs(foldername, populatedSongs)
 	end
 
-	for key, filePath in pairs( tsongFull ) do
-		dermaBase.songlist:AddLine( getSongName(filePath))
+	for key, filePath in pairs( populatedSongs ) do
+		dermaBase.songlist:AddLine(getSongName(filePath))
 	end
 end
 
@@ -157,63 +161,105 @@ local function enableServerTSS(bool)
 end
 
 
-local function actionRefresh()
-	getSongList(tfolderSearchActive)
-	file.Write( "gmpl_songpath.txt", "")
-	for k,v in pairs(tfolderSearchActive) do
-		file.Append( "gmpl_songpath.txt", v .. "\r\n")
-	end
-	dermaBase.audiodirsheet:InvalidateLayout(true)
-end
-
-
 local function initLeftList()
-	table.Empty(folderTable)
+	table.Empty(folderLeft)
+	table.Empty(folderLeftAddon)
 
-	tmpsongPerFolder, folderTable = file.Find( "sound/*", "GAME" )
-	local folderWTable
-	tmpsongPerFolder, folderWTable = file.Find( "sound/*", "WORKSHOP" )
-	table.Add(folderTable, folderWTable)  table.Empty(folderWTable)
+	songsInFolder, folderLeft = file.Find( "sound/*", "GAME" )
+	songsInFolder, folderLeftAddon = file.Find( "sound/*", "WORKSHOP" ) -- also adds GAME
 
-	for k,v in pairs(folderTable) do
+	for k,v in pairs(folderLeft) do
 		for j = 0, #folderExceptions do
 			if v == folderExceptions[j] then
-				folderTable[k] = nil
+				folderLeft[k] = nil
 			end
 		end
 	end
-	folderTable = table.ClearKeys(folderTable)
+	for k,v in pairs(folderLeftAddon) do
+		for j = 0, #folderExceptions do
+			if v == folderExceptions[j] then
+				folderLeftAddon[k] = nil
+			end
+		end
+	end
+	folderLeft = table.ClearKeys(folderLeft)
+	folderLeftAddon = table.ClearKeys(folderLeftAddon)
 end
 
 local function sanityCheckActiveList()
-	tfolderSearch = folderTable
-
-	for k,v in pairs(tfolderSearch) do
-		for j = 1, #tfolderSearchActive do
-			-- remove songDir from searchList if in activeList
-			if rawequal(v, string.Trim(tfolderSearchActive[j]))  then
-				tfolderSearch[k] = nil
+	for k,leftItem in pairs(folderLeft) do
+		for j = 1, #folderRight do
+			if rawequal(leftItem, folderRight[j]) then -- remove songDir from searchList if in activeList
+				folderLeft[k] = nil
 				break
 			end
 		end
 	end
-	--Check if current actives are not found
-	for j = 1, #tfolderSearchActive do
-		if !file.Exists( "sound/" .. string.Trim(tfolderSearchActive[j]), "GAME" ) then
-			tfolderSearchActive[j] = nil
+
+	for j = 1, #folderRight do
+		local path = "sound/" .. folderRight[j]
+		if !file.Exists( path, "GAME" ) then -- this doesn't look in WORKSHOP we prove it exists using folderLeftAddon 
+			local found = false
+			for k,addonSong in pairs(folderLeftAddon) do
+				if rawequal(addonSong, folderRight[j]) then	-- use folderLeftAddon just to check for existence
+					found = true
+					folderLeftAddon[k] = nil -- if it exists we only clear it from left list
+				end
+				if found then break end
+			end
+			if !found then
+				folderRight[j] = nil
+			end
 		end
 	end
+
+	for k,leftItemAddon in pairs(folderLeftAddon) do -- clean left list addons after you prove above that they exist
+		for k2,rightItem in pairs(folderRight) do
+			if rawequal(leftItemAddon, rightItem) then
+				folderLeftAddon[k] = nil
+				break
+			end
+		end
+	end
+
 end
 
 local function populateMusicDir()
 	dermaBase.foldersearch:clearLeft()
 	dermaBase.foldersearch:clearRight()
-	for key,foldername in pairs(tfolderSearch) do
+
+	for k,folderAddon in pairs(folderLeftAddon) do	-- make sure we don't add duplicates
+		for k2,folderBase in pairs(folderLeft) do
+			if rawequal(folderBase, folderAddon) then
+				folderLeft[k2] = nil
+			end
+		end
+	end
+
+	for key,foldername in pairs(folderLeftAddon) do
 		dermaBase.foldersearch:AddLineLeft(foldername)
 	end
-	for key,foldername in pairs(tfolderSearchActive) do
+	for key,foldername in pairs(folderLeft) do
+		dermaBase.foldersearch:AddLineLeft(foldername)
+	end
+	for key,foldername in pairs(folderRight) do
 		dermaBase.foldersearch:AddLineRight(foldername)
 	end
+end
+
+local function actionRebuild()
+	initLeftList()
+	sanityCheckActiveList()
+	populateMusicDir()
+end
+
+local function actionRefresh()
+	getSongList(folderRight)
+	file.Write( "gmpl_songpath.txt", "")
+	for k,v in pairs(folderRight) do
+		file.Append( "gmpl_songpath.txt", v .. "\r\n")
+	end
+	dermaBase.audiodirsheet:InvalidateLayout(true)
 end
 
 local function createMain()
@@ -241,7 +287,7 @@ local function createMain()
 	initLeftList()
 	sanityCheckActiveList()
 	populateMusicDir()
-	getSongList(tfolderSearchActive)
+	getSongList(folderRight)
 end
 
 local function createMediaPlayer()
@@ -333,8 +379,8 @@ local function createMediaPlayer()
 			if playerIsAdmin then
 				net.Start("toServerRefreshSongList")
 
-				net.WriteTable(tfolderSearch)
-				net.WriteTable(tfolderSearchActive)
+				net.WriteTable(folderLeft)
+				net.WriteTable(folderRight)
 				net.SendToServer()
 			end
 		else
@@ -386,7 +432,7 @@ local function createMediaPlayer()
 	dermaBase.buttonplay.DoClick = function( songFile )
 		if isnumber(dermaBase.songlist:GetSelectedLine()) then
 			if !isstring(songFile) then
-				songFile = tsongFull[dermaBase.songlist:GetSelectedLine()]
+				songFile = populatedSongs[dermaBase.songlist:GetSelectedLine()]
 			end
 			if dermaBase.main.IsServerOn() then
 				net.Start( "toServerAdminPlay" )
@@ -430,15 +476,11 @@ local function createMediaPlayer()
 	dermaBase.foldersearch.OnRebuild = function(panel)
 		if dermaBase.cbadmindir:GetbID() then
 			if playerIsAdmin then
-				initLeftList()
-				sanityCheckActiveList()
-				populateMusicDir()
+				actionRebuild()
 				panel:selectFirstLine()
 			end
 		else
-			initLeftList()
-			sanityCheckActiveList()
-			populateMusicDir()
+			actionRebuild()
 			panel:selectFirstLine()
 		end
 	end
@@ -449,15 +491,15 @@ local function createMediaPlayer()
 				panel:selectFirstLine()
 				dermaBase.buttonrefresh:SetVisible(true)
 
-				tfolderSearch = dermaBase.foldersearch:populateLeftList()
-				tfolderSearchActive = dermaBase.foldersearch:populateRightList()
+				folderLeft = dermaBase.foldersearch:populateLeftList()
+				folderRight = dermaBase.foldersearch:populateRightList()
 			end
 		else
 			panel:selectFirstLine()
 			dermaBase.buttonrefresh:SetVisible(true)
 
-			tfolderSearch = dermaBase.foldersearch:populateLeftList()
-			tfolderSearchActive = dermaBase.foldersearch:populateRightList()
+			folderLeft = dermaBase.foldersearch:populateLeftList()
+			folderRight = dermaBase.foldersearch:populateRightList()
 		end
 	end
 
@@ -467,21 +509,21 @@ local function createMediaPlayer()
 				panel:selectFirstLine()
 				dermaBase.buttonrefresh:SetVisible(true)
 
-				tfolderSearch = panel:populateLeftList()
-				tfolderSearchActive = panel:populateRightList()
+				folderLeft = panel:populateLeftList()
+				folderRight = panel:populateRightList()
 			end
 		else
 			panel:selectFirstLine()
 			dermaBase.buttonrefresh:SetVisible(true)
 
-			tfolderSearch = panel:populateLeftList()
-			tfolderSearchActive = panel:populateRightList()
+			folderLeft = panel:populateLeftList()
+			folderRight = panel:populateRightList()
 		end
 	end
 
 
-	dermaBase.songlist.DoDoubleClick = function(lineIndex, line)
-		songFile = tsongFull[lineIndex]
+	dermaBase.songlist.DoDoubleClick = function(panel, lineIndex, line)
+		songFile = populatedSongs[lineIndex]
 		dermaBase.buttonplay.DoClick(songFile)
 	end
 
@@ -576,19 +618,20 @@ local function createMediaPlayer()
 end
 
 function Media:getLeftSongList()
-	return tfolderSearch
+	return folderLeft
 end
 
 function Media:getRightSongList()
-	return tfolderSearchActive
+	return folderRight
 end
 
 function Media:readFileSongs()
 	if file.Exists( "gmpl_songpath.txt", "DATA" ) then
 		local fileRead = string.Explode("\n", file.Read( "gmpl_songpath.txt", "DATA" ))
 		for i = 1, #fileRead - 1 do
-			tfolderSearchActive[i] = fileRead[i]
+			folderRight[i] = string.TrimRight(fileRead[i])
 		end
+		getSongList(folderRight)
 	end
 end
 
@@ -645,7 +688,7 @@ end )
 ---------------------------------------------------------------------------]]--
 
 net.Receive( "refreshSongListFromServer", function(length, sender)
-	tfolderSearch = net.ReadTable() -- also update the left list in case of becoming admin
+	folderLeft = net.ReadTable() -- also update the left list in case of becoming admin
 	local newActiveTable = net.ReadTable()
 
 	getSongList(newActiveTable)
