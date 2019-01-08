@@ -126,6 +126,11 @@ net.Receive( "createMenu", function()
 	dermaBase = include("includes/modules/meth_base.lua")(contextMenu, ScrW() / 5)
 	hook.Remove("PopulateMenuBar", "getContext")
 
+	while !isfunction(dermaBase.main.IsVisible) do
+		MsgC( Color( 144, 219, 232 ), "[gMusic Player]", Color( 255, 0, 0 ), " Failed to initialize - retrying\n" )
+		dermaBase = include("includes/modules/meth_base.lua")(contextMenu, ScrW() / 5)
+	end
+
 	require("musicplayerclass")
 	mediaplayer = Media(dermaBase)
 
@@ -133,7 +138,6 @@ net.Receive( "createMenu", function()
 	net.SendToServer()
 
 	local currentPlyIsAdmin = net.ReadBool()
-
 	mediaplayer:readFileSongs()
 	createMPlayer(currentPlyIsAdmin)
 
