@@ -170,7 +170,7 @@ function PANEL:SetTextColor(color)
 end
 
 function PANEL:Close()
-	-- gui.EnableScreenClicker(false)
+	gui.EnableScreenClicker(false)
 	self:SetVisible(false)
 	self:OnClose()
 end

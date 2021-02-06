@@ -91,18 +91,18 @@ end
 
 function PANEL:OnButtonRebuild()
 	dialogRebuild = vgui.Create( "DFrame" )
-	dialogRebuild:SetSize( 350, 200 )
+	dialogRebuild:SetSize( 400, 200 )
 	dialogRebuild:SetDeleteOnClose( true )
 	dialogRebuild:ShowCloseButton(false)
 	dialogRebuild:Center()
-	dialogRebuild:SetTitle( "Confirm rebuilding the left list!" )
+	dialogRebuild:SetTitle( "Confirm rebuilding the list folders!" )
 	dialogRebuild:MoveToFront()
 
 	dialogRebuild.Label = vgui.Create( "RichText", dialogRebuild )
 	dialogRebuild.Label:SetVerticalScrollbarEnabled(false)
 	dialogRebuild.Label:Dock(FILL)
 	dialogRebuild.Label:InsertColorChange( dialogWhite.r, dialogWhite.g, dialogWhite.b, dialogWhite.a )
-	dialogRebuild.Label:AppendText( "Are you sure you want to rebuild the search list?\nThis might take longer depending on how many folders are there and how fast your cpu is." )
+	dialogRebuild.Label:AppendText("Are you sure you want to rebuild the search list?\n\nThis could take longer depending on the amount of folders.")
 	dialogRebuild.Label.Paint = function(panel)
 		panel:SetFontInternal( "GModNotify" )
 		panel.Paint = nil

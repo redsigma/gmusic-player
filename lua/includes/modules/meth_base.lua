@@ -2,32 +2,30 @@ local dermaBase = {}
 
 local defaultFont = "arialDefault"
 
-local function init( contextMenu, contextMargin )
+local function init(contextMenu, contextMargin)
     dermaBase.painter = include("includes/modules/meth_paint.lua")()
 
-	dermaBase.contextmedia = vgui.Create("DMultiButton")
-    dermaBase.contextmedia:MoveToFront()
+	dermaBase.contextmedia = vgui.Create("DMultiButton", contextMenu)
 
-    -- g_ContextMenu:Add(dermaBase.contextmedia)
 	dermaBase.main = vgui.Create("DgMPlayerFrame")
 
-	bottom_p 				= vgui.Create("Panel", dermaBase.main)
-	dermaBase.sliderseek 	= vgui.Create("DSeekBar",bottom_p)
-	dermaBase.slidervol  	= vgui.Create("DNumSliderNoLabel", bottom_p)
+	bottom_p                = vgui.Create("Panel", dermaBase.main)
+	dermaBase.sliderseek    = vgui.Create("DSeekBar",bottom_p)
+	dermaBase.slidervol     = vgui.Create("DNumSliderNoLabel", bottom_p)
 
 	-- Buttons
-	dermaBase.buttonstop 	= vgui.Create("DBetterButton", dermaBase.main)
-	dermaBase.buttonpause	= vgui.Create("DBetterButton", dermaBase.main)
-	dermaBase.buttonplay 	= vgui.Create("DBetterButton", dermaBase.main)
+	dermaBase.buttonstop    = vgui.Create("DBetterButton", dermaBase.main)
+	dermaBase.buttonpause   = vgui.Create("DBetterButton", dermaBase.main)
+	dermaBase.buttonplay    = vgui.Create("DBetterButton", dermaBase.main)
 
 	-- Music List Server/Client button swap
-	dermaBase.buttonswap = vgui.Create("Panel", dermaBase.main)
-	dermaBase.labelswap  = vgui.Create("DLabel", dermaBase.buttonswap)
+	dermaBase.buttonswap    = vgui.Create("Panel", dermaBase.main)
+	dermaBase.labelswap     = vgui.Create("DLabel", dermaBase.buttonswap)
 	dermaBase.labelswap:SetTextColor(Color(230, 230, 230))
 
 	-- Music List
-	dermaBase.musicsheet	= vgui.Create("DSideMenu",dermaBase.main)
-	dermaBase.songlist		= vgui.Create("DBetterListView", dermaBase.musicsheet )
+	dermaBase.musicsheet    = vgui.Create("DSideMenu",dermaBase.main)
+	dermaBase.songlist      = vgui.Create("DBetterListView", dermaBase.musicsheet )
 
 	-- Music Dir
 	dermaBase.audiodirsheet = vgui.Create("Panel", dermaBase.musicsheet_colsheet)
@@ -45,13 +43,18 @@ local function init( contextMenu, contextMargin )
 
 	-- Settings options
 	dermaBase.settingPage:Category( "Server Side" )
-	dermaBase.cbadminaccess	= dermaBase.settingPage:CheckBox(true, "Only admins can play songs on the server", true )
-	dermaBase.cbadmindir	= dermaBase.settingPage:CheckBox(false, "Only admins can select music dirs", true )
+	dermaBase.cbadminaccess	= dermaBase.settingPage:CheckBox(
+        true, "Only admins can play songs on the server", true )
+	dermaBase.cbadmindir    = dermaBase.settingPage:CheckBox(
+        false, "Only admins can select music dirs", true )
 
 	dermaBase.settingPage:Category( "Client Side" )
-	dermaBase.contextbutton = dermaBase.settingPage:CheckBox(false, "Enable context menu button", false )
-	dermaBase.hotkey 		= dermaBase.settingPage:CheckBox(false, "Disable F3 hotkey", false )
-	dermaBase.darkmode 		= dermaBase.settingPage:CheckBox(true, "Enable dark mode", false )
+	dermaBase.contextbutton = dermaBase.settingPage:CheckBox(
+        false, "Enable context menu button", false )
+	dermaBase.hotkey        = dermaBase.settingPage:CheckBox(
+        false, "Disable F3 hotkey", false )
+	dermaBase.darkmode      = dermaBase.settingPage:CheckBox(
+        true, "Enable dark mode", false )
 
 	-- Panel
 	bottom_p:DockMargin(0,0,25,0)
@@ -61,7 +64,7 @@ local function init( contextMenu, contextMargin )
 	dermaBase.settingsheet:Dock(FILL)
 	dermaBase.slidervol:Dock(RIGHT)
 
-	dermaBase.contextmedia:SetPos(ScrW() - contextMargin, 20)
+	dermaBase.contextmedia:SetPos(ScrW() - contextMargin, 0)
 	dermaBase.contextmedia:SetSize(ScrW() - (ScrW() - contextMargin), 30)
 
 	-- Visibility
@@ -82,14 +85,19 @@ local function init( contextMenu, contextMargin )
 
 	-- Convars for checkboxes
 	dermaBase.slidervol:SetConVar("gmpl_vol")
-	dermaBase.cbadminaccess:SetConVar("gmpl_svadminplay", "1", "[gMusic Player] Allows only admins to play songs on the server")
-	dermaBase.cbadmindir:SetConVar("gmpl_svadmindir", "0", "[gMusic Player] Only admins can select Music Dirs")
+	dermaBase.cbadminaccess:SetConVar("gmpl_svadminplay", "1",
+        "[gMusic Player] Allows only admins to play songs on the server")
+	dermaBase.cbadmindir:SetConVar("gmpl_svadmindir", "0",
+        "[gMusic Player] Only admins can select Music Dirs")
 
-	dermaBase.contextbutton:SetConVar("gmpl_cmenu", "0", "[gMusic Player] Disable/Enable the context menu button")
-	dermaBase.contextbutton:SetEnabled(IsValid(g_ContextMenu))
+	dermaBase.contextbutton:SetConVar("gmpl_cmenu", "0",
+        "[gMusic Player] Disable/Enable the context menu button")
+	dermaBase.contextbutton:SetEnabled(IsValid(contextMenu))
 
-	dermaBase.hotkey:SetConVar("gmpl_nohotkey", "0", "[gMusic Player] Disable/Enable the F3 hotkey")
-	dermaBase.darkmode:SetConVar("gmpl_dark", "1", "[gMusic Player] Toggle dark mode theme")
+	dermaBase.hotkey:SetConVar(
+        "gmpl_nohotkey", "0", "[gMusic Player] Disable/Enable the F3 hotkey")
+	dermaBase.darkmode:SetConVar(
+        "gmpl_dark", "1", "[gMusic Player] Toggle dark mode theme")
 	-- DO gmpl_resetsize for dumbass
 	-- Do gmpl_size x y
 	-- bring player to front if pressing context while already opened with f3
@@ -127,6 +135,11 @@ local function init( contextMenu, contextMargin )
 		dermaBase.buttonpause.DoRightClick()
 	end
 
+    dermaBase.contextmedia.OnScreenSizeChanged = function(old_width, old_height)
+        dermaBase.contextmedia:SetPos(ScrW() - contextMargin, 0)
+        dermaBase.contextmedia:SetSize(ScrW() - (ScrW() - contextMargin), 30)
+	end
+
 	dermaBase.cbadminaccess.OnCvarChange = function( panel, oldVal, newVal )
 		net.Start("toServerRefreshAccess")
 		net.WriteBool(newVal)
@@ -152,17 +165,8 @@ local function init( contextMenu, contextMargin )
 	end
 
 	dermaBase.contextbutton.AfterChange = function( panel, val )
-		if !IsValid(g_ContextMenu) then return end
-		local bVal = tobool(val)
-		-- if bVal then getmetatable(contextMenu).DockMargin(
-        --     contextMenu,0, 0, contextMargin, 0)
-		-- else getmetatable(contextMenu).DockMargin(contextMenu,0, 0, 0, 0)
-		-- end
-
-		-- if g_ContextMenu:IsVisible() then
-		-- 	getmetatable(contextMenu).InvalidateParent(contextMenu,false)
-		-- end
-
+		if !IsValid(contextMenu) then return end
+        local bVal = tobool(val)
 		dermaBase.contextmedia:SetVisible(bVal)
 	end
 
