@@ -1,13 +1,11 @@
 
 local PANEL2 = {}
-local bgHover = Color(40, 40, 40, 255)
 
 function PANEL2:Init()
 	self:SetTextInset( 5, 0 )
 end
 
 derma.DefineControl( "DPureLabel", "", PANEL2, "DLabel" )
-
 
 local PANEL = {}
 
@@ -34,12 +32,6 @@ end
 
 function PANEL:SetTextColor(color)
 	self.col = color
-	local h, s, l = ColorToHSV(color)
-	if l > 0.5 then
-		bgHover = Color(255, 255, 255, 20)
-	else
-		bgHover = Color(20, 20, 20, 160)
-	end
 	for k, label in pairs(self.Columns) do
 		label:SetTextColor(self.col)
 	end
@@ -129,20 +121,6 @@ function PANEL:GetColumnText( i )
 	if ( !self.Columns[ i ] ) then return "" end
 	return self.Columns[ i ].Value
 
-end
-
-function PANEL:Paint(w, h)
-	if self:IsSelected() then
-		surface.SetDrawColor(Color(200, 200, 200, 100))
-		surface.DrawRect(0, 0, w, h)
-	end
-end
-
-function PANEL:PaintOver(w, h)
-	if self:IsHovered() then
-		surface.SetDrawColor(bgHover)
-		surface.DrawRect(0, 0, w, h)
-	end
 end
 
 function PANEL:PerformLayout()

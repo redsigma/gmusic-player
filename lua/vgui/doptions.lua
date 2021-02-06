@@ -6,8 +6,7 @@ AccessorFunc( PANEL, "m_bSizeToContents",	"AutoSize", FORCE_BOOL)
 local itemCount = 0
 local categCount = 0
 
-local bgHeader = Color(20, 150, 240)
-local textColor = Color(0, 0, 0)
+local checkboxTextColor = Color(0, 0, 0)
 
 function PANEL:Init()
 
@@ -22,16 +21,14 @@ function PANEL:Init()
 
 	self.VBar = vgui.Create( "DSimpleScroll", self )
 	self.VBar:SetZPos( 20 )
-	self.VBar.Paint = function(panel, w, h)
-		surface.SetDrawColor(120, 120, 120)
-		surface.DrawRect(0, 0, w, h)
-	end
 
-	self.VBar.btnGrip.Paint = function(panel, w, h)
-		surface.SetDrawColor(bgHeader)
-		surface.DrawRect(0, 0, w, h)
-	end
+end
 
+function PANEL:SetTextColor(checkboxTextColor_)
+	checkboxTextColor = checkboxTextColor_
+	for _, checkbox in pairs(self.Items) do
+		checkbox:SetTextColor(checkboxTextColor)
+	end
 end
 
 function PANEL:RefreshLayout(w, h)
@@ -68,19 +65,13 @@ function PANEL:SyncItems(isAdmin)
 	end
 end
 
-
 function PANEL:Category( strLabel )
 	local cat = vgui.Create( "DLabel", self.panel )
 	cat:SetPos(0, itemCount + categCount)
 	cat:SetWide(self:GetWide())
 	cat:SetContentAlignment(5)
 	cat:SetFont(self:GetDefaultFont())
-	cat:SetTextColor(Color(255, 255, 255))
 	cat:SetText(strLabel)
-	cat.Paint = function(panel, w, h)
-		surface.SetDrawColor(20, 150, 240)
-		surface.DrawRect(0, 0, w, h)
-	end
 
 	categCount = categCount + 6
 	itemCount = itemCount + cat:GetTall() + categCount
@@ -89,14 +80,13 @@ function PANEL:Category( strLabel )
 	return cat
 end
 
-
 function PANEL:CheckBox( isChecked, strLabel, adminOnly )
 	local left = vgui.Create( "DBetterCheckBoxLabel", self.panel )
 	left:SetPos(8, itemCount)
 	left:SetFont(self:GetDefaultFont())
 	left:SetChecked(isChecked)
 	left:SetAdminOnly(adminOnly)
-	left:SetTextColor(textColor)
+	left:SetTextColor(checkboxTextColor)
 	left:SetText( strLabel )
 
 	itemCount = itemCount + left:GetTall()
@@ -104,7 +94,6 @@ function PANEL:CheckBox( isChecked, strLabel, adminOnly )
 
 	return left
 end
-
 
 function PANEL:MultiCheckBox( nrChecked, strLabel, adminOnly, optionNumber )
 	local multiCheck = vgui.Create( "Panel", self.panel )
@@ -116,7 +105,7 @@ function PANEL:MultiCheckBox( nrChecked, strLabel, adminOnly, optionNumber )
 	left.label:SetPos(0, 0)
 	left:SetFont(self:GetDefaultFont())
 	left:SetAdminOnly(adminOnly)
-	left:SetTextColor(textColor)
+	left:SetTextColor(checkboxTextColor)
 	left:SetText( strLabel )
 
 	multiCheck:SetSize(left:GetWide() + 100, 40)
@@ -129,7 +118,7 @@ function PANEL:MultiCheckBox( nrChecked, strLabel, adminOnly, optionNumber )
 			option.Toggle = option.ToggleOne
 			left:addCheckbox(i, option)
 			option:SetFont(self:GetDefaultFont())
-			option:SetTextColor(textColor)
+			option:SetTextColor(checkboxTextColor)
 			option.y = 20
 		end
 		if nrChecked then
@@ -177,19 +166,17 @@ function PANEL:PerformLayout(w, h)
 	self.panel:SetPos( 0, YPos )
 end
 
-function PANEL:UpdateColors(bgHead, bgCol, textCol)
-	bgHeader = bgHead
-	bgColor = bgCol
-	textColor = textCol
-
-	for k,line in pairs(self.Lines) do
-		line:SetTextColor(textColor)
+function PANEL:PaintScroll(gripColor, gripBG)
+	self.VBar.Paint = function(panel, w, h)
+		if istable(gripBG) then
+			surface.SetDrawColor(gripBG)
+			surface.DrawRect(0, 0, w, h)
+		end
+		panel.btnGrip.Paint = function(panelGrip)
+			surface.SetDrawColor(gripColor)
+			surface.DrawRect(0, 0, w, h)
+		end
 	end
-	for k,column in pairs(self.Columns) do
-		column.Paint(column, column:GetWide(), column:GetTall())
-	end
-	self.VBar.btnGrip.Paint(self.VBar.btnGrip, self.VBar.btnGrip:GetWide(), self.VBar.btnGrip:GetTall())
-	self.panelLine.Paint(self.panelLine, self.panelLine:GetWide(), self.panelLine:GetTall())
 end
 
 derma.DefineControl( "DOptions", "Settings Page", PANEL, "Panel" )

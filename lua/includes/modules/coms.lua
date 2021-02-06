@@ -14,9 +14,15 @@ util.AddNetworkString( "toServerAdminPlay" )	util.AddNetworkString( "playFromSer
 util.AddNetworkString( "toServerAdminStop" )	util.AddNetworkString( "stopFromServerAdmin" )
 util.AddNetworkString( "toServerUpdateLoop" )	util.AddNetworkString( "loopFromServer" )
 
-util.AddNetworkString( "askAdminForLiveSeek" )  --
-util.AddNetworkString( "toServerUpdateSeek" )   -- Live Seek Mechanic
-util.AddNetworkString( "playLiveSeek")          --
+-- AutoPlay Mechanic
+util.AddNetworkString( "sv_autoPlay" )  util.AddNetworkString( "cl_autoPlay" )
+util.AddNetworkString( "sv_getAutoPlaySong" )  util.AddNetworkString( "cl_ansAutoPlaySong" )
+util.AddNetworkString( "cl_errAutoPlaySong" )
+
+-- Live Seek Mechanic
+util.AddNetworkString( "askAdminForLiveSeek" )
+util.AddNetworkString( "toServerUpdateSeek" )
+util.AddNetworkString( "playLiveSeek")
 
 util.AddNetworkString( "toServerRefreshAccess")  util.AddNetworkString( "refreshAdminAccess")
 util.AddNetworkString( "toServerRefreshAccess_msg")

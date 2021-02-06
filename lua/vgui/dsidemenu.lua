@@ -12,9 +12,7 @@ function PANEL:Init()
 
 	self.Items = {}
 
-	local w, h = self:GetParent():GetSize()
-	self:SetSize(w, h - 80)
-
+	self:SetSize(self:GetParent():GetSize())
 end
 
 function PANEL:OnSideBarToggle(wide)

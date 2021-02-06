@@ -5,21 +5,20 @@ local slideColor = Color(0, 0, 0, 100)
 AccessorFunc( PANEL, "m_bMute", "Mute", FORCE_BOOL )
 
 function PANEL:Init()
-
 	self.prevVol = 0
 
 	self.TextArea = self:Add("DLabel")
 	self.TextArea:SetMouseInputEnabled( true )
-	self.TextArea:SetTextInset( 10, 0 )
-	self.TextArea:DockMargin(0, 0, 15, 0)
+	self.TextArea:SetTextInset( 10, -3 )
 	self.TextArea:Dock( RIGHT )
 	self.TextArea:SetWide( 45 )
+	self.TextArea:SetCursor( "hand" )
 	self.TextArea:SetTextColor(textColor)
 	self.TextArea.OnChange = function( textarea, val ) self:SetValue( self.TextArea:GetText() ) end
 	self.TextArea.DoClick = function()
 		self.m_bMute = !self.m_bMute
 		if self.m_bMute then
-			self.TextArea:SetText("  --")
+			self.TextArea:SetText("Mute")
 		else
 			self.TextArea:SetText(self.Scratch:GetTextValue())
 		end
@@ -31,26 +30,26 @@ function PANEL:Init()
 	self.Slider:SetLockY( 0.5 )
 	self.Slider.TranslateValues = function( slider, x, y ) return self:TranslateSliderValues( x, y ) end
 	self.Slider:SetTrapInside( true )
+	self.Slider:DockMargin(20, 0, 0, 0)
 	self.Slider:Dock( FILL )
 	self.Slider:SetHeight( 16 )
 	self.Slider.Paint = function( panel, w, h )
 		surface.SetDrawColor(slideColor)
-		surface.DrawRect( 0, h / 2 - 1, w, 1 )
+		surface.DrawRect( 0, h / 2 - 4, w, 1 )
 
-		surface.DrawRect( w / 4, h / 2 + 3, 1, 5 )
-		surface.DrawRect( w / 2, h / 2 + 3, 1, 5 )
-		surface.DrawRect( w - (w / 4), h / 2 + 3, 1, 5 )
+		surface.DrawRect( w / 4, h / 2, 1, 5 )
+		surface.DrawRect( w / 2, h / 2, 1, 5 )
+		surface.DrawRect( w - (w / 4), h / 2, 1, 5 )
 	end
 	self.Slider.Knob:SetSize( 8, 15 )
 	self.Slider.Knob.Paint = function(panel, w, h)
 		surface.SetDrawColor(textColor)
-		surface.DrawRect( 0, 0, w, h)
+		surface.DrawRect( 0, -3, w, h)
 	end
 
 	self.Scratch = self:Add( "DNumberScratch" )
 	self.Scratch:SetImageVisible( false )
 
-	self.Scratch:Dock( FILL )
 	self.Scratch:SetVisible(false)
 	self.Scratch.OnValueChanged = function() self:ValueChanged( self.Scratch:GetFloatValue() ) end
 
@@ -184,7 +183,6 @@ function PANEL:UpdateNotches()
 end
 
 function PANEL:PerformLayout()
-	self.Scratch:SetVisible( false )
 	self.Slider:StretchToParent( 0, 0, 0, 0 )
 	self.Slider:SetSlideX( self.Scratch:GetFraction() )
 end

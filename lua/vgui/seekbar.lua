@@ -6,7 +6,9 @@ local slideColor = Color(0, 0, 0, 100)
 
 function PANEL:Init()
 	self.allow = true
+
 	self.TextCurrent = self:Add("DTextEntry")
+	self.TextCurrent:DockMargin(5, 0, 0, 0)
 	self.TextCurrent:Dock(LEFT)
 	self.TextCurrent:SetPaintBackground(false)
 	self.TextCurrent:SetWide(45)
@@ -25,7 +27,7 @@ function PANEL:Init()
 		panel:DrawTextEntryText( textColor, textColor, textColor)
 	end
 
-	self.TextLength = self:Add("DTextEntry")
+	self.TextLength = vgui.Create("DTextEntry", self)
 	self.TextLength:Dock(RIGHT)
 
 	self.TextLength:SetPaintBackground(false)
@@ -55,7 +57,7 @@ function PANEL:Init()
 	self.Slider:SetHeight(self:GetTall())
 	self.Slider.Paint = function( panel, w, h )
 		surface.SetDrawColor(slideColor)
-		surface.DrawRect( 8, h / 2 - 1, w - 15, 1 )
+		surface.DrawRect( 0, h / 2 - 1, w - 15, 1 )
 
 		surface.DrawRect( w / 4, h / 2 + 3, 1, 5 )
 		surface.DrawRect( w / 2, h / 2 + 3, 1, 5 )

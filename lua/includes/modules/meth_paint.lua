@@ -1,137 +1,132 @@
 local paintMethod = {}
-local headerColor = {}
-local panelColor = {}
+local colors = {}
+local thememode = nil
 
-local function init(skinTable)
-for skinIndex,skins in pairs(skinTable) do
+local white = Color(255, 255, 255)
 
-	headerColor.hue, headerColor.sat, headerColor.bright = ColorToHSV(skins.GwenTexture:GetColor(350,370))
-	panelColor.hue, panelColor.sat, panelColor.bright = ColorToHSV(skins.GwenTexture:GetColor(140,10))
-	break;
-end
+local function changeTheme(thememode_)
+	thememode = thememode_
 
-return paintMethod
-end
-
-local function getColors()
-	local colors = {}
-
-	if (panelColor.bright > 0.5 or headerColor.bright > 0.5) then
-		colors.bg = Color(20, 150, 240)
-		colors.text = Color(255, 255, 255)
-		colors.chktext = Color(0, 0, 0)
-		colors.bglist = Color(255, 255, 255)
+	if (tobool(thememode)) then
+		colors.bg = Color(15, 110, 175)
+		colors.bghover = Color(230, 230, 230, 50)
+		colors.text = Color(230, 230, 230)
+		colors.bglist = Color(35, 35, 35)
 		colors.slider = Color(0, 0, 0, 100)
 	else
-		colors.bg = Color(15, 110, 175)
-		colors.text = Color(255, 255, 255)
-		colors.chktext = Color(255, 255, 255)
-		colors.bglist = Color(35, 35, 35)
+		colors.bg = Color(20, 150, 240)
+		colors.bghover = Color(30, 30, 30, 130)
+		colors.text = Color(0, 0, 0)
+		colors.bglist = Color(245, 245, 245)
 		colors.slider = Color(0, 0, 0, 100)
 	end
 
 	return colors
 end
 
-local function paintBaseList(panel)
+local function init()
+	return paintMethod
+end
+
+local function paintBG(panel, color)
 	panel.Paint = function(self, w, h)
-		surface.SetDrawColor( getColors().bglist )
+		if istable(color) then
+			surface.SetDrawColor( color )
+		else
+			surface.SetDrawColor(colors.bg)
+		end
 		surface.DrawRect( 0, 0, w, h )
 	end
 end
 
-local function paintHoverBG(panel)
+local function paintThemeBG(panel, color)
+	paintBG(panel, colors.bglist)
+end
+
+local function paintHoverBG(panel, color)
 	panel.PaintOver = function(self, w, h)
 		if panel:IsHovered() then
-			surface.SetDrawColor( Color(255, 255, 255, 50) )
+			if istable(color) then
+				surface.SetDrawColor( color )
+			else
+				surface.SetDrawColor( colors.bghover )
+			end
 			surface.DrawRect( 0, 0, w, h )
 		end
 	end
 end
 
-local function paintBase(panel)
-	local color = getColors().bg
+local function paintBGArea(panel, startx, starty, endx, endy)
 	panel.Paint = function(self, w, h)
-		surface.SetDrawColor( color )
-		surface.DrawRect( 0, 0, w, h )
+		surface.SetDrawColor( colors.bg )
+		surface.DrawRect( startx, starty, endx, endy )
 	end
 end
 
-local function paintList(panel)
-	local bgColor = getColors().bg
-	local bgList = getColors().bglist
-	local colorText = getColors().chktext
-
-	panel:UpdateColors(bgColor, bgList, colorText)
-
-end
-
-local function paintOptions(panel)
-	local bgColor = getColors().bg
-	local colorText = getColors().chktext
-	local bgList = getColors().bglist
-
-	panel.Paint = function(self, w, h)
-		surface.SetDrawColor( bgList )
-		surface.DrawRect( 0, 0, w, h )
-		surface.SetDrawColor(bgColor)
-		surface.DrawOutlinedRect( w-1, 0, w, h )
-		surface.DrawOutlinedRect( 0, 0, w, 1 )
-	end
-
-	panel.VBar.btnGrip.Paint = function(self, w, h)
-		surface.SetDrawColor(bgColor)
-		surface.DrawRect(0, 0, w, h)
-	end
-
-	for k, checkbox in pairs( panel.Items ) do
-		checkbox:SetTextColor(colorText)
-	end
-	for k, category in pairs( panel.Categories ) do
-		category.Paint = function(self, w, h)
-			surface.SetDrawColor(bgColor)
-			surface.DrawRect(0, 0, w, h)
+local function paintHoverBGArea(panel)
+	panel.PaintOver = function(self, w, h)
+		if panel:IsHovered() then
+			surface.SetDrawColor( colors.bghover )
+			surface.DrawRect( startx, starty, endx, endy )
 		end
 	end
 end
 
-local function paintDoubleList(panel)
-	local bgHead = getColors().bg
-	local bgColor = getColors().bglist
-	local colorText = getColors().text
-
-	panel:UpdateColors(bgHead, bgColor, colorText)
+local function paintList(panel)
+	panel:PaintList(colors.bglist)
+end
+local function paintHoverList(panel)
+	panel:PaintHoverList(colors.bghover)
 end
 
+local function paintColumn(panel)
+	panel:PaintColumn(colors.bg)
+end
 
-local function paintButton(panel)
-	panel:SetTextColor(getColors().text)
-	panel.Paint = function() end
+local function paintHoverColumn(panel, hoverColor)
+	if istable(hoverColor) then panel:PaintHoverColumn(hoverColor)
+	else panel:PaintHoverColumn(colors.bghover) end
+end
+
+local function paintScroll(panel, bgGrip, colorArrows)
+	if istable(colorArrows) then panel:PaintScroll(colors.bg, bgGrip, colorArrows)
+	else panel:PaintScroll(colors.bg, bgGrip, colors.text) end
 end
 
 local function paintSlider(panel)
-	panel:SetSliderColor(getColors().slider)
-	panel:SetTextColor(getColors().text)
+	panel:SetSliderColor(colors.slider)
+	panel:SetTextColor(white)
 	panel.Slider.Paint(panel.Slider, panel.Slider:GetWide(), panel.Slider:GetTall())
 end
 
 local function paintText(panel)
-	panel:SetTextColor(getColors().chktext)
+	panel:SetTextColor(colors.text)
 end
 
-local function paintDisabled(panel)
-	panel.Paint = function() end
+local function paintNone(table)
+	if istable(table) then
+		for _, panel in pairs(table) do
+			panel.Paint = function() end
+		end
+	end
 end
 
-paintMethod.setBGHover		=	paintHoverBG
-paintMethod.setDisabled 	=	paintDisabled
-paintMethod.paintButton 	=	paintButton
-paintMethod.paintSlider 	=	paintSlider
-paintMethod.paintBase 		=	paintBase
-paintMethod.paintBaseList 	=	paintBaseList
-paintMethod.paintList 		=	paintList
-paintMethod.paintDoubleList =	paintDoubleList
-paintMethod.paintOptions 	=	paintOptions
-paintMethod.paintText 		=	paintText
+paintMethod.changeTheme			=	changeTheme
+paintMethod.paintNone 			=	paintNone
+
+paintMethod.paintSlider 		=	paintSlider
+paintMethod.paintThemeBG 		=	paintThemeBG
+paintMethod.paintScroll 		=	paintScroll
+
+paintMethod.paintBG 			=	paintBG
+paintMethod.paintHoverBG 		=	paintHoverBG
+paintMethod.paintBGArea 		=	paintBGArea
+paintMethod.paintHoverBGArea	=	paintHoverBGArea
+paintMethod.paintText 			=	paintText
+
+paintMethod.paintList 			=	paintList
+paintMethod.paintHoverList 		=	paintHoverList
+paintMethod.paintColumn 		=	paintColumn
+paintMethod.paintHoverColumn 	=	paintHoverColumn
 
 return init

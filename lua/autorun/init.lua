@@ -13,7 +13,7 @@ if (SERVER) then
 	AddCSLuaFile("vgui/dbettercolumn.lua")
 	AddCSLuaFile("vgui/dbetterlist.lua")
 	AddCSLuaFile("vgui/dmultibutton.lua")
-
+	AddCSLuaFile("vgui/dbetterbutton.lua")
 
 	AddCSLuaFile "includes/modules/musicplayerclass.lua"
 	AddCSLuaFile "includes/modules/meth_base.lua"
@@ -25,6 +25,5 @@ if (SERVER) then
 
 	include("gmpl/sv_gmpl.lua")
 else
-
 	include("gmpl/cl_gmpl.lua")
 end

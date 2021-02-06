@@ -5,51 +5,18 @@ local rightList = {}
 
 local midPanelH = 0
 
-local bgHeader = Color(20, 150, 240)
-local bgColor = Color(255, 255, 255)
-local textColor = Color(255, 255, 255)
+local dialogWhite = Color(255, 255, 255)
+local lineTextColor
+local dialogRebuild = nil
 
 function PANEL:Init()
-
 	self.midPanel = vgui.Create("Panel", self)
 	self.midPanel:Dock(TOP)
 	midPanelH = self.midPanel:GetTall() - 1
 
 	self.list1 = vgui.Create("DListView", self)
 	self.list1:SetPos(0, self.midPanel:GetTall())
-	self.list1:AddColumn( "Folders from ROOT" ).Header.Paint = function(panel, w, h)
-		surface.SetDrawColor( bgHeader )
-		surface.DrawRect(0, 0, w, h)
-		panel:SetFontInternal("default")
-		panel:SetColor(textColor)
-	end
-	self.list1.Paint = function(panel, w, h)
-		surface.SetDrawColor( bgHeader )
-		surface.DrawOutlinedRect( w-1, 0, w, h )
-		surface.SetDrawColor( bgColor )
-		surface.DrawRect(0, 0, w-1, h)
-	end
-
-	self.list1.VBar.btnGrip.Paint = function(panel, w, h)
-		surface.SetDrawColor( bgHeader )
-		surface.DrawRect(0, 0, w, h)
-	end
-	self.list1.VBar.btnUp.Paint = function(panel, w, h)
-		surface.SetDrawColor( bgHeader )
-		surface.DrawRect(0, 0, w, h)
-		surface.SetFont("Marlett")
-		surface.SetTextPos( 2, 2 )
-		surface.SetTextColor( textColor )
-		surface.DrawText("5")
-	end
-	self.list1.VBar.btnDown.Paint = function(panel, w, h)
-		surface.SetDrawColor( bgHeader )
-		surface.DrawRect(0, 0, w, h)
-		surface.SetFont("Marlett")
-		surface.SetTextPos( 2, 1 )
-		surface.SetTextColor( textColor )
-		surface.DrawText("6")
-	end
+	self.column1 = self.list1:AddColumn( "Folders from ROOT" )
 
 	self.list1.OnRowRightClick = function(line, lineIndex)
 		if self.list1:GetLine(lineIndex):IsSelected() then
@@ -57,40 +24,9 @@ function PANEL:Init()
 		end
 	end
 
-
 	self.list2 = vgui.Create("DListView", self)
 	self.list2:SetPos(self.list1:GetWide(), 0)
-	self.list2:AddColumn( "Active Folders" ).Header.Paint = function(panel, w, h)
-		surface.SetDrawColor(bgHeader)
-		surface.DrawRect(0, 0, w, h)
-		panel:SetFontInternal("default")
-		panel:SetColor(textColor)
-	end
-	self.list2.Paint = function(panel, w, h)
-		surface.SetDrawColor( bgColor )
-		surface.DrawRect(0, 0, w, h)
-	end
-
-	self.list2.VBar.btnGrip.Paint = function(panel, w, h)
-		surface.SetDrawColor( bgHeader )
-		surface.DrawRect(0, 0, w, h)
-	end
-	self.list2.VBar.btnUp.Paint = function(panel, w, h)
-		surface.SetDrawColor( bgHeader )
-		surface.DrawRect(0, 0, w, h)
-		surface.SetFont("Marlett")
-		surface.SetTextPos( 2, 2 )
-		surface.SetTextColor( textColor )
-		surface.DrawText("5")
-	end
-	self.list2.VBar.btnDown.Paint = function(panel, w, h)
-		surface.SetDrawColor( bgHeader )
-		surface.DrawRect(0, 0, w, h)
-		surface.SetFont("Marlett")
-		surface.SetTextPos( 2, 1 )
-		surface.SetTextColor( textColor )
-		surface.DrawText("6")
-	end
+	self.column2 = self.list2:AddColumn( "Active Folders" )
 
 	self.list2.OnRowRightClick = function(line, lineIndex)
 		if self.list2:GetLine(lineIndex):IsSelected() then
@@ -101,74 +37,23 @@ function PANEL:Init()
 	self.btnRebuildMid = self.midPanel:Add("DButton")
 	self.btnRebuildMid:SetSize(80, midPanelH)
 	self.btnRebuildMid:SetFont("default")
-	self.btnRebuildMid:SetTextColor(textColor)
 	self.btnRebuildMid:SetText("Rebuild List")
-	self.btnRebuildMid.DoClick = function() self:OnButtonRebuild() end
-	self.btnRebuildMid.Paint = function(panel, w, h)
-		if self.btnRebuildMid:IsHovered() then
-			surface.SetDrawColor(255, 255, 0, 255)
-		else
-			surface.SetDrawColor(bgHeader)
+	self.btnRebuildMid.DoClick = function()
+		if !IsValid(dialogRebuild) then
+			self:OnButtonRebuild()
 		end
-		surface.DrawRect(0, 0, w, h)
 	end
 
 	self.btnAddMid = self.midPanel:Add("DButton")
 	self.btnAddMid:SetFont("default")
-	self.btnAddMid:SetTextColor(textColor)
 	self.btnAddMid:SetText("Add Folder")
 	self.btnAddMid:SetPos(self.btnRebuildMid:GetWide(), 0)
 	self.btnAddMid.DoClick = function() self:OnButtonAdd() end
-	self.btnAddMid.Paint = function(panel, w, h)
-		if self.btnAddMid:IsHovered() then
-			surface.SetDrawColor(0, 255, 0, 255)
-		else
-			surface.SetDrawColor(bgHeader)
-		end
-		surface.DrawRect(0, 0, w, h)
-	end
 
 	self.btnRemMid = self.midPanel:Add("DButton")
 	self.btnRemMid:SetFont("default")
-	self.btnRemMid:SetTextColor(textColor)
 	self.btnRemMid:SetText("Remove Folder")
 	self.btnRemMid.DoClick = function() self:OnButtonRem() end
-	self.btnRemMid.Paint = function(panel, w, h)
-		if self.btnRemMid:IsHovered() then
-			surface.SetDrawColor(255, 150, 0, 255)
-		else
-			surface.SetDrawColor(bgHeader)
-		end
-		surface.DrawRect(0, 0, w, h)
-	end
-end
-
-function PANEL:UpdateColors(bgHead, bgCol, textCol)
-	textColor = textCol
-	bgHeader = bgHead
-	bgColor = bgCol
-	self.btnRebuildMid:SetTextColor(textColor)
-	self.btnAddMid:SetTextColor(textColor)
-	self.btnRemMid:SetTextColor(textColor)
-
-	local list1 = self.list1:GetChildren()[2].Header
-	local list2 = self.list2:GetChildren()[2].Header
-
-	list1.Paint(list1, list1:GetWide(), list1:GetTall())
-	list2.Paint(list2, list2:GetWide(), list2:GetTall())
-
-	self.list1.Paint(self.list1, self.list1:GetWide(), self.list1:GetTall())
-	self.list2.Paint(self.list2, self.list2:GetWide(), self.list2:GetTall())
-
-	self.list1.VBar.btnGrip.Paint(self.list1.VBar.btnGrip, self.list1.VBar.btnGrip:GetWide(), self.list1.VBar.btnGrip:GetTall())
-	self.list2.VBar.btnGrip.Paint(self.list1.VBar.btnGrip, self.list1.VBar.btnGrip:GetWide(), self.list1.VBar.btnGrip:GetTall())
-
-	self.list1.VBar.btnUp.Paint(self.list2.VBar.btnUp, self.list2.VBar.btnUp:GetWide(), self.list2.VBar.btnUp:GetTall())
-	self.list2.VBar.btnUp.Paint(self.list2.VBar.btnUp, self.list2.VBar.btnUp:GetWide(), self.list2.VBar.btnUp:GetTall())
-
-	self.list1.VBar.btnDown.Paint(self.list2.VBar.btnDown, self.list2.VBar.btnDown:GetWide(), self.list2.VBar.btnDown:GetTall())
-	self.list2.VBar.btnDown.Paint(self.list2.VBar.btnDown, self.list2.VBar.btnDown:GetWide(), self.list2.VBar.btnDown:GetTall())
-
 end
 
 function PANEL:selectFirstLine()
@@ -205,30 +90,25 @@ end
 
 
 function PANEL:OnButtonRebuild()
-	local confirmDialog = vgui.Create( "DFrame" )
-	confirmDialog:SetSize( 350, 150 )
-	confirmDialog:SetDeleteOnClose( true )
-	confirmDialog:ShowCloseButton(false)
-	confirmDialog:Center()
-	confirmDialog:SetTitle( "Confirm rebuilding the left list!" )
-	confirmDialog:MoveToFront()
-	confirmDialog.Paint = function(panel, w, h)
-		surface.SetDrawColor( bgHeader )
-		surface.DrawRect( 0, 0, w, h )
-	end
+	dialogRebuild = vgui.Create( "DFrame" )
+	dialogRebuild:SetSize( 350, 200 )
+	dialogRebuild:SetDeleteOnClose( true )
+	dialogRebuild:ShowCloseButton(false)
+	dialogRebuild:Center()
+	dialogRebuild:SetTitle( "Confirm rebuilding the left list!" )
+	dialogRebuild:MoveToFront()
 
-	confirmDialog.Label = vgui.Create( "RichText", confirmDialog )
-	confirmDialog.Label:SetVerticalScrollbarEnabled(false)
-	confirmDialog.Label:Dock(FILL)
-	confirmDialog.Label:InsertColorChange( textColor.r, textColor.g, textColor.b, textColor.a )
-	confirmDialog.Label:AppendText( "Are you sure you want to rebuild the search list?")
-	confirmDialog.Label:AppendText( "\n\nThis might take longer depending on how many folders are there and how fast your cpu is." )
-	confirmDialog.Label.Paint = function(panel)
+	dialogRebuild.Label = vgui.Create( "RichText", dialogRebuild )
+	dialogRebuild.Label:SetVerticalScrollbarEnabled(false)
+	dialogRebuild.Label:Dock(FILL)
+	dialogRebuild.Label:InsertColorChange( dialogWhite.r, dialogWhite.g, dialogWhite.b, dialogWhite.a )
+	dialogRebuild.Label:AppendText( "Are you sure you want to rebuild the search list?\nThis might take longer depending on how many folders are there and how fast your cpu is." )
+	dialogRebuild.Label.Paint = function(panel)
 		panel:SetFontInternal( "GModNotify" )
 		panel.Paint = nil
 	end
 
-	local bottomPanel = vgui.Create("Panel", confirmDialog)
+	local bottomPanel = vgui.Create("Panel", dialogRebuild)
 	bottomPanel:Dock(BOTTOM)
 
 
@@ -238,11 +118,11 @@ function PANEL:OnButtonRebuild()
 	bottomPanel.btnNo:SetText( "No" )
 	bottomPanel.btnNo:SetFont( "GModNotify" )
 	bottomPanel.btnNo.Paint = function(panel, w, h)
-		surface.SetDrawColor( textColor )
+		surface.SetDrawColor( dialogWhite )
 		surface.DrawRect( 0, 0, w, h )
 	end
 	bottomPanel.btnNo.DoClick = function()
-		confirmDialog:Close()
+		dialogRebuild:Close()
 	end
 
 	bottomPanel.btnYes = vgui.Create( "DButton", bottomPanel )
@@ -250,20 +130,44 @@ function PANEL:OnButtonRebuild()
 	bottomPanel.btnYes:SetText( "YES" )
 	bottomPanel.btnYes:SetFont( "GModNotify" )
 	bottomPanel.btnYes.Paint = function(panel, w, h)
-		surface.SetDrawColor( textColor )
+		surface.SetDrawColor( dialogWhite )
 		surface.DrawRect( 0, 0, w, h )
 	end
 	bottomPanel.btnYes.DoClick = function()
 		self:OnRebuild()
-		confirmDialog:Close()
+		dialogRebuild:Close()
 	end
 end
+
+function PANEL:SetInfoColor(color)
+	local col
+	if istable(color) then col = color
+	else col = lineTextColor end
+
+	self.column1.Header:SetTextColor(col)
+	self.column2.Header:SetTextColor(col)
+
+	self.btnRebuildMid:SetTextColor(col)
+	self.btnAddMid:SetTextColor(col)
+	self.btnRemMid:SetTextColor(col)
+end
+
+function PANEL:SetTextColor(lineTextColor_)
+	lineTextColor = lineTextColor_
+	for _, line in pairs(self.list1.Lines) do
+		line.Columns[1]:SetTextColor(lineTextColor_)
+	end
+	for _, line in pairs(self.list2.Lines) do
+		line.Columns[1]:SetTextColor(lineTextColor_)
+	end
+end
+
 function PANEL:OnRebuild()
 end
 
 function PANEL:OnButtonAdd()
 	for k,v in pairs(self.list1:GetSelected()) do
-		self.list2:AddLine(v:GetColumnText(1))
+		self.list2:AddLine(v:GetColumnText(1)).Columns[1]:SetTextColor(lineTextColor)
 		self.list1:RemoveLine(v:GetID())
 	end
 
@@ -275,7 +179,7 @@ end
 
 function PANEL:OnButtonRem()
 	for k,v in pairs(self.list2:GetSelected()) do
-		self.list1:AddLine(v:GetColumnText(1))
+		self.list1:AddLine(v:GetColumnText(1)).Columns[1]:SetTextColor(lineTextColor)
 		self.list2:RemoveLine(v:GetID())
 	end
 
@@ -287,10 +191,10 @@ end
 
 
 function PANEL:AddLineLeft(var)
-	self.list1:AddLine(var)
+	self.list1:AddLine(var).Columns[1]:SetTextColor(lineTextColor)
 end
 function PANEL:AddLineRight(var)
-	self.list2:AddLine(var)
+	self.list2:AddLine(var).Columns[1]:SetTextColor(lineTextColor)
 end
 
 
@@ -313,6 +217,102 @@ function PANEL:PerformLayout()
 
 	self.list2:SetPos(mainX / 2, self.midPanel:GetTall())
 	self.list2:SetSize(mainX - mainX / 2, mainY)
+end
+
+function PANEL:PaintList(listColor)
+	self.list1.Paint = function(panel, w, h)
+		surface.SetDrawColor( listColor )
+		surface.DrawRect(0, 0, w, h)
+	end
+	self.list2.Paint = function(panel, w, h)
+		surface.SetDrawColor( listColor )
+		surface.DrawRect(0, 0, w, h)
+	end
+end
+
+function PANEL:PaintScroll(gripColor, gripBG, arrowColor)
+	self.list1.VBar.Paint = function(panel, w, h)
+		if istable(gripBG) then
+			surface.SetDrawColor(gripBG)
+			surface.DrawRect(0, 0, w, h)
+		end
+
+		panel.btnGrip.Paint = function(panelGrip)
+			surface.SetDrawColor(gripColor)
+			surface.DrawRect(0, 0, w, h)
+		end
+		panel.btnUp.Paint = function(gripUp, wUp, hUp)
+			surface.SetDrawColor( gripColor )
+			surface.DrawRect(0, 0, wUp, hUp)
+			surface.SetFont("Marlett")
+			surface.SetTextPos(2, 2)
+			surface.SetTextColor(arrowColor)
+			surface.DrawText("5")
+		end
+		panel.btnDown.Paint = function(gripUp, wUp, hUp)
+			surface.SetDrawColor( gripColor )
+			surface.DrawRect(0, 0, wUp, hUp)
+			surface.SetFont("Marlett")
+			surface.SetTextPos(2, 1)
+			surface.SetTextColor(arrowColor)
+			surface.DrawText("6")
+		end
+	end
+
+	self.list2.VBar.Paint = function(panel, w, h)
+		if istable(gripBG) then
+			surface.SetDrawColor(gripBG)
+			surface.DrawRect(0, 0, w, h)
+		end
+		panel.btnGrip.Paint = function(panelGrip)
+			surface.SetDrawColor(gripColor)
+			surface.DrawRect(0, 0, w, h)
+		end
+		panel.btnUp.Paint = function(gripUp, wUp, hUp)
+			surface.SetDrawColor( gripColor )
+			surface.DrawRect(0, 0, wUp, hUp)
+			surface.SetFont("Marlett")
+			surface.SetTextPos(2, 2)
+			if istable(arrowColor) then surface.SetTextColor(arrowColor)
+			else surface.SetTextColor(Color(255, 255, 255)) end
+			surface.DrawText("5")
+		end
+		panel.btnDown.Paint = function(gripUp, wUp, hUp)
+			surface.SetDrawColor( gripColor )
+			surface.DrawRect(0, 0, wUp, hUp)
+			surface.SetFont("Marlett")
+			surface.SetTextPos(2, 1)
+			if istable(arrowColor) then surface.SetTextColor(arrowColor)
+			else surface.SetTextColor(Color(255, 255, 255)) end
+			surface.DrawText("6")
+		end
+	end
+end
+
+function PANEL:PaintColumn(bgColumn)
+	self.column1.Header.Paint = function(panel, w, h)
+		surface.SetDrawColor( bgColumn )
+		surface.DrawRect(0, 0, w, h)
+	end
+	self.column2.Header.Paint = function(panel, w, h)
+		surface.SetDrawColor( bgColumn )
+		surface.DrawRect(0, 0, w, h)
+	end
+end
+
+function PANEL:PaintHoverColumn(bgHover)
+	self.column1.Header.PaintOver = function(panel, w, h)
+		if panel:IsHovered() then
+			surface.SetDrawColor( bgHover )
+			surface.DrawRect(0, 0, w, h)
+		end
+	end
+	self.column2.Header.PaintOver = function(panel, w, h)
+		if panel:IsHovered() then
+			surface.SetDrawColor( bgHover )
+			surface.DrawRect(0, 0, w, h)
+		end
+	end
 end
 
 derma.DefineControl( "DDoubleListView", "Double List View", PANEL, "Panel" )

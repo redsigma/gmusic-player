@@ -2,9 +2,7 @@ local PANEL = {}
 local linePos = 0
 local prevSelect = nil
 
-local bgHeader = Color(20, 150, 240)
-local bgColor = Color(255, 255, 255)
-local textColor = Color(255, 255, 255)
+local defaultTextColor = Color(255, 255, 255)
 
 AccessorFunc( PANEL, "m_bDirty", "Dirty", FORCE_BOOL )
 AccessorFunc( PANEL, "m_bSortable", "Sortable", FORCE_BOOL )
@@ -35,27 +33,15 @@ function PANEL:Init()
 
 	self:SetDirty( true )
 
-	self.panelLine = vgui.Create( "Panel", self )
+	self.container = vgui.Create("Panel" ,self)
+	self.panelLine = vgui.Create("Panel", self.container )
 
 	self.VBar = vgui.Create( "DSimpleScroll", self )
 	self.VBar:SetZPos( 20 )
-	self.VBar.Paint = function(panel, w, h)
-		surface.SetDrawColor(120, 120, 120)
-		surface.DrawRect(0, 0, w, h)
-	end
-
-	self.VBar.btnGrip.Paint = function(panel, w, h)
-		surface.SetDrawColor(bgHeader)
-		surface.DrawRect(0, 0, w, h)
-	end
-
-	self.Paint = function(panel, w, h)
-		surface.SetDrawColor(bgColor)
-		surface.DrawRect(0, 0, w, h)
-	end
 end
 
 function PANEL:RefreshLayout(w, h)
+	-- The lines should be attached to a parent
 	self:SetSize(w, h)
 	self.VBar:SetScroll(self.VBar:GetScroll())
 	for k, line in pairs(self.Lines) do
@@ -78,6 +64,13 @@ function PANEL:SetHideHeaders(bool)
 	end
 end
 
+function PANEL:SetTextColor(txtcolor_)
+	defaultTextColor = txtcolor_
+	for _, line in pairs(self.Lines) do
+		line:SetTextColor(defaultTextColor)
+	end
+end
+
 function PANEL:DisableScrollbar()
 	if IsValid( self.VBar) then
 		self.VBar:Remove()
@@ -87,7 +80,7 @@ function PANEL:DisableScrollbar()
 end
 
 function PANEL:ResetColor(index)
-	self.Lines[index]:SetTextColor(textColor)
+	self.Lines[index]:SetTextColor(defaultTextColor)
 end
 
 function PANEL:HighlightLine(index, color, txtcolor)
@@ -101,6 +94,7 @@ function PANEL:HighlightLine(index, color, txtcolor)
 		end
 	else
 		self.Lines[index].Paint = function() end
+		self:ResetColor(index)
 	end
 end
 
@@ -113,10 +107,6 @@ function PANEL:AddColumn( strName )
 
 	local pColumn = vgui.Create( "DBetterColumn", self )
 	pColumn:SetTall(self.m_iHeaderHeight)
-	pColumn.Paint = function(panel, w, h)
-		surface.SetDrawColor(bgHeader)
-		surface.DrawRect(0, 0, w, h)
-	end
 	pColumn:SetText(strName)
 	pColumn:SetTextColor(Color(255, 255, 255))
 	pColumn:SetContentAlignment( 5 )
@@ -126,11 +116,8 @@ function PANEL:AddColumn( strName )
 	end
 	pColumn:Dock(TOP)
 
-
-	table.insert( self.Columns, pColumn )
-
+	table.insert(self.Columns, pColumn)
 	self:InvalidateLayout()
-
 	return pColumn
 end
 
@@ -150,7 +137,6 @@ function PANEL:ColumnWidth( i )
 	if ( !ctrl ) then return 0 end
 
 	return ctrl:GetWide()
-
 end
 
 function PANEL:FixColumnsLayout()
@@ -176,22 +162,22 @@ end
 
 
 function PANEL:PerformLayout(w, h)
-	local Tall = 0
 	local YPos = 0
 
 	if IsValid( self.VBar ) then
-		self.VBar:SetPos( w - 16, 0 )
-		self.VBar:SetSize( 16, h)
-		self.VBar:SetUp( self.VBar:GetTall(), self.panelLine:GetTall() + self:GetHeaderHeight() )
+		self.VBar:SetPos(w - 16, 0)
+		self.VBar:SetSize(16, h)
 
 		YPos = self.VBar:GetOffset()
-		self.VBar:InvalidateLayout()
-	end
+		if table.IsEmpty(self.Columns) then
+			self.VBar:SetUp( self.VBar:GetTall(), self.panelLine:GetTall())
+			self.container:SetPos(0, 0)
+		else
+			self.VBar:SetUp( self.VBar:GetTall(), self.panelLine:GetTall() + self.m_iHeaderHeight)
+			self.container:SetPos(0, self.m_iHeaderHeight)
+		end
 
-	if self.m_bHideHeaders then
-		Tall = YPos
-	else
-		Tall = YPos + self:GetHeaderHeight()
+		self.VBar:InvalidateLayout()
 	end
 
 	if self.VBar.Enabled then
@@ -199,14 +185,13 @@ function PANEL:PerformLayout(w, h)
 	else
 		self.panelLine:SetSize( w, linePos )
 	end
+	self.container:SetSize( w, h )
 
-	self.panelLine:SetPos( 0, Tall )
-
+	self.panelLine:SetPos( 0, YPos )
 	if self:GetDirty() then
 		self:SetDirty( false )
 		self:FixColumnsLayout()
 	end
-
 end
 
 function PANEL:Think()
@@ -226,7 +211,6 @@ function PANEL:AddLine( strLine )
 
 	local Line = vgui.Create( "DBetterLine", self.panelLine )
 	Line:SetFont(self.m_FontName)
-	Line:SetTextColor(textColor)
 	Line.BeforeMousePress = function(panel, index)
 		self:BeforeMousePress(index)
 	end
@@ -265,6 +249,10 @@ end
 function PANEL:OnMouseWheeled( dlta )
 	if ( !IsValid( self.VBar ) ) then return end
 	return self.VBar:OnMouseWheeled( dlta )
+end
+
+function PANEL:SetSelectedLine(line)
+	self.selectedK = line
 end
 
 function PANEL:GetSelectedLine()
@@ -318,26 +306,42 @@ function PANEL:GetSelected()
 end
 
 function PANEL:SizeToContents()
-	self:SetHeight( self.panelLine:GetTall() + self:GetHeaderHeight() )
+	self:SetHeight( self.panelLine:GetTall() )
 end
 
 function PANEL:GetLineColor()
-	return textColor
+	return defaultTextColor
 end
 
-function PANEL:UpdateColors(bgHead, bgCol, textCol)
-	bgHeader = bgHead
-	bgColor = bgCol
-	textColor = textCol
+function PANEL:PaintList(listColor)
+	self.container.Paint = function(panel, w, h)
+		surface.SetDrawColor(listColor)
+		surface.DrawRect(0, 0, w, h)
+	end
+end
 
-	for k,line in pairs(self.Lines) do
-		line:SetTextColor(textColor)
+function PANEL:PaintHoverList(hoverColor)
+	for _, line in pairs(self.Lines) do
+		line.PaintOver = function(panel, w, h)
+			if panel:IsHovered() then
+				surface.SetDrawColor(hoverColor)
+				surface.DrawRect(0, 0, w, h)
+			end
+		end
 	end
-	for k,column in pairs(self.Columns) do
-		column.Paint(column, column:GetWide(), column:GetTall())
+end
+
+function PANEL:PaintScroll(gripColor, gripBG)
+	self.VBar.Paint = function(panel, w, h)
+		if istable(gripBG) then
+			surface.SetDrawColor(gripBG)
+			surface.DrawRect(0, 0, w, h)
+		end
+		panel.btnGrip.Paint = function(panelGrip)
+			surface.SetDrawColor(gripColor)
+			surface.DrawRect(0, 0, w, h)
+		end
 	end
-	self.VBar.btnGrip.Paint(self.VBar.btnGrip, self.VBar.btnGrip:GetWide(), self.VBar.btnGrip:GetTall())
-	self.Paint(self, self:GetWide(), self:GetTall())
 end
 
 derma.DefineControl( "DBetterListView", "Better List", PANEL, "Panel" )

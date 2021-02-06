@@ -1,9 +1,10 @@
+
 local mediaplayer = nil
-
-
+local ObjPaint = nil
 
 local dermaBase = {}
 local contextMenu
+local contextMenuMargin = ScrW() / 5
 local ingameView
 
 surface.CreateFont( "arialDefault", {
@@ -24,80 +25,94 @@ surface.CreateFont( "arialDefault", {
 	outline = false,
 } )
 
-
 local function paintMediaPlayer()
-	local ObjPaint = include("includes/modules/meth_paint.lua")(derma.GetSkinTable())
+	ObjPaint.paintNone({
+		dermaBase.buttonrefresh, dermaBase.buttonstop, dermaBase.buttonpause,
+		dermaBase.buttonplay, dermaBase.buttonaplay,
+		dermaBase.musicsheet.Navigation, dermaBase.foldersearch, 
+		dermaBase.musicsheet,
+		dermaBase.foldersearch.btnRebuildMid, dermaBase.foldersearch.btnAddMid,
+		dermaBase.foldersearch.btnRemMid
+	})
+	local white = Color(255, 255, 255)
+	local hoverWhite = Color(230, 230, 230, 50)
 
-	ObjPaint.paintButton(dermaBase.buttonrefresh)
-	ObjPaint.paintButton(dermaBase.buttonstop)
-	ObjPaint.paintButton(dermaBase.buttonpause)
-	ObjPaint.paintButton(dermaBase.buttonplay)
+	dermaBase.buttonrefresh:SetTextColor(white)
+	dermaBase.buttonstop:SetTextColor(white)
+	dermaBase.buttonpause:SetTextColor(white)
+	dermaBase.buttonplay:SetTextColor(white)
+
 	ObjPaint.paintSlider(dermaBase.sliderseek)
 	ObjPaint.paintSlider(dermaBase.slidervol)
 
+	ObjPaint.paintBG(dermaBase.main)
 
-	ObjPaint.paintBase(dermaBase.main)
-	ObjPaint.setDisabled(dermaBase.musicsheet)
+	ObjPaint.paintBG(dermaBase.musicsheet.Navigation, Color(120, 120, 120))
+	for k, sideItem in pairs(dermaBase.musicsheet.Items) do
+		if (!sideItem.Button) then continue end
+		ObjPaint.paintBG(sideItem.Button, Color(255, 255 ,255))
+		ObjPaint.paintHoverBG(sideItem.Button, Color(0, 0, 0, 50))
+		sideItem.Button:SetTextColor(Color(0, 0, 0))
+	end
+
+	ObjPaint.paintHoverBG(dermaBase.buttonrefresh, hoverWhite)
+	ObjPaint.paintHoverBG(dermaBase.buttonstop, hoverWhite)
+	ObjPaint.paintHoverBG(dermaBase.buttonpause, hoverWhite)
+	ObjPaint.paintHoverBG(dermaBase.buttonplay, hoverWhite)
+
 	ObjPaint.paintList(dermaBase.songlist)
-	ObjPaint.paintDoubleList(dermaBase.foldersearch)
-	ObjPaint.paintOptions(dermaBase.settingPage)
-	ObjPaint.paintText(dermaBase.contextmedia)
+	ObjPaint.paintHoverList(dermaBase.songlist)
 
-	dermaBase.musicsheet.Navigation.Paint = function(panel, w, h)
-		surface.SetDrawColor( Color(150, 150, 150) )
-		surface.DrawRect( 0, 0, w, h )
+	ObjPaint.paintScroll(dermaBase.songlist, Color(120, 120, 120))
+	ObjPaint.paintText(dermaBase.songlist)
+
+	ObjPaint.paintText(dermaBase.foldersearch)
+	ObjPaint.paintList(dermaBase.foldersearch)
+	ObjPaint.paintColumn(dermaBase.foldersearch)
+	ObjPaint.paintHoverColumn(dermaBase.foldersearch, hoverWhite)
+	ObjPaint.paintScroll(dermaBase.foldersearch, Color(120, 120, 120))
+
+	ObjPaint.paintHoverBG(dermaBase.foldersearch.btnRebuildMid, hoverWhite)
+	ObjPaint.paintHoverBG(dermaBase.foldersearch.btnAddMid, hoverWhite)
+	ObjPaint.paintHoverBG(dermaBase.foldersearch.btnRemMid, hoverWhite)
+
+	ObjPaint.paintThemeBG(dermaBase.settingsheet)
+	ObjPaint.paintScroll(dermaBase.settingPage)
+	ObjPaint.paintText(dermaBase.settingPage)
+	for _, category in pairs(dermaBase.settingPage.Categories ) do
+		ObjPaint.paintBG(category)
+		category:SetTextColor(white)
 	end
-	for k, v in pairs(dermaBase.musicsheet.Items) do
-		if (!v.Button) then continue end
-		v.Button:SetTextColor(Color(0, 0, 0))
-		v.Button:DockMargin( 0, 0, 0, 1 )
-
-		v.Button.Paint = function(panel, w, h)
-			surface.SetDrawColor( Color(255, 255, 255) )
-			surface.DrawRect( 0, 0, w, h )
-		end
-	end
-
-	ObjPaint.setBGHover(dermaBase.buttonrefresh)
-	ObjPaint.setBGHover(dermaBase.buttonstop)
-	ObjPaint.setBGHover(dermaBase.buttonpause)
-	ObjPaint.setBGHover(dermaBase.buttonplay)
-
 end
-
-
-
 
 local function createMPlayer(ply)
 	mediaplayer:SyncSettings(ply)
 	mediaplayer:create()
 
 	dermaBase.main:MoveToFront() -- prevents conflcits from other addons that are using the ScreenClicker
-	ingameView = dermaBase.main:GetParent()
-
-	paintMediaPlayer()
-	dermaBase.main:SetParent(g_ContextMenu) -- must do this else the freking half invisible window appears
+	ingameView = dermaBase.main:GetParent() -- must do this else the freking half invisible window appears
 											-- still don't hav a clue what could cause it
 end
 
 local function showMPlayer( newHost )
 	if dermaBase.main:IsVisible() then
-		if dermaBase.main:HasParents(g_ContextMenu) then
-			dermaBase.main:SetParent(ingameView)
-			gui.EnableScreenClicker(true)
-		else
 
-			RememberCursorPosition()      -- still doesn't work
+		if dermaBase.main:HasParents(g_ContextMenu) then --  moving while in context with hotkey
+			dermaBase.main:SetParent(ingameView)
+			dermaBase.main:SetVisible(false)
+		else
+			RememberCursorPosition()
 			dermaBase.main:SetVisible(false)
 			gui.EnableScreenClicker(false)
 		end
 	else
-
-		if dermaBase.main:HasParents(g_ContextMenu) then
-			dermaBase.main:SetParent(ingameView)
+		if LocalPlayer():IsWorldClicking() then -- focus if context already opened
+			dermaBase.main:SetParent(g_ContextMenu)
+		elseif dermaBase.main:HasParents(ingameView) then
+			gui.EnableScreenClicker(true)
 		end
+
 		mediaplayer:SetSongHost(newHost)
-		gui.EnableScreenClicker(true)
 		dermaBase.main:SetVisible(true)
 		mediaplayer:SyncSettings(nil) -- will sync using LocalPlayer()
 		RestoreCursorPosition()
@@ -123,12 +138,12 @@ end )
 First Run on server start
 ---------------------------------------------------------------------------]]--
 net.Receive( "createMenu", function()
-	dermaBase = include("includes/modules/meth_base.lua")(contextMenu, ScrW() / 5)
+	dermaBase = include("includes/modules/meth_base.lua")(contextMenu, contextMenuMargin)
 	hook.Remove("PopulateMenuBar", "getContext")
 
 	while !isfunction(dermaBase.main.IsVisible) do
 		MsgC( Color( 144, 219, 232 ), "[gMusic Player]", Color( 255, 0, 0 ), " Failed to initialize - retrying\n" )
-		dermaBase = include("includes/modules/meth_base.lua")(contextMenu, ScrW() / 5)
+		dermaBase = include("includes/modules/meth_base.lua")(contextMenu, contextMenuMargin)
 	end
 
 	require("musicplayerclass")
@@ -139,12 +154,13 @@ net.Receive( "createMenu", function()
 
 	local currentPlyIsAdmin = net.ReadBool()
 	mediaplayer:readFileSongs()
-	createMPlayer(currentPlyIsAdmin)
 
+	ObjPaint = include("includes/modules/meth_paint.lua")()
+	createMPlayer(currentPlyIsAdmin)
 end )
 
 net.Receive( "getSettingsFromFirstAdmin", function()
-	if LocalPlayer():IsValid() and LocalPlayer():IsAdmin() then
+	if IsValid(LocalPlayer()) and LocalPlayer():IsAdmin() then
 		local storeCurrentSettings = {}
 		storeCurrentSettings.aa = GetConVar("gmpl_svadminplay"):GetBool()
 		storeCurrentSettings.aadir = GetConVar("gmpl_svadmindir"):GetBool()
@@ -171,31 +187,49 @@ net.Receive( "requestHotkeyFromServer", function(length, sender )
 	end
 end )
 net.Receive( "persistClientSettings", function(length, sender )
-	if dermaBase.contextbutton:GetChecked() then
-		dermaBase.contextbutton:AfterChange(true)
-	end
+	dermaBase.darkmode.AfterChange = function( panel, bVal )
+		ObjPaint.changeTheme(bVal)
+		paintMediaPlayer()
+
+		panel.OnCvarWrong = function( panel, old, new )
+			MsgC(Color(255,0,0),"Only 0 - 1 value is allowed. Keeping value " .. oldValue .. " \n")
+		end
+
+	end dermaBase.darkmode:AfterChange(dermaBase.darkmode:GetChecked())
+	dermaBase.contextbutton:AfterChange(dermaBase.contextbutton:GetChecked())
 
 end )
-
 ---------------------------------------------------------------------------]]--
+
+--[[-------------------------------------------------------------------------
+Server convars
+---------------------------------------------------------------------------]]--
+net.Receive( "refreshAdminAccess", function(length, sender)
+	local tmpVal = net.ReadBool()
+	dermaBase.cbadminaccess:SetChecked(tmpVal)
+end )
+
+net.Receive( "refreshAdminAccessDir", function(length, sender)
+	local tmpVal = net.ReadBool()
+	dermaBase.cbadmindir:SetChecked(tmpVal)
+end )
+---------------------------------------------------------------------------]]--
+
+
 
 net.Receive( "openmenu", function()
 	local adminHost = net.ReadType()
-	mediaplayer:SetSongHost(newHost)
+	mediaplayer:SetSongHost(adminHost)
 	showMPlayer(adminHost)
 end )
 
 net.Receive( "openmenucontext", function()
-	mediaplayer:SetSongHost(newHost)
+	local adminHost = net.ReadType()
+	mediaplayer:SetSongHost(adminHost)
 
 	dermaBase.main:SetParent(g_ContextMenu)
-	if dermaBase.main:IsVisible() then
-		dermaBase.main:SetVisible(false)
-		gui.EnableScreenClicker(false)
-	else
-		dermaBase.main:SetVisible(true)
-	end
-
+	showMPlayer(adminHost)
+	gui.EnableScreenClicker(false)
 end )
 
 concommand.Add("gmplshow", function()
@@ -204,14 +238,15 @@ end)
 
 
 cvars.AddChangeCallback( "gmpl_vol", function( convar , oldValue , newValue  )
-	if (TypeID(util.StringToType( newValue, "Float" )) == TYPE_NUMBER) then
-		if TypeID(mediaplayer) ~= TYPE_NIL then
+	if !istable(mediaplayer) then return end
+	if (isnumber(util.StringToType( newValue, "Float" ))) then
+		-- if istable(mediaplayer) then
 			mediaplayer:SetVolume(newValue)
-		end
-	elseif (TypeID(util.StringToType( oldValue, "Float" )) == TYPE_NUMBER) then
-		if TypeID(mediaplayer) ~= TYPE_NIL then
+		-- end
+	elseif (isnumber(util.StringToType( oldValue, "Float" ))) then
+		-- if istable(mediaplayer) then
 			mediaplayer:SetVolume(oldValue)
-			MsgC(Color(255,0,0),"Only 0-100 value is allowed. Value not changed ( \"" ..  oldValue .. "\" )\n")
-		end
+			MsgC(Color(255,0,0),"Only 0 - 100 value is allowed. Keeping value " .. oldValue .. "\n")
+		-- end
 	end
 end )

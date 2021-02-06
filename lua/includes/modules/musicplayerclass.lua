@@ -18,6 +18,8 @@ local populatedSongs = {}
 local folderExceptions = { "ambience", "ambient", "ambient_mp3", "beams", "buttons", "coach", "combined", "commentary", "common", "doors", "foley", "friends", "garrysmod", "hl1", "items", "midi",
 							"misc", "mvm", "test", "npc", "passtime", "phx", "physics", "pl_hoodoo", "plats", "player", "replay", "resource", "sfx", "thrusters", "tools", "ui", "vehicles", "vo", "weapons" }
 
+local basenameSongs = {}
+
 function Media:new(coreBase)
 	dermaBase = coreBase
 	local MediaPlayer = setmetatable({}, Media)
@@ -33,18 +35,10 @@ function Media:SetVolume(var)
 	dermaBase.slidervol:SetValue(var)
 end
 
-
-function setAccessCheckbox(dermaCheckBox, bool)
-	if isbool(bool) then
-		dermaCheckBox:SetChecked(bool)
-	end
-end
-
-
 function Media:SetSongHost(var)
 	if isentity(var) and var:IsAdmin() then
 		hostAdminAccess = var
-		dermaBase.labelswap:SetText( "Current Host\n" .. hostAdminAccess:Nick() )
+		dermaBase.labelswap:SetText( "Host: " .. hostAdminAccess:Nick() )
 	end
 end
 
@@ -53,14 +47,14 @@ end
 Methods Used For Server Options -- Runs in think
 ---------------------------------------------------------------------------]]--
 local function adminAcessRevertButtons()
-	dermaBase.buttonplay:SetText("Play")
+	dermaBase.buttonplay:SetText("Play / AutoPlay")
 	dermaBase.buttonpause:SetText("Pause / Loop")
 	dermaBase.buttonstop:SetVisible(true)
 	dermaBase.buttonswap:SetVisible(false)
 end
 
 local function adminAcessChangeButtons()
-	if dermaBase.cbadminaccess:GetbID() then   -- make sure the checkbox is on
+	if dermaBase.cbadminaccess:GetChecked() then   -- make sure the checkbox is on
 		dermaBase.buttonplay:SetText("Resume Live")
 		dermaBase.buttonpause:SetText("Pause")
 		dermaBase.buttonstop:SetVisible(false)
@@ -74,11 +68,13 @@ local function adminAccessDirChangeButton()
 	end
 
 	if playerIsAdmin then
-		if dermaBase.musicsheet.Items[2].Button:GetDisabled() then
-			dermaBase.musicsheet.Items[2].Button:SetEnabled(true)
+		if !dermaBase.musicsheet.Items[2].Button:IsVisible() then
+			dermaBase.musicsheet.Items[2].Button:SetVisible(true)
+			dermaBase.musicsheet.Navigation:InvalidateChildren()
 		end
-	elseif !dermaBase.musicsheet.Items[2].Button:GetDisabled() then
-		dermaBase.musicsheet.Items[2].Button:SetEnabled(false)
+	elseif dermaBase.musicsheet.Items[2].Button:IsVisible() then
+		dermaBase.musicsheet.Items[2].Button:SetVisible(false)
+		dermaBase.musicsheet.Navigation:InvalidateChildren()
 	end
 end
 
@@ -97,7 +93,7 @@ local function thinkServerOptions()
 		end
 	end
 
-	if dermaBase.cbadmindir:GetbID() then
+	if dermaBase.cbadmindir:GetChecked() then
 		adminAccessDirChangeButton()
 	else
 		adminAccessDirRevertButton()
@@ -107,6 +103,7 @@ end
 
 local function getSongName( filePath )
 	local songName = string.GetFileFromFilename(filePath)
+	table.insert(basenameSongs, songName)
 	return string.StripExtension(songName)
 end
 
@@ -149,6 +146,7 @@ local function getSongList( folderRightTable )
 	for key, filePath in pairs( populatedSongs ) do
 		dermaBase.songlist:AddLine(getSongName(filePath))
 	end
+	Media.updateSongs(populatedSongs)
 end
 
 local function enableServerTSS(bool)
@@ -292,11 +290,11 @@ end
 
 local function createMediaPlayer()
 	dermaBase.main:SetPos(16, 36)
-	dermaBase.main:SetTitle(" gMusic Player")
+	dermaBase.main:SetText(" gMusic Player")
 	dermaBase.main:SetDraggable(true)
 	dermaBase.main:SetSizable(true)
 
-	dermaBase.contextmedia:SetTitle(false)
+	dermaBase.contextmedia:SetText(false)
 	local mainX, mainY = dermaBase.main:GetSize()
 
 	dermaBase.musicsheet:SetPos(0,20)
@@ -331,40 +329,31 @@ local function createMediaPlayer()
 	dermaBase.labelswap:Dock(FILL)
 	dermaBase.labelswap:DockMargin(6,1,0,0)
 	if isentity(hostAdminAccess) then
-		dermaBase.labelswap:SetText( "Current Host\n" .. hostAdminAccess:Nick() )
+		dermaBase.labelswap:SetText( "Host: " .. hostAdminAccess:Nick() )
 	else
-		dermaBase.labelswap:SetText( "No song currently playing" )
+		dermaBase.labelswap:SetText( "No host info" )
 	end
 
-	dermaBase.buttonstop:SetFont(defaultFont)
+	local buttonTall = 30
 	dermaBase.buttonstop:SetText("Stop")
-	dermaBase.buttonstop:SetSize(mainX / 3,30)
-	dermaBase.buttonstop:SetPos(0,  dermaBase.musicsheet:GetTall() + 20)
+	dermaBase.buttonstop:SetSize(mainX / 3, buttonTall)
+	dermaBase.buttonstop:SetPos(0, dermaBase.musicsheet:GetTall() + 20)
 
-	dermaBase.buttonpause:SetFont(defaultFont)
 	dermaBase.buttonpause:SetText("Pause / Loop")
-	dermaBase.buttonpause:SetSize(dermaBase.buttonstop:GetWide(),dermaBase.buttonstop:GetTall())
+	dermaBase.buttonpause:SetSize(dermaBase.buttonstop:GetWide(), buttonTall)
 	dermaBase.buttonpause:SetPos(dermaBase.buttonstop:GetWide(), dermaBase.musicsheet:GetTall() + 20)
 
-	dermaBase.buttonplay:SetFont(defaultFont)
-	dermaBase.buttonplay:SetText("Play")
-	dermaBase.buttonplay:SetSize(mainX - (dermaBase.buttonstop:GetWide() + dermaBase.buttonpause:GetWide()), dermaBase.buttonstop:GetTall())
+	dermaBase.buttonplay:SetText("Play / AutoPlay")
+	dermaBase.buttonplay:SetSize(mainX - (dermaBase.buttonstop:GetWide() + dermaBase.buttonpause:GetWide()), buttonTall)
 	dermaBase.buttonplay:SetPos(dermaBase.buttonstop:GetWide() + dermaBase.buttonpause:GetWide(), dermaBase.musicsheet:GetTall() + 20)
 
-	dermaBase.sliderseek:SetSize(mainX - 150 ,30)
-	dermaBase.sliderseek:SetPos(0 , dermaBase.main:GetTall() - dermaBase.sliderseek:GetTall())
+	dermaBase.sliderseek:SetSize(mainX - 150 , buttonTall)
 	dermaBase.sliderseek:AlignBottom()
 	dermaBase.sliderseek.Slider.Knob:SetHeight(dermaBase.sliderseek:GetTall())
 	dermaBase.sliderseek.Slider.Knob:SetWide(5)
-	dermaBase.sliderseek:SetTextFont(defaultFont)
 	dermaBase.sliderseek:ShowSeekTime()
 	dermaBase.sliderseek:ShowSeekLength()
 
-	dermaBase.slidervol:SetFont(defaultFont)
-	dermaBase.slidervol:SetSize(mainX - dermaBase.sliderseek:GetWide() - 5, 30)
-	dermaBase.slidervol:SetPos(dermaBase.sliderseek:GetWide() , mainY - dermaBase.slidervol:GetTall())
-	dermaBase.slidervol:AlignBottom()
-	dermaBase.slidervol:SetConVar("gmpl_vol")
 	dermaBase.slidervol:SetValue(cvarMediaVolume:GetFloat())
 
 	dermaBase.musicsheet.Items[2].Button.DoClick = function(self)
@@ -375,7 +364,7 @@ local function createMediaPlayer()
 	end
 
 	dermaBase.buttonrefresh.DoClick = function(self)
-		if dermaBase.cbadmindir:GetbID() then
+		if dermaBase.cbadmindir:GetChecked() then
 			if playerIsAdmin then
 				net.Start("toServerRefreshSongList")
 
@@ -391,7 +380,7 @@ local function createMediaPlayer()
 
 	dermaBase.buttonstop.DoClick = function()
 		if dermaBase.main.IsServerOn() then
-			if !dermaBase.cbadminaccess:GetbID() then
+			if !dermaBase.cbadminaccess:GetChecked() then
 				net.Start( "toServerStop" )
 				net.SendToServer()
 			elseif playerIsAdmin then
@@ -411,14 +400,14 @@ local function createMediaPlayer()
 
 	dermaBase.buttonpause.DoRightClick  = function()
 		if dermaBase.main.IsServerOn() then
-			if dermaBase.cbadminaccess:GetbID() then
+			if dermaBase.cbadminaccess:GetChecked() then
 				if playerIsAdmin then
 					Media.loop()
 					net.Start("toServerUpdateLoop")
 					net.WriteBool(Media.isLooped())
 					net.SendToServer()
 				end
-			else
+			else -- for non-admins
 				Media.loop()
 				net.Start("toServerUpdateLoop")
 				net.WriteBool(Media.isLooped())
@@ -430,9 +419,10 @@ local function createMediaPlayer()
 	end
 
 	dermaBase.buttonplay.DoClick = function( songFile )
-		if isnumber(dermaBase.songlist:GetSelectedLine()) then
+		local nrLine = dermaBase.songlist:GetSelectedLine()
+		if isnumber(nrLine) then
 			if !isstring(songFile) then
-				songFile = populatedSongs[dermaBase.songlist:GetSelectedLine()]
+				songFile = populatedSongs[nrLine]
 			end
 			if dermaBase.main.IsServerOn() then
 				net.Start( "toServerAdminPlay" )
@@ -447,13 +437,33 @@ local function createMediaPlayer()
 				enableServerTSS(false)
 			end
 		else
-			if !( dermaBase.main.IsServerOn() and  !playerIsAdmin and dermaBase.cbadminaccess:GetbID() ) then
+			if !( dermaBase.main.IsServerOn() and  !playerIsAdmin and dermaBase.cbadminaccess:GetChecked() ) then
 				chat.AddText( Color(255,0,0),"[gMusic Player] Please select a song")
 			else
 				net.Start( "toServerAdminPlay" )
 				net.WriteString("")
 				net.SendToServer()
 			end
+		end
+	end
+
+	dermaBase.buttonplay.DoRightClick = function()
+		if #populatedSongs and dermaBase.main.IsServerOn() then
+			if dermaBase.cbadminaccess:GetChecked() then
+				if playerIsAdmin then
+					Media.autoplay()
+					net.Start("sv_autoPlay")
+					net.WriteBool(Media.isAutoPlay())
+					net.SendToServer()
+				end
+			else
+				Media.autoplay()
+				net.Start("sv_autoPlay")
+				net.WriteBool(Media.isAutoPlay())
+				net.SendToServer()
+			end
+		else
+			Media.autoplay()
 		end
 	end
 
@@ -474,7 +484,7 @@ local function createMediaPlayer()
 	end
 
 	dermaBase.foldersearch.OnRebuild = function(panel)
-		if dermaBase.cbadmindir:GetbID() then
+		if dermaBase.cbadmindir:GetChecked() then
 			if playerIsAdmin then
 				actionRebuild()
 				panel:selectFirstLine()
@@ -486,7 +496,7 @@ local function createMediaPlayer()
 	end
 
 	dermaBase.foldersearch.OnAdd = function(panel)
-		if dermaBase.cbadmindir:GetbID() then
+		if dermaBase.cbadmindir:GetChecked() then
 			if playerIsAdmin then
 				panel:selectFirstLine()
 				dermaBase.buttonrefresh:SetVisible(true)
@@ -504,7 +514,7 @@ local function createMediaPlayer()
 	end
 
 	dermaBase.foldersearch.OnRemove = function(panel)
-		if dermaBase.cbadmindir:GetbID() then
+		if dermaBase.cbadmindir:GetChecked() then
 			if playerIsAdmin then
 				panel:selectFirstLine()
 				dermaBase.buttonrefresh:SetVisible(true)
@@ -530,7 +540,7 @@ local function createMediaPlayer()
 	dermaBase.sliderseek.SeekClick.OnValueChanged = function(seekClickLayer, seekSecs)
 		if Media.hasValidity() then
 			if dermaBase.main.IsServerOn() then
-				if !dermaBase.cbadminaccess:GetbID() then
+				if !dermaBase.cbadminaccess:GetChecked() then
 					if Media.hasState() == GMOD_CHANNEL_PAUSED then
 						Media.seek(seekSecs)
 						dermaBase.sliderseek:SetTime(seekSecs)
@@ -574,17 +584,14 @@ local function createMediaPlayer()
 		dermaBase.buttonswap:SetSize(panel:GetWide() / 3,30)
 		dermaBase.buttonswap:SetPos(0, songHeight + 20)
 
-		dermaBase.buttonpause:SetSize(dermaBase.buttonstop:GetWide(),dermaBase.buttonstop:GetTall())
+		dermaBase.buttonpause:SetSize(dermaBase.buttonstop:GetWide(), 30)
 		dermaBase.buttonpause:SetPos(dermaBase.buttonstop:GetWide(), songHeight + 20)
 
-		dermaBase.buttonplay:SetSize(panel:GetWide() - (dermaBase.buttonstop:GetWide() + dermaBase.buttonpause:GetWide()), dermaBase.buttonstop:GetTall())
+		dermaBase.buttonplay:SetSize(panel:GetWide() - (dermaBase.buttonstop:GetWide() + dermaBase.buttonpause:GetWide()), 30)
 		dermaBase.buttonplay:SetPos(dermaBase.buttonstop:GetWide() + dermaBase.buttonpause:GetWide(), songHeight + 20)
 
 		dermaBase.sliderseek:SetSize(panel:GetWide() - 150 ,30)
-		dermaBase.sliderseek:SetPos(0, mainTall - dermaBase.sliderseek:GetTall())
-
 		dermaBase.slidervol:SetSize(panel:GetWide()  - dermaBase.sliderseek:GetWide() - 5, 30)
-		dermaBase.slidervol:SetPos(dermaBase.sliderseek:GetWide() , mainTall - dermaBase.slidervol:GetTall())
 	end
 
 	dermaBase.main.OnResizing = function()
@@ -644,13 +651,39 @@ function Media:create()
 	createMediaPlayer()
 end
 
-
-hook.Add("Think","RealTimeSeek", function()
+hook.Add("Think","gmpl_RealTimeSeek", function()
+	if !Media.breakOnStop and Media.hasValidity() and Media.hasState() == GMOD_CHANNEL_STOPPED then
+		if Media.isAutoPlay() then
+			if dermaBase.main.IsServerOn() then
+				if dermaBase.cbadminaccess:GetChecked() then
+					if playerIsAdmin then
+						print("stopsmart---- checked IS admin ")
+						Media.stopsmart()
+					else
+						print("stopsmart---- checked NOT admin ")
+						-- gather next song from admin
+						net.Start("sv_getAutoPlaySong")
+						net.SendToServer()
+					end
+				else --aaccess off
+					print("stopsmart---- NOT checked ")
+					Media.stopsmart()
+				end
+			else -- not server
+				print("stopsmart---- NOT on server")
+				Media.stopsmart()
+			end
+		else
+			print("stopsmart---- STOP no autoplay")
+			Media.stop()
+		end
+		Media.breakOnStop = true
+	end
 	if dermaBase.main:IsVisible() then
 		if Media.hasValidity() then
 			if dermaBase.sliderseek:isAllowed() then
 				if Media.hasState() == GMOD_CHANNEL_PLAYING  then  -- real time Seek
-					dermaBase.sliderseek:SetTime(Media.getTime())
+					dermaBase.sliderseek:SetTime(Media.getTime(), false)
 				elseif Media.hasState() == GMOD_CHANNEL_STALLED then
 	--[[-------------------------------------------------------------------------
 	This should decrease the chances of cracklings. [#bug, #happensLinux]
@@ -661,8 +694,7 @@ hook.Add("Think","RealTimeSeek", function()
 			elseif Media.isLooped() then
 				dermaBase.sliderseek:AllowSeek(true)
 				dermaBase.sliderseek:SetTime(dermaBase.sliderseek:GetMin())
-			else
-				Media.stop()
+			else -- audio stopped
 				dermaBase.sliderseek:AllowSeek(true)
 			end
 		end
@@ -671,21 +703,15 @@ hook.Add("Think","RealTimeSeek", function()
 		end
 		thinkServerOptions()
 	end
+
 end)
 
---[[-------------------------------------------------------------------------
-Settings Page on each Client
----------------------------------------------------------------------------]]--
-net.Receive( "refreshAdminAccess", function(length, sender)
-	local tmpVal = net.ReadBool()
-	setAccessCheckbox(dermaBase.cbadminaccess,tmpVal)
-end )
+hook.Add("Tick", "gmpl_RealTimePost", function()
+	if Media.breakOnStop and Media.hasValidity() and Media.hasState() ~= GMOD_CHANNEL_STOPPED then
+		Media.breakOnStop = false
+	end
+end)
 
-net.Receive( "refreshAdminAccessDir", function(length, sender)
-	local tmpVal = net.ReadBool()
-	setAccessCheckbox(dermaBase.cbadmindir,tmpVal)
-end )
----------------------------------------------------------------------------]]--
 
 net.Receive( "refreshSongListFromServer", function(length, sender)
 	folderLeft = net.ReadTable() -- also update the left list in case of becoming admin
@@ -700,8 +726,10 @@ net.Receive( "askAdminForLiveSeek", function(length, sender)
 	local user = net.ReadEntity()
 	if playerIsAdmin then
 		local seekTime = 0
+
 		if Media.hasValidity() then
 			seekTime = Media.getTime()
+			songIndex = dermaBase.songlist:GetSelectedLine()
 			net.Start("toServerUpdateSeek")
 			net.WriteDouble(seekTime)
 			net.SendToServer()
@@ -709,12 +737,14 @@ net.Receive( "askAdminForLiveSeek", function(length, sender)
 			user:PrintMessage(HUD_PRINTTALK, "No song is playing on the server")
 		end
 	else
-		user:PrintMessage(HUD_PRINTTALK, "Cannot get Live Song. The host probably disconnected or not admin anymore.")
+		dermaBase.labelswap:SetText("Disconnected: " .. hostAdminAccess:Nick())
+		user:PrintMessage(HUD_PRINTTALK, "Cannot get Live Song. The host disconnected or it's no longer admin.")
 	end
 end)
 
 net.Receive( "playLiveSeek", function(length, sender)
 	local loopStatus = net.ReadBool()
+	local autoplayStatus = net.ReadBool()
 	hostAdminAccess = net.ReadEntity()
 	song = net.ReadString()
 	local numberSeek = net.ReadDouble()
@@ -732,7 +762,8 @@ net.Receive( "playLiveSeek", function(length, sender)
 					CurrentSong:EnableLooping(false)
 					Media.uiPlay()
 				end
-				dermaBase.labelswap:SetText( "Current Host\n" .. hostAdminAccess:Nick() )
+				Media.autoplay(autoplayStatus)
+				dermaBase.labelswap:SetText( "Host: " .. hostAdminAccess:Nick() )
 			else
 				Media.uiMissing()
 				dermaBase.labelswap:SetText( "Cannot play live song" )
@@ -747,8 +778,9 @@ net.Receive( "playFromServer_adminAccess", function(length, sender)
 		hostAdminAccess = net.ReadEntity()
 		Media.play(filePath)
 		enableServerTSS(true)
-		dermaBase.labelswap:SetText( "Current Host\n" .. hostAdminAccess:Nick() )
-		chat.AddText(Color(0,255,255),  "Playing: " .. string.StripExtension(string.GetFileFromFilename(filePath)) )
+
+		dermaBase.labelswap:SetText( "Host: " .. hostAdminAccess:Nick() )
+		chat.AddText(Color(0,220,220),  "Playing: " .. string.StripExtension(string.GetFileFromFilename(filePath)) )
 	end
 end)
 
@@ -764,7 +796,7 @@ net.Receive( "playFromServer", function(length, sender)
 		local filePath = net.ReadString()
 		Media.play(filePath)
 		enableServerTSS(true)
-		chat.AddText(Color(0,255,255),  "Playing: " .. string.StripExtension(string.GetFileFromFilename(filePath)))
+		chat.AddText(Color(0,220,220),  "Playing: " .. string.StripExtension(string.GetFileFromFilename(filePath)))
 	end
 end)
 
@@ -772,7 +804,7 @@ net.Receive( "loopFromServer", function(length, sender)
 	if dermaBase.main.IsServerOn() then
 		local loopState = net.ReadBool()
 		if Media.hasValidity() then
-			Media.forceloop(loopState)
+			Media.setloop(loopState)
 			if Media.hasState() == GMOD_CHANNEL_PLAYING then
 				if loopState then
 					Media.uiLoop()
@@ -782,6 +814,30 @@ net.Receive( "loopFromServer", function(length, sender)
 			end
 		end
 	end
+end)
+
+net.Receive( "cl_autoPlay", function(length, sender)
+	if dermaBase.main.IsServerOn() then
+		local autoplayState = net.ReadBool()
+		if Media.hasValidity() then
+			Media.autoplay(autoplayState)
+		end
+	end
+end)
+
+// TODO WORK ON adding the song table of the admin host on the server and tehn you just
+//increment from that table the next song.
+//If the same admin host tries to change the song check if it is the same admin and if not
+//check if the song basename is the one he wants to play(the key probably wont be a good idea)
+net.Receive( "cl_ansAutoPlaySong", function(length, sender)
+	local nextAutoPlayedSong = net.ReadString()
+	-- local currSong = populatedSongs[Media.songIndex(1, true)] or ""
+	Media.uiAutoPlay()
+	Media.play(nextAutoPlayedSong)
+end)
+
+net.Receive( "cl_errAutoPlaySong", function(length, sender)
+	Media.stop()
 end)
 
 net.Receive( "stopFromServer", function(length, sender)
@@ -797,3 +853,4 @@ net.Receive( "seekFromServer", function(length, sender)
 		end
 	end
 end)
+

@@ -12,32 +12,23 @@ function PANEL:Init()
 
 	self.box = vgui.Create( "DBetterCheckBox", self )
 
-	self.box.BeforeChange = function( panel )
-		self:BeforeChange()
+	self.box.OnCvarChange = function( panel, oldVal, newVal )
+		self:OnCvarChange(oldVal, newVal)
 	end
 
-	self.box.BeforeConvarChanged = function( panel, val)
+	self.box.AfterChange = function( panel, val)
+
 		if self.box:GetAdminOnly() then
 			if self.box:GetIsAdmin() then
-				self:BeforeConvarChanged(val)
+				self:AfterChange(val)
 			end
 		else
-			self:BeforeConvarChanged(val)
+			self:AfterChange(val)
 		end
 	end
 
-	self.box.AfterConvarChanged = function( panel, val)
-		if self.box:GetAdminOnly() then
-			if self.box:GetIsAdmin() then
-				self:AfterConvarChanged(val)
-			end
-		else
-			self:AfterConvarChanged(val)
-		end
-	end
-
-	self.box.AfterChange = function( panel, val )
-		self:AfterChange(val)
+	self.box.OnCvarWrong = function( panel, oldVal, newVal )
+		self:OnCvarWrong(oldVal, newVal)
 	end
 
 	self.box.Paint = function(panel, w, h)
@@ -69,13 +60,10 @@ function PANEL:SetEnabled( bEnabled )
 	self.m_bEnabled = bEnabled
 	if bEnabled then
 		self:SetAlpha( 255 )
-		self:SetMouseInputEnabled( true )
 	else
 		self:SetAlpha( 75 )
-		self:SetMouseInputEnabled( false )
 	end
-
-
+	self:SetMouseInputEnabled( bEnabled )
 end
 function PANEL:IsEnabled()
 	return self.m_bEnabled
@@ -87,27 +75,16 @@ function PANEL:SetPos(x, y)
 	self:SizeToContents()
 end
 
-function PANEL:AllowContinue(bool)
-	self.box:SetBeforeBool(bool)
-end
-
-function PANEL:BeforeConvarChanged(val)
-end
-
-function PANEL:AfterConvarChanged(val)
-end
-
-function PANEL:BeforeChange()
+function PANEL:OnCvarChange(oldVal, newVal)
 	-- override before a value has changed. must return bool to continue
-	-- must set the AllowContinue method
 end
 
 function PANEL:AfterChange( bool )
 	-- override after a value has changed
 end
 
-function PANEL:GetbID()
-	return self.box:GetbID()
+function PANEL:OnCvarWrong(oldValue, newValue)
+	-- override if any problem happened
 end
 
 function PANEL:SetAdminOnly( bool )
@@ -122,7 +99,10 @@ function PANEL:SetChecked( val )
 	self.box:SetChecked( val )
 end
 
-function PANEL:GetChecked( val )
+function PANEL:GetChecked()
+	if self.box.cvar then
+		return self.box.cvar:GetBool()
+	end
 	return self.box:GetChecked()
 end
 
@@ -190,34 +170,19 @@ function PANEL:GetCheckedi(index)
 	return false
 end
 
-function PANEL:GetCvarText()
+function PANEL:GetCvarName()
 	return self.cvarText
 end
 
-function PANEL:SetConVar( strCvar, defVal, helpText ) -- defVal override default check of the checkbox
+function PANEL:SetConVar( strCvar, defVal, helpText )
 	local tmp = CreateClientConVar(strCvar , defVal, true, false, helpText)
 	self.cvarText = strCvar
 
 	self.box:SetConVar(strCvar)
-	self.box:PersistConvar(tmp, true)
-end
-
-function PANEL:SetCustomConVar( strCvar, defVal, boolConvar, helpText ) -- defVal override default check of the checkbox
-	local tmp = CreateClientConVar(strCvar , defVal, true, false, helpText)
-	self.cvarText = strCvar
-
-	cvars.AddChangeCallback( strCvar, function( convar , oldValue , newValue  )
-		self:OnCustomCvarChange(tonumber(newValue))
-		self:UpdateThink()
-	end )
-	self.box:PersistConvar(tmp, boolConvar)
+	self.box:PersistConvar(tmp)
 end
 
 function PANEL:OnCustomCvarChange(newValue)
-end
-
-function PANEL:OnToggleOnce(id)
-	-- For override
 end
 
 function PANEL:SetIsAdmin(isAdmin)
@@ -249,7 +214,7 @@ function PANEL:UpdateSize()
 	end
 end
 
-
+-- Needed to sync Items
 function PANEL:UpdateThink()
 	self.box:ConVarNumberThink()
 end

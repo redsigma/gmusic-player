@@ -92,7 +92,7 @@ function PANEL:Init()
 	self:SetSizable(true)
 	self:SetScreenLock(false)
 
-	self:SetTitle("Window")
+	self:SetText("Window")
 	self:SetMinWidth(320)
 	self:SetMinHeight(300)
 
@@ -160,11 +160,11 @@ function PANEL:GetTitle()
 	return self.labelTitle:GetText()
 end
 
-function PANEL:SetTitle(strTitle)
+function PANEL:SetText(strTitle)
 	self.labelTitle:SetText(strTitle)
 end
 
-function PANEL:SetTitleColor(color)
+function PANEL:SetTextColor(color)
 	self.labelTitle:SetTextColor(color)
 end
 

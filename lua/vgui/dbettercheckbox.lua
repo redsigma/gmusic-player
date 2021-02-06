@@ -2,34 +2,30 @@ local PANEL = {}
 
 AccessorFunc( PANEL, "m_bChecked", "Checked", FORCE_BOOL )
 AccessorFunc( PANEL, "m_bAdminOnly", "AdminOnly", FORCE_BOOL)
-AccessorFunc( PANEL, "m_bFrekingBool", "BeforeBool", FORCE_BOOL)
-
 
 Derma_Hook( PANEL, "Paint", "Paint", "CheckBox" )
 Derma_Hook( PANEL, "ApplySchemeSettings", "Scheme", "CheckBox" )
 Derma_Hook( PANEL, "PerformLayout", "Layout", "CheckBox" )
 
-
 Derma_Install_Convar_Functions( PANEL )
 
 function PANEL:SetValue( val )
+	local bVal
+	if isbool(val) then	bVal = val
+	elseif isnumber(val) then bVal = tobool(val) end
+
 	if self:GetAdminOnly() then
 		if self:GetIsAdmin() then
-			if ( tonumber( val ) == 0 ) then val = 0 end
-			val = tobool( val )
-
-			self:SetChecked( val )
-			self.m_bValue = val
+			self:SetChecked( bVal )
+			self.m_bValue = bVal
 
 			self:UpdateConVar()
 		else
 			self:RevertConVar()
 		end
 	else
-		if ( tonumber( val ) == 0 ) then val = 0 end
-		val = tobool( val )
-		self:SetChecked( val )
-		self.m_bValue = val
+		self:SetChecked( bVal )
+		self.m_bValue = bVal
 
 		self:UpdateConVar()
 	end
@@ -42,10 +38,8 @@ function PANEL:Init()
 	self.isAdmin = nil
 	self:SetSize( 15, 15 )
 	self:SetText( "" )
-	self.bID = false
-	self:SetBeforeBool(true)
+	self.m_bChecked = false
 	self.cvar = nil
-
 end
 
 function PANEL:addCheckbox(index, checkbox)
@@ -61,32 +55,26 @@ function PANEL:AfterChange( val )
 	-- override after a value has changed
 end
 
-function PANEL:AfterConvarChanged(val)
-	-- override before convar has changed
+function PANEL:OnCvarWrong(oldValue, newValue)
+	-- override if any problem happened
 end
 
-function PANEL:PreAfterConvarChanged(val)
-	self:AfterChange(val)
-	self:Think()
-	self:AfterConvarChanged(val)
-end
-
-function PANEL:PersistConvar( newCvar, booleanize )
+function PANEL:PersistConvar(newCvar)
 	self.cvar = newCvar
 	if !ConVarExists(self.cvar:GetName()) then
 		self.cvar:SetInt(self.cvar:GetDefault())
 	end
-	if booleanize then
-		cvars.AddChangeCallback( self.cvar:GetName(), function( convar , oldValue , newValue  )
-			self:PreAfterConvarChanged(tobool(tonumber(newValue)))
-		end )
-	else
-		cvars.AddChangeCallback( self.cvar:GetName(), function( convar , oldValue , newValue  )
-			self:PreAfterConvarChanged(tonumber(newValue))
-		end )
-	end
+	cvars.AddChangeCallback( self.cvar:GetName(), function( convar , oldValue , newValue  )
+		local tmp = tonumber(newValue)
+		if isnumber(tmp) then
+			self:OnCvarChange(oldValue, tmp)
 
-
+			self:SetValue(tmp)
+			self:AfterChange(tmp)
+		else
+			self:OnCvarWrong(oldValue, newValue)
+		end
+	end )
 end
 
 
@@ -105,11 +93,6 @@ function PANEL:UpdateConVar()
 	end
 end
 
-function PANEL:SetCheckedSilent(bool)
-	self.m_bChecked = bool
-	self.bID = bool
-end
-
 function PANEL:RevertConVar()
 	if self:GetChecked() then
 		self.cvar:SetString("1")
@@ -123,22 +106,19 @@ function PANEL:IsEditing()
 	return self.Depressed
 end
 
-function PANEL:BeforeChange()
-	-- override before a value has changed
-	-- must use the SetBeforeBool method to continue
+function PANEL:OnCvarChange(oldval, newval)
 end
 
-function PANEL:BeforeConvarChanged(val)
+function PANEL:SetCheckedSilent(bool)
+	self.m_bChecked = bool
 end
 
 function PANEL:SetChecked(bool)
-	self:BeforeConvarChanged(bool)
 	self.m_bChecked = bool
-	self.bID = bool
 end
 
-function PANEL:GetbID()
-	return self.bID
+function PANEL:GetChecked()
+	return self.m_bChecked
 end
 
 function PANEL:SetIsAdmin( isAdmin )
@@ -153,23 +133,15 @@ function PANEL:GetIsAdmin()
 	end
 end
 
-
-
 function PANEL:DoClick()
 	self:Toggle()
 end
 
 function PANEL:Toggle()
-	self:BeforeChange()
-	if self:GetBeforeBool() then
-		if self:GetChecked() then
-			self:SetValue( false )
-		else
-			self:SetValue( true )
-		end
-		self:AfterChange( self:GetChecked() )
+	if self:GetChecked() then
+		self:SetValue( false )
 	else
-		self:SetBeforeBool(true) -- reset it after check to prevent glitches
+		self:SetValue( true )
 	end
 end
 function PANEL:ToggleOne()
@@ -210,7 +182,7 @@ function PANEL:Think()
 		end
 	end
 
-	self:ConVarNumberThink()
+	-- self:ConVarNumberThink()
 end
 
 

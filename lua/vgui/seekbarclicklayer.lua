@@ -26,7 +26,8 @@ function PANEL:OnCursorMoved(x)
 	local w = self:GetWide()
 	local min = self:GetMin()
 
-	x = round(x, 3) / w or 0
+	-- x = round(x, 3) / w or 0
+	x = x / w or 0
 	x = x * (self:GetMax() - min)
 	x = min + x
 

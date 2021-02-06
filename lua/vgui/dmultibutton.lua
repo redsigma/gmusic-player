@@ -73,7 +73,7 @@ function PANEL:SetTextColor( color )
 	self.title:SetColor(color)
 end
 
-function PANEL:SetTitle( title )
+function PANEL:SetText( title )
 	if isbool(title) then
 		title = "gMusic Player"
 		self.seek:SetVisible(false)

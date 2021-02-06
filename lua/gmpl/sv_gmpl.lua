@@ -3,9 +3,12 @@ include("includes/modules/coms.lua")
 local liveSong = ""
 local liveSeek = 0
 local isLooped = false
+local isAutoPlayed = false
 
 local userWantLive = 0
 local playerHost = 0
+
+local songAutoPlayed = ""
 
 
 --[[-------------------------------------------------------------------------
@@ -26,7 +29,7 @@ serverSettings.aadir = false  -- cbAdminAccessDir to other players
 ---------------------------------------------------------------------------]]--
 
 
-local function openMenu( ply , netMsg )
+local function sendType_ToClient( ply , netMsg )
 	net.Start( netMsg )
 	net.WriteType(playerHost)
 	net.Send(ply)
@@ -41,23 +44,18 @@ local function initMenu(ply)
 	net.Send(ply)
 end
 
-
-
-
-
 --[[-------------------------------------------------------------------------
 On Player initial spawn update settings.
 ---------------------------------------------------------------------------]]--
 hook.Add("Initialize", "checkUlib", function()
 	if istable(hook.GetTable().ULibLocalPlayerReady) then
+		print("[gMusic Player] Initializing - via Ulib")
 		hook.Add("ULibLocalPlayerReady", "initPlayer", function(ply)
-			print("[gMusic Player] Initializing - via Ulib")
 			initMenu(ply)
-
 		end)
 	else
+		print("[gMusic Player] Initializing")
 		hook.Add("PlayerInitialSpawn", "initPlayer", function(ply)
-			print("[gMusic Player] Initializing")
 			initMenu(ply)
 		end)
 	end
@@ -68,13 +66,13 @@ hook.Add( "ShowSpare1", "openMenuF3F", function( ply )
 end)
 net.Receive( "toServerHotkey", function(length, sender )
 	if sender:IsValid() then
-		openMenu(sender,"openmenu")
+		sendType_ToClient(sender,"openmenu")
 	end
 end )
 
 net.Receive( "toServerContext", function(length, sender )
 	if sender:IsValid() then
-		openMenu(sender, "openmenucontext")
+		sendType_ToClient(sender, "openmenucontext")
 	end
 end )
 ---------------------------------------------------------------------------]]--
@@ -178,49 +176,40 @@ net.Receive( "toServerRefreshSongList", function(length, sender )
 end )
 
 net.Receive( "toServerUpdateSeek", function(length, sender )
-	if userWantLive:IsValid() then
-		if sender:IsValid() then
-			liveSeek = net.ReadDouble()
-			net.Start("playLiveSeek")
+	if userWantLive:IsValid() and sender:IsValid() then
+		liveSeek = net.ReadDouble()
+		net.Start("playLiveSeek")
 
-			net.WriteBool(isLooped)
-			net.WriteEntity(sender) -- the playerHost
-			net.WriteString(liveSong)
-			net.WriteDouble(liveSeek)
+		net.WriteBool(isLooped)
+		net.WriteBool(isAutoPlayed)
+		net.WriteEntity(sender) -- the playerHost
+		net.WriteString(liveSong)
+		net.WriteDouble(liveSeek)
 
-			net.Send(userWantLive)
-		else
-			userWantLive:PrintMessage(HUD_PRINTTALK, "No song is playing on the server")
-		end
+		net.Send(userWantLive)
 	end
 end )
 
 
 net.Receive( "toServerAdminPlay", function(length, sender )
-	if sender:IsValid() then
+	if IsValid(sender) then
 		if serverSettings.aa then
 			if sender:IsAdmin() then
-			liveSong = net.ReadString()
-			playerHost = sender
-			isLooped = false
-			net.Start( "playFromServer_adminAccess" )
-			net.WriteString( liveSong )
-			net.WriteEntity( playerHost )
-			net.Send(player.GetAll())
+				liveSong = net.ReadString()
+				playerHost = sender
+				isLooped = false
+				net.Start( "playFromServer_adminAccess" )
+				net.WriteString( liveSong )
+				net.WriteEntity( playerHost )
+				net.Send(player.GetAll())
 			else
-			userWantLive = sender
-			if TypeID(playerHost) == TYPE_ENTITY then
-				if playerHost:IsPlayer() and playerHost:IsConnected()  then
-
-					net.Start("askAdminForLiveSeek")
-					net.WriteEntity(sender)
-					net.Send(playerHost)
-				else
-					userWantLive:PrintMessage(HUD_PRINTTALK, "No song playing on the server")
+				userWantLive = sender
+				if TypeID(playerHost) == TYPE_ENTITY and playerHost:IsPlayer()
+				and playerHost:IsConnected()  then
+						net.Start("askAdminForLiveSeek")
+						net.WriteEntity(sender)
+						net.Send(playerHost)
 				end
-			else
-				userWantLive:PrintMessage(HUD_PRINTTALK, "No song playing on the server")
-			end
 			end
 		else
 			local strFilePath = net.ReadString()
@@ -240,12 +229,33 @@ net.Receive( "toServerUpdateLoop", function(length, sender )
 	end
 end )
 
+net.Receive( "sv_autoPlay", function(length, sender )
+	if sender:IsValid() then
+		isAutoPlayed = net.ReadBool()
+		net.Start( "cl_autoPlay" )
+		net.WriteBool(isAutoPlayed)
+		net.Send(player.GetAll())
+	end
+end )
+
+net.Receive( "sv_getAutoPlaySong", function(length, sender )
+	if !isnumber(playerHost) and playerHost:IsPlayer() then
+		net.Start( "cl_ansAutoPlaySong" )
+		net.WriteString(liveSong)
+		net.Send(playerHost)
+	elseif sender:IsValid() then
+		net.Start( "cl_errAutoPlaySong" )
+		net.Send(sender)
+	end
+end )
+
 net.Receive( "toServerAdminStop", function(length, sender )
 	if sender:IsValid() then
 		liveSong = ""
 		liveSeek = 0
 		playerHost = 0
 		isLooped = false
+		isAutoPlayed = false
 		net.Start( "stopFromServerAdmin" )
 		net.Send(player.GetAll())
 	end
