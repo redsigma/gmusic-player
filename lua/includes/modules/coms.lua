@@ -2,10 +2,10 @@ util.AddNetworkString( "serverFirstMade")	util.AddNetworkString( "sendServerSett
 util.AddNetworkString( "getSettingsFromFirstAdmin")	util.AddNetworkString( "updateSettingsFromFirstAdmin")
 
 util.AddNetworkString( "createMenu" )
-util.AddNetworkString( "requestHotkeyFromServer")
+util.AddNetworkString( "press_Key_F3FromServer")
 
-util.AddNetworkString( "toServerContext")	util.AddNetworkString( "openmenucontext")
-util.AddNetworkString( "toServerHotkey")	util.AddNetworkString( "openmenu" )
+util.AddNetworkString( "toServerContextMenu")	util.AddNetworkString( "openmenucontext")
+util.AddNetworkString( "toServerKey_F3")	util.AddNetworkString( "openmenu" )
 
 util.AddNetworkString( "toServerStop" )	util.AddNetworkString( "stopFromServer" )
 util.AddNetworkString( "toServerSeek" )	util.AddNetworkString( "seekFromServer" )

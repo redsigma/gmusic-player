@@ -122,7 +122,7 @@ function PANEL:Toggle()
 end
 
 function PANEL:SizeToContents()
-	self:InvalidateLayout( true ) -- update DLabel and the X 
+	self:InvalidateLayout( true ) -- update DLabel and the X
 	self:SetWide( self.label.x + self.label:GetWide() )
 	self:SetTall( self.box:GetTall() + 4 )
 	self:InvalidateLayout() -- update the children

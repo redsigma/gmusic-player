@@ -1,7 +1,6 @@
 local PANEL = {}
 
 function PANEL:Init()
-
 	self.Offset = 0
 	self.scroll = 0
 	self.panelSize = 1

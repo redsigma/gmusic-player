@@ -2,7 +2,8 @@ local PANEL = {}
 local linePos = 0
 local prevSelect = nil
 
-local defaultTextColor = Color(255, 255, 255)
+local text_color = Color(255, 255, 255)
+local bg_color_hover = Color(230, 230, 230, 50)
 
 AccessorFunc( PANEL, "m_bDirty", "Dirty", FORCE_BOOL )
 AccessorFunc( PANEL, "m_bSortable", "Sortable", FORCE_BOOL )
@@ -34,7 +35,7 @@ function PANEL:Init()
 	self:SetDirty( true )
 
 	self.container = vgui.Create("Panel" ,self)
-	self.panelLine = vgui.Create("Panel", self.container )
+	self.panelLine = vgui.Create("Panel", self.container)
 
 	self.VBar = vgui.Create( "DSimpleScroll", self )
 	self.VBar:SetZPos( 20 )
@@ -64,10 +65,20 @@ function PANEL:SetHideHeaders(bool)
 	end
 end
 
-function PANEL:SetTextColor(txtcolor_)
-	defaultTextColor = txtcolor_
+function PANEL:SetTextColor(text_color_)
+	text_color = text_color_
 	for _, line in pairs(self.Lines) do
-		line:SetTextColor(defaultTextColor)
+		line:SetTextColor(text_color)
+	end
+end
+
+/*
+    Hover bg for each item
+*/
+function PANEL:SetHoverBGColor(hover_color)
+    bg_color_hover = hover_color
+	for _, line in pairs(self.Lines) do
+        line:SetHoverBG(bg_color_hover)
 	end
 end
 
@@ -80,7 +91,7 @@ function PANEL:DisableScrollbar()
 end
 
 function PANEL:ResetColor(index)
-	self.Lines[index]:SetTextColor(defaultTextColor)
+	self.Lines[index]:SetTextColor(text_color)
 end
 
 function PANEL:HighlightLine(index, color, txtcolor)
@@ -206,7 +217,7 @@ function PANEL:OnScrollbarAppear()
 end
 
 function PANEL:AddLine( strLine )
-	self:SetDirty( true )
+	self:SetDirty(true)
 	self:InvalidateLayout()
 
 	local Line = vgui.Create( "DBetterLine", self.panelLine )
@@ -238,6 +249,8 @@ function PANEL:AddLine( strLine )
 	Line:SetPos(0, linePos)
 	linePos = linePos + self.m_iDataHeight
 
+    Line:SetTextColor(text_color)
+    Line:SetHoverBG(bg_color_hover)
 	Line:SetColumnText( 0, strLine )
 
 	local indexID = table.insert( self.Lines, Line )
@@ -310,24 +323,13 @@ function PANEL:SizeToContents()
 end
 
 function PANEL:GetLineColor()
-	return defaultTextColor
+	return text_color
 end
 
 function PANEL:PaintList(listColor)
 	self.container.Paint = function(panel, w, h)
 		surface.SetDrawColor(listColor)
 		surface.DrawRect(0, 0, w, h)
-	end
-end
-
-function PANEL:PaintHoverList(hoverColor)
-	for _, line in pairs(self.Lines) do
-		line.PaintOver = function(panel, w, h)
-			if panel:IsHovered() then
-				surface.SetDrawColor(hoverColor)
-				surface.DrawRect(0, 0, w, h)
-			end
-		end
 	end
 end
 

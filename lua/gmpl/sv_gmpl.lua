@@ -21,13 +21,8 @@ local songActiveTable = {}
 Server Options identifiers
 ---------------------------------------------------------------------------]]--
 local serverJustStarted = true
-local serverSettings = {}
-
-serverSettings.aa = true      -- cbAdminAccess to other players
-
-serverSettings.aadir = false  -- cbAdminAccessDir to other players
+local serverSettings =  include("gmpl/sv_cvars.lua")()
 ---------------------------------------------------------------------------]]--
-
 
 local function sendType_ToClient( ply , netMsg )
 	net.Start( netMsg )
@@ -60,17 +55,17 @@ hook.Add("Initialize", "checkUlib", function()
 		end)
 	end
 end)
-hook.Add( "ShowSpare1", "openMenuF3F", function( ply )
-	net.Start( "requestHotkeyFromServer" )
+hook.Add("ShowSpare1", "openMenuF3", function( ply )
+	net.Start("press_Key_F3FromServer")
 	net.Send(ply)
 end)
-net.Receive( "toServerHotkey", function(length, sender )
+net.Receive( "toServerKey_F3", function(length, sender )
 	if sender:IsValid() then
 		sendType_ToClient(sender,"openmenu")
 	end
 end )
 
-net.Receive( "toServerContext", function(length, sender )
+net.Receive( "toServerContextMenu", function(length, sender )
 	if sender:IsValid() then
 		sendType_ToClient(sender, "openmenucontext")
 	end
@@ -87,7 +82,7 @@ net.Receive( "serverFirstMade", function(length, sender )
 			net.WriteTable(serverSettings)
 			net.Send(sender)
 
-			if serverSettings.aadir then
+			if serverSettings.admin_dir_access then
 				net.Start("refreshSongListFromServer")
 				net.WriteTable(songInactiveTable)
 				net.WriteTable(songActiveTable)
@@ -97,15 +92,15 @@ net.Receive( "serverFirstMade", function(length, sender )
 	end
 end )
 
-net.Receive( "updateSettingsFromFirstAdmin", function(length, sender )
+net.Receive("updateSettingsFromFirstAdmin", function(length, sender )
 	local tmpSettingsTable = net.ReadTable()
 
-	serverSettings.aa  = tmpSettingsTable.aa
-	serverSettings.aadir = tmpSettingsTable.aadir
+	serverSettings.admin_server_access  = tmpSettingsTable.admin_server_access
+	serverSettings.admin_dir_access = tmpSettingsTable.admin_dir_access
 
 	serverJustStarted = false
 
-	if serverSettings.aadir then
+	if serverSettings.admin_dir_access then
 		songInactiveTable = net.ReadTable()
 		songActiveTable = net.ReadTable()
 	end
@@ -113,7 +108,7 @@ end )
 
 --[[-------------------------------------------------------------------------
 Settings Panel Options
----------------------------------------------------------------------------]]-- 
+---------------------------------------------------------------------------]]--
 local function printMessage(nrMsg, sender, itemVal)
 	local str
 	if nrMsg == 1 then
@@ -124,42 +119,6 @@ local function printMessage(nrMsg, sender, itemVal)
 
 	PrintMessage(HUD_PRINTTALK, str .. " changed to " .. tostring(itemVal) .. " by " .. sender:Nick() )
 end
-
-local function updateServerOption( netMsg, itemOption )
-	net.Start(netMsg)
-	net.WriteBool(itemOption)
-	net.Send(player.GetAll())
-end
-
-net.Receive( "toServerRefreshAccess_msg", function(length, sender )
-	if sender:IsValid() then
-		local tmpBool = net.ReadBool()
-		printMessage(1, sender, tmpBool)
-	end
-end )
-
-net.Receive( "toServerRefreshAccessDir_msg", function(length, sender )
-	if sender:IsValid() then
-		local tmpBool = net.ReadBool()
-		printMessage(2, sender, tmpBool)
-	end
-end )
-
-net.Receive( "toServerRefreshAccess", function(length, sender )
-	if sender:IsValid() and sender:IsAdmin() then
-		serverSettings.aa = net.ReadBool()  -- doesn't work in a method
-		updateServerOption("refreshAdminAccess", serverSettings.aa )
-	end
-end )
-
-net.Receive( "toServerRefreshAccessDir", function(length, sender )
-	if sender:IsValid() and sender:IsAdmin() then
-		serverSettings.aadir = net.ReadBool()
-		updateServerOption("refreshAdminAccessDir", serverSettings.aadir )
-	end
-end )
----------------------------------------------------------------------------]]-- 
-
 
 net.Receive( "toServerRefreshSongList", function(length, sender )
 	if sender:IsValid() and sender:IsAdmin() then
@@ -193,7 +152,7 @@ end )
 
 net.Receive( "toServerAdminPlay", function(length, sender )
 	if IsValid(sender) then
-		if serverSettings.aa then
+		if serverSettings.admin_server_access then
 			if sender:IsAdmin() then
 				liveSong = net.ReadString()
 				playerHost = sender

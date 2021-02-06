@@ -41,6 +41,15 @@ function PANEL:GetTextColor()
 	return self.col
 end
 
+function PANEL:SetHoverBG(color)
+    self.PaintOver = function(line, w, h)
+        if line:IsHovered() then
+            surface.SetDrawColor(color)
+            surface.DrawRect(0, 0, w, h)
+        end
+    end
+end
+
 function PANEL:BeforeMousePress(index)
 end
 

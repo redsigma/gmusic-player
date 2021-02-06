@@ -1,3 +1,7 @@
+/*
+    Painter used to to color the panels. Color values are shared among all
+    panels
+*/
 local paintMethod = {}
 local colors = {}
 local thememode = nil
@@ -76,7 +80,7 @@ local function paintList(panel)
 	panel:PaintList(colors.bglist)
 end
 local function paintHoverList(panel)
-	panel:PaintHoverList(colors.bghover)
+	panel:SetHoverBGColor(colors.bghover)
 end
 
 local function paintColumn(panel)

@@ -12,15 +12,14 @@ local colorServerState = Color(255, 150, 0, 255)
 local isTSS = false
 
 function PANEL:Init()
-
 	self:SetMouseInputEnabled( true )
 	self:MouseCapture( true )
 	self:SetFocusTopLevel(false)
 	self:SetCursor("sizeall")
 
-	self:SetSizeDynamic(120,300)
+	self:UpdateWindowSize()
 
-	self.TSS = vgui.Create( "Panel", self )
+	self.TSS = vgui.Create("Panel", self)
 	self.TSS:SetVisible(false)
 	self.TSS:SetSize(10,20)
 	self.TSS.Paint = function(panel, w, h)
@@ -32,7 +31,6 @@ function PANEL:Init()
 	self.labelTitle:SetPos(0,0)
 	self.labelTitle:SetFont("default")
 	self.labelTitle:SetTextColor(Color(255, 255, 255))
-
 	self.labelTitle.Paint = function(panel, w, h)
 		surface.SetDrawColor(150, 150, 150, 255)
 		surface.DrawRect(0, 0, w, h)
@@ -86,7 +84,6 @@ function PANEL:Init()
 		end
 	end
 	titleMargin = self.buttonMode:GetWide() + self.buttonSettings:GetWide() + self.buttonClose:GetWide()
-
 
 	self:SetDraggable(true)
 	self:SetSizable(true)
@@ -142,7 +139,7 @@ function PANEL:SetBGColor(r, g, b)
 	end
 end
 
-function PANEL:SetSizeDynamic(width, height)
+function PANEL:UpdateWindowSize()
 	if (ScrW() < 800) then
 		self:SetSize(500, 400)
 	elseif (ScrW() > 1280) then
@@ -150,6 +147,10 @@ function PANEL:SetSizeDynamic(width, height)
 	else
 		self:SetSize(ScrW() - 120, 400)
 	end
+end
+
+function PANEL:OnScreenSizeChanged(old_width, old_height)
+    self:UpdateWindowSize()
 end
 
 function PANEL:ShowCloseButton(bShow)
@@ -169,8 +170,8 @@ function PANEL:SetTextColor(color)
 end
 
 function PANEL:Close()
+	-- gui.EnableScreenClicker(false)
 	self:SetVisible(false)
-	gui.EnableScreenClicker(false)
 	self:OnClose()
 end
 

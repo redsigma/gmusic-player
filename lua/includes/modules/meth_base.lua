@@ -3,7 +3,12 @@ local dermaBase = {}
 local defaultFont = "arialDefault"
 
 local function init( contextMenu, contextMargin )
-	dermaBase.contextmedia = vgui.Create("DMultiButton", g_ContextMenu)
+    dermaBase.painter = include("includes/modules/meth_paint.lua")()
+
+	dermaBase.contextmedia = vgui.Create("DMultiButton")
+    dermaBase.contextmedia:MoveToFront()
+
+    -- g_ContextMenu:Add(dermaBase.contextmedia)
 	dermaBase.main = vgui.Create("DgMPlayerFrame")
 
 	bottom_p 				= vgui.Create("Panel", dermaBase.main)
@@ -43,7 +48,7 @@ local function init( contextMenu, contextMargin )
 	dermaBase.cbadminaccess	= dermaBase.settingPage:CheckBox(true, "Only admins can play songs on the server", true )
 	dermaBase.cbadmindir	= dermaBase.settingPage:CheckBox(false, "Only admins can select music dirs", true )
 
-	dermaBase.settingPage:Category( "Client Side Options" )
+	dermaBase.settingPage:Category( "Client Side" )
 	dermaBase.contextbutton = dermaBase.settingPage:CheckBox(false, "Enable context menu button", false )
 	dermaBase.hotkey 		= dermaBase.settingPage:CheckBox(false, "Disable F3 hotkey", false )
 	dermaBase.darkmode 		= dermaBase.settingPage:CheckBox(true, "Enable dark mode", false )
@@ -56,7 +61,7 @@ local function init( contextMenu, contextMargin )
 	dermaBase.settingsheet:Dock(FILL)
 	dermaBase.slidervol:Dock(RIGHT)
 
-	dermaBase.contextmedia:SetPos(ScrW() - contextMargin, 0)
+	dermaBase.contextmedia:SetPos(ScrW() - contextMargin, 20)
 	dermaBase.contextmedia:SetSize(ScrW() - (ScrW() - contextMargin), 30)
 
 	-- Visibility
@@ -74,12 +79,6 @@ local function init( contextMenu, contextMargin )
 	dermaBase.buttonstop:SetFont(defaultFont)
 	dermaBase.buttonpause:SetFont(defaultFont)
 	dermaBase.buttonplay:SetFont(defaultFont)
-
-	-- Visual Style
-	dermaBase.settingsheet.Paint = function(panel, w, h)
-		surface.SetDrawColor(255, 255, 255)
-		surface.DrawRect(0, 0, w, h)
-	end
 
 	-- Convars for checkboxes
 	dermaBase.slidervol:SetConVar("gmpl_vol")
@@ -109,7 +108,7 @@ local function init( contextMenu, contextMargin )
 
 	-- Clicks M1
 	dermaBase.contextmedia.DoClick = function()
-		net.Start( "toServerContext" )
+		net.Start( "toServerContextMenu" )
 		net.SendToServer()
 	end
 
@@ -155,16 +154,81 @@ local function init( contextMenu, contextMargin )
 	dermaBase.contextbutton.AfterChange = function( panel, val )
 		if !IsValid(g_ContextMenu) then return end
 		local bVal = tobool(val)
-		if bVal then getmetatable(contextMenu).DockMargin(contextMenu,0, 0, contextMargin, 0)
-		else getmetatable(contextMenu).DockMargin(contextMenu,0, 0, 0, 0)
-		end
+		-- if bVal then getmetatable(contextMenu).DockMargin(
+        --     contextMenu,0, 0, contextMargin, 0)
+		-- else getmetatable(contextMenu).DockMargin(contextMenu,0, 0, 0, 0)
+		-- end
 
-		if g_ContextMenu:IsVisible() then
-			getmetatable(contextMenu).InvalidateParent(contextMenu,false)
-		end
+		-- if g_ContextMenu:IsVisible() then
+		-- 	getmetatable(contextMenu).InvalidateParent(contextMenu,false)
+		-- end
 
 		dermaBase.contextmedia:SetVisible(bVal)
 	end
+
+    dermaBase.painter.update_colors = function ()
+        dermaBase.painter.paintNone({
+            dermaBase.buttonrefresh, dermaBase.buttonstop, dermaBase.buttonpause, dermaBase.buttonplay, dermaBase.buttonaplay,
+            dermaBase.musicsheet.Navigation, dermaBase.foldersearch,
+            dermaBase.musicsheet, dermaBase.foldersearch.btnRebuildMid,
+            dermaBase.foldersearch.btnAddMid, dermaBase.foldersearch.btnRemMid
+        })
+        local white = Color(255, 255, 255)
+        local hoverWhite = Color(230, 230, 230, 50)
+
+        dermaBase.buttonrefresh:SetTextColor(white)
+        dermaBase.buttonstop:SetTextColor(white)
+        dermaBase.buttonpause:SetTextColor(white)
+        dermaBase.buttonplay:SetTextColor(white)
+
+        dermaBase.painter.paintSlider(dermaBase.sliderseek)
+        dermaBase.painter.paintSlider(dermaBase.slidervol)
+
+        dermaBase.painter.paintBG(dermaBase.main)
+
+        dermaBase.painter.paintBG(
+            dermaBase.musicsheet.Navigation, Color(120, 120, 120))
+        for k, sideItem in pairs(dermaBase.musicsheet.Items) do
+            if (!sideItem.Button) then continue end
+                dermaBase.painter.paintBG(
+                    sideItem.Button, Color(255, 255 ,255))
+                dermaBase.painter.paintHoverBG(
+                    sideItem.Button, Color(0, 0, 0, 50))
+                sideItem.Button:SetTextColor(Color(0, 0, 0))
+        end
+        dermaBase.painter.paintHoverBG(dermaBase.buttonrefresh, hoverWhite)
+        dermaBase.painter.paintHoverBG(dermaBase.buttonstop, hoverWhite)
+        dermaBase.painter.paintHoverBG(dermaBase.buttonpause, hoverWhite)
+        dermaBase.painter.paintHoverBG(dermaBase.buttonplay, hoverWhite)
+
+        dermaBase.painter.paintList(dermaBase.songlist)
+        dermaBase.painter.paintHoverList(dermaBase.songlist)
+
+        dermaBase.painter.paintScroll(dermaBase.songlist, Color(120, 120, 120))
+        dermaBase.painter.paintText(dermaBase.songlist)
+
+        dermaBase.painter.paintText(dermaBase.foldersearch)
+        dermaBase.painter.paintList(dermaBase.foldersearch)
+        dermaBase.painter.paintColumn(dermaBase.foldersearch)
+        dermaBase.painter.paintHoverColumn(dermaBase.foldersearch, hoverWhite)
+        dermaBase.painter.paintScroll(
+            dermaBase.foldersearch, Color(120, 120, 120))
+
+        dermaBase.painter.paintHoverBG(
+            dermaBase.foldersearch.btnRebuildMid, hoverWhite)
+        dermaBase.painter.paintHoverBG(
+            dermaBase.foldersearch.btnAddMid, hoverWhite)
+        dermaBase.painter.paintHoverBG(
+            dermaBase.foldersearch.btnRemMid, hoverWhite)
+
+        dermaBase.painter.paintThemeBG(dermaBase.settingsheet)
+        dermaBase.painter.paintScroll(dermaBase.settingPage)
+        dermaBase.painter.paintText(dermaBase.settingPage)
+        for _, category in pairs(dermaBase.settingPage.Categories) do
+            dermaBase.painter.paintBG(category)
+            category:SetTextColor(white)
+        end
+    end
 
 return dermaBase
 end

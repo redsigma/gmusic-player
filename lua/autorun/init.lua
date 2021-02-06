@@ -1,4 +1,5 @@
 if (SERVER) then
+    AddCSLuaFile("vgui/dbasepanel.lua")
 	AddCSLuaFile("vgui/seekbarclicklayer.lua")
 	AddCSLuaFile("vgui/seekbar.lua")
 	AddCSLuaFile("vgui/numslidernolabel.lua")
@@ -21,9 +22,12 @@ if (SERVER) then
 	AddCSLuaFile "includes/modules/coms.lua"
 	AddCSLuaFile "includes/func/audio.lua"
 
+	AddCSLuaFile("gmpl/cl_hooks.lua")
 	AddCSLuaFile("gmpl/cl_gmpl.lua")
+	AddCSLuaFile("gmpl/cl_cvars.lua")
 
 	include("gmpl/sv_gmpl.lua")
+	include("gmpl/sv_cvars.lua")
 else
 	include("gmpl/cl_gmpl.lua")
 end

@@ -196,7 +196,7 @@ local function sanityCheckActiveList()
 
 	for j = 1, #folderRight do
 		local path = "sound/" .. folderRight[j]
-		if !file.Exists( path, "GAME" ) then -- this doesn't look in WORKSHOP we prove it exists using folderLeftAddon 
+		if !file.Exists( path, "GAME" ) then -- this doesn't look in WORKSHOP we prove it exists using folderLeftAddon
 			local found = false
 			for k,addonSong in pairs(folderLeftAddon) do
 				if rawequal(addonSong, folderRight[j]) then	-- use folderLeftAddon just to check for existence
