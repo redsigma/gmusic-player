@@ -48,16 +48,18 @@ function PANEL:Init()
 		panel:DrawTextEntryText(textColor, textColor, textColor)
 	end
 
+    local right_margin = 15
 	self.Slider = self:Add("DSlider", self)
 	self.Slider:SetSlideY(0)
 	self.Slider:SetLockY(0)
 	self.Slider.TranslateValues = function(slider, x, y) return self:TranslateSliderValues(x, y) end
 	self.Slider:SetTrapInside(true)
 	self.Slider:Dock(FILL)
+    self.Slider:DockMargin(0, 0, right_margin, 0)
 	self.Slider:SetHeight(self:GetTall())
 	self.Slider.Paint = function( panel, w, h )
 		surface.SetDrawColor(slideColor)
-		surface.DrawRect( 0, h / 2 - 1, w - 15, 1 )
+		surface.DrawRect( 0, h / 2 - 1, w, 1 )
 
 		surface.DrawRect( w / 4, h / 2 + 3, 1, 5 )
 		surface.DrawRect( w / 2, h / 2 + 3, 1, 5 )
@@ -70,6 +72,7 @@ function PANEL:Init()
 
 	self.SeekClick = vgui.Create("DSeekBarClickLayer", self)
 	self.SeekClick:Dock(FILL)
+    self.SeekClick:DockMargin(0, 0, right_margin, 0)
 
 	self.Scratch = self:Add("DNumberScratch")
 	self.Scratch:SetImageVisible(false)

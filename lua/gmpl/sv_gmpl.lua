@@ -24,14 +24,14 @@ local serverJustStarted = true
 local serverSettings =  include("gmpl/sv_cvars.lua")()
 ---------------------------------------------------------------------------]]--
 
-local function sendType_ToClient( ply , netMsg )
-	net.Start( netMsg )
+local function sendType_ToClient(ply , netMsg )
+	net.Start(netMsg)
 	net.WriteType(playerHost)
 	net.Send(ply)
 end
 
 local function initMenu(ply)
-	net.Start( "createMenu" )
+	net.Start("createMenu")
 	net.WriteBool(ply:IsAdmin())
 	net.Send(ply)
 
@@ -59,17 +59,17 @@ hook.Add("ShowSpare1", "openMenuF3", function( ply )
 	net.Start("press_Key_F3FromServer")
 	net.Send(ply)
 end)
-net.Receive( "toServerKey_F3", function(length, sender )
+net.Receive("toServerKey_F3", function(length, sender)
 	if sender:IsValid() then
 		sendType_ToClient(sender,"openmenu")
 	end
-end )
+end)
 
-net.Receive( "toServerContextMenu", function(length, sender )
+net.Receive("toServerContextMenu", function(length, sender)
 	if sender:IsValid() then
 		sendType_ToClient(sender, "openmenucontext")
 	end
-end )
+end)
 ---------------------------------------------------------------------------]]--
 
 net.Receive( "serverFirstMade", function(length, sender )

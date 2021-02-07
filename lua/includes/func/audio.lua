@@ -177,6 +177,9 @@ local function updateTitleSong(status,songFilePath)
 			dermaBase.contextmedia:SetTextColor(col404)
 			dermaBase.contextmedia:SetMissing(true)
 			missingSong = true
+            MsgC(Color(100, 200, 200), "[gMusic Player]",
+                Color(255, 255, 255),
+                " Song file missing:\n>↳ ⮩ ", songFilePath, "\n")
 		end
 		dermaBase.main:SetText(strStatus .. string.StripExtension(string.GetFileFromFilename(songFilePath)))
 		dermaBase.contextmedia:SetText(string.StripExtension(string.GetFileFromFilename(songFilePath)))

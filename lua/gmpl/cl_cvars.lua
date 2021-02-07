@@ -27,8 +27,9 @@ net.Receive("persistClientSettings", function(length, sender)
         dermaBase.painter.update_colors()
 
 		panel.OnCvarWrong = function(panel, old, new)
-			MsgC(Color(255,0,0), "Only 0 - 1 value is allowed. Keeping value "
-                .. oldValue .. " \n")
+			MsgC(Color(255, 90, 90),
+                "Only 0 - 1 value is allowed. Keeping value " .. oldValue ..
+                " \n")
 		end
 
 	end

@@ -25,11 +25,11 @@ local function init(contextMenu, contextMargin)
 
 	-- Music List
 	dermaBase.musicsheet    = vgui.Create("DSideMenu",dermaBase.main)
-	dermaBase.songlist      = vgui.Create("DBetterListView", dermaBase.musicsheet )
+	dermaBase.songlist      = vgui.Create("DBetterListView", dermaBase.musicsheet)
 
 	-- Music Dir
 	dermaBase.audiodirsheet = vgui.Create("Panel", dermaBase.musicsheet_colsheet)
-	dermaBase.foldersearch	= vgui.Create("DDoubleListView", dermaBase.audiodirsheet )
+	dermaBase.foldersearch	= vgui.Create("DDoubleListView", dermaBase.audiodirsheet)
 	dermaBase.foldersearch:SetInfoColor(Color(255, 255, 255))
 
 	-- Music Dir refresh button
@@ -113,6 +113,26 @@ local function init(contextMenu, contextMargin)
 	-- it shows no host even though somebody was the host.. fix
 	-- pause the song serverside if admin pause
 	-- seekbar prevent stopping the sound if you still hold on the click. If you seeked to the end
+
+	dermaBase.buttonpause.DoRightClick  = function()
+		if dermaBase.main.IsServerOn() then
+			if dermaBase.cbadminaccess:GetChecked() then
+				if Media.playerIsAdmin then
+					Media.loop()
+					net.Start("toServerUpdateLoop")
+					net.WriteBool(Media.isLooped())
+					net.SendToServer()
+				end
+			else -- for non-admins
+				Media.loop()
+				net.Start("toServerUpdateLoop")
+				net.WriteBool(Media.isLooped())
+				net.SendToServer()
+			end
+		else
+			Media.loop()
+		end
+	end
 
 	-- Clicks M1
 	dermaBase.contextmedia.DoClick = function()
@@ -208,8 +228,12 @@ local function init(contextMenu, contextMargin)
         dermaBase.painter.paintList(dermaBase.songlist)
         dermaBase.painter.paintHoverList(dermaBase.songlist)
 
-        dermaBase.painter.paintScroll(dermaBase.songlist, Color(120, 120, 120))
+        dermaBase.painter.paintScroll(
+            dermaBase.songlist, Color(120, 120, 120))
         dermaBase.painter.paintText(dermaBase.songlist)
+        if Media.hasValidity() && Media.isLooped() then
+            Media.uiLoop()
+        end
 
         dermaBase.painter.paintText(dermaBase.foldersearch)
         dermaBase.painter.paintList(dermaBase.foldersearch)

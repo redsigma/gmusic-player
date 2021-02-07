@@ -11,8 +11,8 @@ function PANEL:Init()
 	self.TextArea:SetMouseInputEnabled( true )
 	self.TextArea:SetTextInset( 10, -3 )
 	self.TextArea:Dock( RIGHT )
-	self.TextArea:SetWide( 45 )
-	self.TextArea:SetCursor( "hand" )
+	self.TextArea:SetWide(45)
+	self.TextArea:SetCursor("hand")
 	self.TextArea:SetTextColor(textColor)
 	self.TextArea.OnChange = function( textarea, val ) self:SetValue( self.TextArea:GetText() ) end
 	self.TextArea.DoClick = function()
@@ -24,6 +24,13 @@ function PANEL:Init()
 		end
 		self.prevVol = self.Scratch:GetFraction()
 		self:OnVolumeClick(self.prevVol)
+	end
+    self.TextArea.Paint = function() end
+	self.TextArea.PaintOver = function(panel, w, h)
+		if panel:IsHovered() then
+			surface.SetDrawColor(255, 255, 255, 30)
+			surface.DrawRect(5, 0, w, h - 5)
+		end
 	end
 
 	self.Slider = self:Add( "DSlider", self )

@@ -7,22 +7,41 @@ local dermaBase = {}
 Media = {}
 Media.__index = Media
 
--- private fields
-local playerIsAdmin = false
-
 local songsInFolder  = {}
 local folderLeft = {}
 local folderLeftAddon = {}
 local folderRight = {}
 local populatedSongs = {}
-local folderExceptions = { "ambience", "ambient", "ambient_mp3", "beams", "buttons", "coach", "combined", "commentary", "common", "doors", "foley", "friends", "garrysmod", "hl1", "items", "midi",
-							"misc", "mvm", "test", "npc", "passtime", "phx", "physics", "pl_hoodoo", "plats", "player", "replay", "resource", "sfx", "thrusters", "tools", "ui", "vehicles", "vo", "weapons" }
+local folderExceptions = { "ambience", "ambient", "ambient_mp3", "beams",
+"buttons", "coach", "combined", "commentary", "common", "doors", "foley",
+"friends", "garrysmod", "hl1", "items", "midi", "misc", "mvm", "test",
+"npc", "passtime", "phx", "physics", "pl_hoodoo", "plats", "player",
+"replay", "resource", "sfx", "thrusters", "tools", "ui", "vehicles", "vo",
+"weapons" }
+/*
+    Parent anchor of the main panel
+*/
+local view_ingame = nil
+local view_context_menu = nil
+/*
+    Used to track if the player is in context menu
+    note: IsWorldClicking() NOT reliable
+*/
+local is_context_open = false
 
 local basenameSongs = {}
 
 function Media:new(coreBase)
 	dermaBase = coreBase
 	local MediaPlayer = setmetatable({}, Media)
+    /*
+        Used to store the active anchor panel when the window is visible
+    */
+    self.anchor_parent = nil
+    /*
+        Check if player is admin
+    */
+    self.playerIsAdmin = false
 	local action = include("includes/func/audio.lua")(dermaBase)
 	for k,v in pairs(action) do self[k] = v end
 	return MediaPlayer
@@ -35,9 +54,9 @@ function Media:SetVolume(var)
 	dermaBase.slidervol:SetValue(var)
 end
 
-function Media:SetSongHost(var)
-	if isentity(var) and var:IsAdmin() then
-		hostAdminAccess = var
+function Media:SetSongHost(ply)
+	if isentity(ply) && ply:IsAdmin() then
+		hostAdminAccess = ply
 		dermaBase.labelswap:SetText( "Host: " .. hostAdminAccess:Nick() )
 	end
 end
@@ -63,11 +82,11 @@ local function adminAcessChangeButtons()
 end
 
 local function adminAccessDirChangeButton()
-	if dermaBase.audiodirsheet:IsVisible() and !playerIsAdmin then
+	if dermaBase.audiodirsheet:IsVisible() and !Media.playerIsAdmin then
 		dermaBase.musicsheet:SetActiveButton(dermaBase.musicsheet.Items[1].Button)
 	end
 
-	if playerIsAdmin then
+	if Media.playerIsAdmin then
 		if !dermaBase.musicsheet.Items[2].Button:IsVisible() then
 			dermaBase.musicsheet.Items[2].Button:SetVisible(true)
 			dermaBase.musicsheet.Navigation:InvalidateChildren()
@@ -86,7 +105,7 @@ end
 
 local function thinkServerOptions()
 	if dermaBase.main.IsServerOn() then
-		if !playerIsAdmin then
+		if !Media.playerIsAdmin then
 			adminAcessChangeButtons()
 		else
 			adminAcessRevertButtons()
@@ -365,7 +384,7 @@ local function createMediaPlayer()
 
 	dermaBase.buttonrefresh.DoClick = function(self)
 		if dermaBase.cbadmindir:GetChecked() then
-			if playerIsAdmin then
+			if Media.playerIsAdmin then
 				net.Start("toServerRefreshSongList")
 
 				net.WriteTable(folderLeft)
@@ -383,7 +402,7 @@ local function createMediaPlayer()
 			if !dermaBase.cbadminaccess:GetChecked() then
 				net.Start( "toServerStop" )
 				net.SendToServer()
-			elseif playerIsAdmin then
+			elseif Media.playerIsAdmin then
 				net.Start( "toServerAdminStop" )
 				net.SendToServer()
 			end
@@ -396,26 +415,6 @@ local function createMediaPlayer()
 
 	dermaBase.buttonpause.DoClick = function()
 		Media.pause()
-	end
-
-	dermaBase.buttonpause.DoRightClick  = function()
-		if dermaBase.main.IsServerOn() then
-			if dermaBase.cbadminaccess:GetChecked() then
-				if playerIsAdmin then
-					Media.loop()
-					net.Start("toServerUpdateLoop")
-					net.WriteBool(Media.isLooped())
-					net.SendToServer()
-				end
-			else -- for non-admins
-				Media.loop()
-				net.Start("toServerUpdateLoop")
-				net.WriteBool(Media.isLooped())
-				net.SendToServer()
-			end
-		else
-			Media.loop()
-		end
 	end
 
 	dermaBase.buttonplay.DoClick = function( songFile )
@@ -437,8 +436,9 @@ local function createMediaPlayer()
 				enableServerTSS(false)
 			end
 		else
-			if !( dermaBase.main.IsServerOn() and  !playerIsAdmin and dermaBase.cbadminaccess:GetChecked() ) then
-				chat.AddText( Color(255,0,0),"[gMusic Player] Please select a song")
+			if !( dermaBase.main.IsServerOn() and  !Media.playerIsAdmin and dermaBase.cbadminaccess:GetChecked() ) then
+				chat.AddText(Color(100, 200, 200), "[gMusic Player] ",
+                    Color(255, 90, 90), "Please select a song")
 			else
 				net.Start( "toServerAdminPlay" )
 				net.WriteString("")
@@ -450,7 +450,7 @@ local function createMediaPlayer()
 	dermaBase.buttonplay.DoRightClick = function()
 		if #populatedSongs and dermaBase.main.IsServerOn() then
 			if dermaBase.cbadminaccess:GetChecked() then
-				if playerIsAdmin then
+				if Media.playerIsAdmin then
 					Media.autoplay()
 					net.Start("sv_autoPlay")
 					net.WriteBool(Media.isAutoPlay())
@@ -485,7 +485,7 @@ local function createMediaPlayer()
 
 	dermaBase.foldersearch.OnRebuild = function(panel)
 		if dermaBase.cbadmindir:GetChecked() then
-			if playerIsAdmin then
+			if Media.playerIsAdmin then
 				actionRebuild()
 				panel:selectFirstLine()
 			end
@@ -497,7 +497,7 @@ local function createMediaPlayer()
 
 	dermaBase.foldersearch.OnAdd = function(panel)
 		if dermaBase.cbadmindir:GetChecked() then
-			if playerIsAdmin then
+			if Media.playerIsAdmin then
 				panel:selectFirstLine()
 				dermaBase.buttonrefresh:SetVisible(true)
 
@@ -515,7 +515,7 @@ local function createMediaPlayer()
 
 	dermaBase.foldersearch.OnRemove = function(panel)
 		if dermaBase.cbadmindir:GetChecked() then
-			if playerIsAdmin then
+			if Media.playerIsAdmin then
 				panel:selectFirstLine()
 				dermaBase.buttonrefresh:SetVisible(true)
 
@@ -548,7 +548,7 @@ local function createMediaPlayer()
 					net.Start("toServerSeek")
 					net.WriteDouble(seekSecs)
 					net.SendToServer()
-				elseif playerIsAdmin then
+				elseif Media.playerIsAdmin then
 					if Media.hasState() == GMOD_CHANNEL_PAUSED then
 						Media.seek(seekSecs)
 						dermaBase.sliderseek:SetTime(seekSecs)
@@ -646,17 +646,62 @@ function Media:SyncSettings(ply)
 	dermaBase.settingPage:SyncItems(ply)
 end
 
-function Media:create()
+function Media:create(context_menu)
 	createMain()
 	createMediaPlayer()
+    view_ingame = dermaBase.main:GetParent()
+    view_context_menu = context_menu
 end
+
+function Media:show()
+	if dermaBase.main:IsVisible() then
+        RememberCursorPosition()
+        gui.EnableScreenClicker(false)
+        if is_context_open then
+            if self.anchor_parent == view_context_menu then
+                dermaBase.main:SetVisible(false)
+            else
+                // move from outside to context area
+                self.anchor_parent = view_context_menu
+            end
+        else
+            if self.anchor_parent == view_ingame then
+                dermaBase.main:SetVisible(false)
+            else
+                // move outside of context menu area
+                gui.EnableScreenClicker(true)
+                self.anchor_parent = view_ingame
+            end
+        end
+    else
+        if is_context_open then
+            // open in context area
+            gui.EnableScreenClicker(false)
+            self.anchor_parent = view_context_menu
+        else
+            // open outside
+            gui.EnableScreenClicker(true)
+            self.anchor_parent = view_ingame
+        end
+        dermaBase.main:SetVisible(true)
+    end
+    RestoreCursorPosition()
+    dermaBase.main:SetParent(self.anchor_parent)
+end
+
+hook.Add('OnContextMenuOpen', 'gmpl_context_open', function()
+    is_context_open = true
+end)
+hook.Add('OnContextMenuClose', 'gmpl_context_close', function()
+    is_context_open = false
+end)
 
 hook.Add("Think","gmpl_RealTimeSeek", function()
 	if !Media.breakOnStop and Media.hasValidity() and Media.hasState() == GMOD_CHANNEL_STOPPED then
 		if Media.isAutoPlay() then
 			if dermaBase.main.IsServerOn() then
 				if dermaBase.cbadminaccess:GetChecked() then
-					if playerIsAdmin then
+					if Media.playerIsAdmin then
 						print("stopsmart---- checked IS admin ")
 						Media.stopsmart()
 					else
@@ -698,8 +743,8 @@ hook.Add("Think","gmpl_RealTimeSeek", function()
 				dermaBase.sliderseek:AllowSeek(true)
 			end
 		end
-		if LocalPlayer():IsAdmin() ~= playerIsAdmin then
-			playerIsAdmin = LocalPlayer():IsAdmin()
+		if LocalPlayer():IsAdmin() ~= Media.playerIsAdmin then
+			Media.playerIsAdmin = LocalPlayer():IsAdmin()
 		end
 		thinkServerOptions()
 	end
@@ -724,7 +769,7 @@ end )
 
 net.Receive( "askAdminForLiveSeek", function(length, sender)
 	local user = net.ReadEntity()
-	if playerIsAdmin then
+	if Media.playerIsAdmin then
 		local seekTime = 0
 
 		if Media.hasValidity() then
