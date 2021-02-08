@@ -3,12 +3,12 @@ local PANEL = {}
 AccessorFunc( PANEL, "ActiveButton", "ActiveButton" )
 
 function PANEL:Init()
-	self.Navigation = vgui.Create( "DScrollPanel", self )
+	self.Navigation = vgui.Create("DScrollPanel", self)
 	self.Navigation:SetWidth( 100 )
 	self.Navigation:SetZPos(1)
 	self.Navigation:MoveToFront()
 
-	self.Content = vgui.Create( "Panel", self )
+	self.Content = vgui.Create("Panel", self)
 
 	self.Items = {}
 
@@ -37,7 +37,7 @@ end
 
 function PANEL:AddSheet( label, panel, material )
 
-	if ( !IsValid( panel ) ) then return end
+	if ( not IsValid( panel ) ) then return end
 
 	local Sheet = {}
 
@@ -67,7 +67,7 @@ function PANEL:AddSheet( label, panel, material )
 
 	table.insert( self.Items, Sheet )
 
-	if ( !IsValid( self.ActiveButton ) ) then
+	if ( not IsValid( self.ActiveButton ) ) then
 		self:SetActiveButton( Sheet.Button )
 	end
 
@@ -77,7 +77,7 @@ function PANEL:SetActiveButton( active )
 
 	if ( self.ActiveButton == active ) then return end
 
-	if ( self.ActiveButton && self.ActiveButton.Target ) then
+	if ( self.ActiveButton and self.ActiveButton.Target ) then
 		self.ActiveButton.Target:SetVisible( false )
 		self.ActiveButton:SetSelected( false )
 		self.ActiveButton:SetToggle( false )
@@ -90,6 +90,10 @@ function PANEL:SetActiveButton( active )
 
 	self.Content:InvalidateLayout()
 
+end
+
+function PANEL:IsVisible()
+    return self.Navigation:IsVisible()
 end
 
 function PANEL:PerformLayout(width, height)

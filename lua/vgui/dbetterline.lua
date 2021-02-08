@@ -19,8 +19,9 @@ AccessorFunc( PANEL, "m_bDoubleClicking", "DoubleClickingEnabled", FORCE_BOOL )
 local delta = 0
 
 function PANEL:Init()
-
-	self.col = Color(255, 255, 255)
+	self.col = Color(230, 230, 230)
+    self.prevcol = self.col
+    self.bgcol = {}
 	self.m_FontName = "default"
 	self:SetSelectable( true )
 	self:SetMouseInputEnabled( true )
@@ -30,11 +31,34 @@ function PANEL:Init()
 	self.Columns = {}
 end
 
+function PANEL:SetBGColor(color)
+    if color then
+        self.bgcol = color
+        self.Paint = function(panel, w, h)
+            surface.SetDrawColor(color)
+            surface.DrawRect(0, 0, w, h)
+        end
+    else
+        self.bgcol = {}
+        self.Paint = function() end
+        self:SetTextColor(self.col)
+    end
+end
+
+function PANEL:GetBGColor()
+    return self.bgcol
+end
+
 function PANEL:SetTextColor(color)
-	self.col = color
-	for k, label in pairs(self.Columns) do
-		label:SetTextColor(self.col)
-	end
+    if color then
+        self.prevcol = self.col
+        self.col = color
+    else
+        self.col = self.prevcol
+    end
+    for k, label in pairs(self.Columns) do
+        label:SetTextColor(self.col)
+    end
 end
 
 function PANEL:GetTextColor()
@@ -62,8 +86,8 @@ function PANEL:OnMousePressed( mcode )
 	if mcode == MOUSE_RIGHT then
 		self:DoRightClick(self.m_iID, self)
 	end
-	if mcode == MOUSE_LEFT && self.m_bDoubleClicking then
-		if ( delta && SysTime() - delta < 0.2 ) then
+	if mcode == MOUSE_LEFT and self.m_bDoubleClicking then
+		if ( delta and SysTime() - delta < 0.17 ) then
 			self:DoDoubleClickInternal(self)
 			self:DoDoubleClick(self.m_iID, self)
 			return
@@ -111,7 +135,7 @@ function PANEL:SetColumnText( i, strText )
 
 	end
 
-	if ( !IsValid( self.Columns[ i ] ) ) then
+	if ( not IsValid( self.Columns[ i ] ) ) then
 
 		self.Columns[ i ] = vgui.Create( "DPureLabel", self )
 		self.Columns[ i ]:SetWide(self:GetWide())
@@ -127,7 +151,7 @@ function PANEL:SetColumnText( i, strText )
 end
 
 function PANEL:GetColumnText( i )
-	if ( !self.Columns[ i ] ) then return "" end
+	if ( not self.Columns[ i ] ) then return "" end
 	return self.Columns[ i ].Value
 
 end
@@ -135,4 +159,4 @@ end
 function PANEL:PerformLayout()
 end
 
-derma.DefineControl( "DBetterLine", "A better line from the BetterListView", PANEL, "Panel" )
+derma.DefineControl("DBetterLine", "A better line from the BetterListView", PANEL, "Panel")

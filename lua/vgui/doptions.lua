@@ -13,14 +13,14 @@ function PANEL:Init()
 	self.Categories = {}
 	self.Items = {}
 
-	self:SetMouseInputEnabled( true )
-	self:SetKeyboardInputEnabled( true )
+	self:SetMouseInputEnabled(true)
+	self:SetKeyboardInputEnabled( true)
 	self:SetDefaultFont("default")
 
-	self.panel = vgui.Create( "Panel", self )
+	self.panel = vgui.Create("Panel", self)
 
-	self.VBar = vgui.Create( "DSimpleScroll", self )
-	self.VBar:SetZPos( 20 )
+	self.VBar = vgui.Create("DSimpleScroll", self)
+	self.VBar:SetZPos(20)
 
 end
 
@@ -57,15 +57,16 @@ function PANEL:Clear()
 	self.Items = {}
 end
 
-function PANEL:SyncItems(isAdmin)
-	for k, checkbox in pairs( self.Items ) do
-		checkbox:SetIsAdmin(isAdmin)
-		checkbox:UpdateThink()
-		checkbox:SetIsAdmin(nil)
+--[[
+    Updates the settings page elements according to match the cvar values
+--]]
+function PANEL:InvalidateItems()
+	for k, checkbox in pairs(self.Items) do
+	    checkbox:UpdateThink()
 	end
 end
 
-function PANEL:Category( strLabel )
+function PANEL:Category(strLabel)
 	local cat = vgui.Create( "DLabel", self.panel )
 	cat:SetPos(0, itemCount + categCount)
 	cat:SetWide(self:GetWide())
@@ -80,11 +81,10 @@ function PANEL:Category( strLabel )
 	return cat
 end
 
-function PANEL:CheckBox( isChecked, strLabel, adminOnly )
-	local left = vgui.Create( "DBetterCheckBoxLabel", self.panel )
+function PANEL:CheckBox(strLabel, adminOnly)
+	local left = vgui.Create("DBetterCheckBoxLabel", self.panel)
 	left:SetPos(8, itemCount)
 	left:SetFont(self:GetDefaultFont())
-	left:SetChecked(isChecked)
 	left:SetAdminOnly(adminOnly)
 	left:SetTextColor(checkboxTextColor)
 	left:SetText( strLabel )
@@ -95,6 +95,11 @@ function PANEL:CheckBox( isChecked, strLabel, adminOnly )
 	return left
 end
 
+--[[
+    todo:
+        - no need for default check due to cvars
+        - separate it to avoid bloat
+--]]
 function PANEL:MultiCheckBox( nrChecked, strLabel, adminOnly, optionNumber )
 	local multiCheck = vgui.Create( "Panel", self.panel )
 	multiCheck:SetPos(8, itemCount)
@@ -114,15 +119,15 @@ function PANEL:MultiCheckBox( nrChecked, strLabel, adminOnly, optionNumber )
 		for i = 1, optionNumber do
 			local option = vgui.Create( "DBetterCheckBoxLabel", multiCheck )
 			option:SetID(i)
-			option.box.DoClick = option.box.ToggleOne
-			option.Toggle = option.ToggleOne
+			-- option.box.DoClick = option.box.ToggleOne
+			-- option.Toggle = option.ToggleOne
 			left:addCheckbox(i, option)
 			option:SetFont(self:GetDefaultFont())
 			option:SetTextColor(checkboxTextColor)
 			option.y = 20
 		end
 		if nrChecked then
-			if !isnumber(nrChecked) then nrChecked = 1 end
+			if not isnumber(nrChecked) then nrChecked = 1 end
 			left.box.child[tonumber(nrChecked)]:SetChecked(true)
 		end
 
@@ -141,7 +146,7 @@ function PANEL:Rebuild()
 end
 
 function PANEL:OnMouseWheeled( dlta )
-	if ( !IsValid( self.VBar ) ) then return end
+	if ( not IsValid( self.VBar ) ) then return end
 	return self.VBar:OnMouseWheeled( dlta )
 end
 
@@ -179,4 +184,4 @@ function PANEL:PaintScroll(gripColor, gripBG)
 	end
 end
 
-derma.DefineControl( "DOptions", "Settings Page", PANEL, "Panel" )
+derma.DefineControl("DOptions", "Settings Page", PANEL, "Panel")

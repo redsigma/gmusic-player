@@ -7,7 +7,12 @@ AccessorFunc(PANEL, "m_iMinWidth", "MinWidth")
 AccessorFunc(PANEL, "m_iMinHeight", "MinHeight")
 
 local titleMargin
+--[[
+    Indicates if server mode is enabled
+--]]
 local serverOn = false
+local last_mode = false
+
 local colorServerState = Color(255, 150, 0, 255)
 local isTSS = false
 
@@ -83,9 +88,11 @@ function PANEL:Init()
 			surface.DrawRect(0, 0, w, h)
 		end
 	end
-	titleMargin = self.buttonMode:GetWide() + self.buttonSettings:GetWide() + self.buttonClose:GetWide()
+	titleMargin = self.buttonMode:GetWide() + self.buttonSettings:GetWide()
+        + self.buttonClose:GetWide()
+    self.title_color = {}
 
-	self:SetDraggable(true)
+    self:SetDraggable(true)
 	self:SetSizable(true)
 	self:SetScreenLock(false)
 
@@ -106,8 +113,13 @@ function PANEL:SetFont(font)
 	self.buttonMode:SetFont(font)
 end
 
-function PANEL:isTSS()
+function PANEL:IsTSSEnabled()
 	return isTSS
+end
+
+function PANEL:playingFromAnotherMode()
+    -- print("last mode | IS server ON: ", last_mode, serverOn)
+    return last_mode ~= serverOn
 end
 
 function PANEL:SetTSSEnabled(bool)
@@ -120,23 +132,29 @@ function PANEL:SetTSSEnabled(bool)
 	isTSS = bool
 end
 
-function PANEL:SetTitleServerState(bool)
-	if bool then
+function PANEL:SetTitleServerState(selected_mode)
+	if selected_mode then
 		colorServerState = Color(20, 150, 240, 255)
 	else
 		colorServerState = Color(255, 150, 0, 255)
 	end
+    last_mode = selected_mode
 	self.TSS.Paint = function(panel, w, h)
 		surface.SetDrawColor(colorServerState)
 		surface.DrawRect(0, 0, w, h)
 	end
 end
 
-function PANEL:SetBGColor(r, g, b)
+function PANEL:SetTitleBGColor(r, g, b)
 	self.labelTitle.Paint = function(panel, w, h)
 		surface.SetDrawColor(r, g, b, 255)
 		surface.DrawRect(0, 0, w, h)
 	end
+    if g == nil then
+        self.title_color = r
+    else
+        self.title_color = {r, g, b}
+    end
 end
 
 function PANEL:UpdateWindowSize()
@@ -161,11 +179,15 @@ function PANEL:GetTitle()
 	return self.labelTitle:GetText()
 end
 
-function PANEL:SetText(strTitle)
+function PANEL:SetTitle(strTitle)
 	self.labelTitle:SetText(strTitle)
 end
 
-function PANEL:SetTextColor(color)
+function PANEL:GetTitleColor()
+	return self.labelTitle:GetTextColor()
+end
+
+function PANEL:SetTitleColor(color)
 	self.labelTitle:SetTextColor(color)
 end
 
@@ -194,7 +216,7 @@ function PANEL:SwitchMode()
 	self:OnModeChanged()
 end
 
-function PANEL:IsServerOn()
+function PANEL:IsServerMode()
 	return serverOn
 end
 
@@ -286,6 +308,13 @@ function PANEL:Think()
 	if (self.y < 0) then
 		self:SetPos(self.x, 0)
 	end
+    self:OnUpdateUI()
+end
+
+--[[
+    Callback for custom use
+--]]
+function PANEL:OnUpdateUI()
 end
 
 function PANEL:Paint(w, h)

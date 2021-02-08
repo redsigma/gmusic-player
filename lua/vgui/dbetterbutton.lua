@@ -23,14 +23,14 @@ end
 
 function PANEL:SetImage( img )
 
-    if ( !img ) then
+    if ( not img ) then
         if ( IsValid( self.m_Image ) ) then
             self.m_Image:Remove()
         end
         return
     end
 
-    if ( !IsValid( self.m_Image ) ) then
+    if ( not IsValid( self.m_Image ) ) then
         self.m_Image = vgui.Create( "DImage", self )
     end
 
@@ -42,11 +42,16 @@ end
 PANEL.SetIcon = PANEL.SetImage
 
 function PANEL:UpdateColours( skin )
-    if ( !self:IsEnabled() )					then return self:SetTextStyleColor( skin.Colours.Button.Disabled ) end
-    if ( self:IsDown() || self.m_bSelected )	then return self:SetTextStyleColor( skin.Colours.Button.Down ) end
-    if ( self.Hovered )							then return self:SetTextStyleColor( skin.Colours.Button.Hover ) end
+    if not self:IsEnabled()	then
+        return self:SetTextStyleColor(skin.Colours.Button.Disabled)
+    end
+    if self:IsDown() or self.m_bSelected then
+        return self:SetTextStyleColor(skin.Colours.Button.Down) end
+    if self.Hovered then
+        return self:SetTextStyleColor(skin.Colours.Button.Hover)
+    end
 
-    return self:SetTextStyleColor( skin.Colours.Button.Normal )
+    return self:SetTextStyleColor(skin.Colours.Button.Normal)
 end
 
 function PANEL:PerformLayout()
@@ -64,7 +69,7 @@ function PANEL:SizeToContents()
 end
 
 function PANEL:SetEnabled(bool)
-    self:SetDisabled(!bool)
+    self:SetDisabled(not bool)
 end
 
 function PANEL:DoClick()
@@ -103,7 +108,7 @@ function PANEL:OnMouseReleased( mousecode )
 end
 
 function PANEL:Think()
-    if !self:GetDisabled() then
+    if not self:GetDisabled() then
         self:OnThink()
     end
 end

@@ -39,7 +39,7 @@ function PANEL:Init()
 	self.btnRebuildMid:SetFont("default")
 	self.btnRebuildMid:SetText("Rebuild List")
 	self.btnRebuildMid.DoClick = function()
-		if !IsValid(dialogRebuild) then
+		if not IsValid(dialogRebuild) then
 			self:OnButtonRebuild()
 		end
 	end
@@ -57,11 +57,11 @@ function PANEL:Init()
 end
 
 function PANEL:selectFirstLine()
-	if !isnumber(self.list1:GetSelectedLine()) then
+	if not isnumber(self.list1:GetSelectedLine()) then
 		self.list1:SelectFirstItem()
 	end
 
-	if !isnumber(self.list2:GetSelectedLine()) then
+	if not isnumber(self.list2:GetSelectedLine()) then
 		self.list2:SelectFirstItem()
 	end
 end
@@ -95,7 +95,7 @@ function PANEL:OnButtonRebuild()
 	dialogRebuild:SetDeleteOnClose( true )
 	dialogRebuild:ShowCloseButton(false)
 	dialogRebuild:Center()
-	dialogRebuild:SetTitle( "Confirm rebuilding the list folders!" )
+	dialogRebuild:SetTitle( "Confirm rebuilding the list foldersnot " )
 	dialogRebuild:MoveToFront()
 
 	dialogRebuild.Label = vgui.Create( "RichText", dialogRebuild )
@@ -116,6 +116,7 @@ function PANEL:OnButtonRebuild()
 	bottomPanel.btnNo:Dock(RIGHT)
 	bottomPanel.btnNo:DockMargin(4, 0, 0, 0)
 	bottomPanel.btnNo:SetText( "No" )
+    bottomPanel.btnNo:SetTextColor(Color(0, 0, 0))
 	bottomPanel.btnNo:SetFont( "GModNotify" )
 	bottomPanel.btnNo.Paint = function(panel, w, h)
 		surface.SetDrawColor( dialogWhite )
@@ -128,6 +129,7 @@ function PANEL:OnButtonRebuild()
 	bottomPanel.btnYes = vgui.Create( "DButton", bottomPanel )
 	bottomPanel.btnYes:Dock(FILL)
 	bottomPanel.btnYes:SetText( "YES" )
+    bottomPanel.btnYes:SetTextColor(Color(0, 0, 0))
 	bottomPanel.btnYes:SetFont( "GModNotify" )
 	bottomPanel.btnYes.Paint = function(panel, w, h)
 		surface.SetDrawColor( dialogWhite )
@@ -190,11 +192,11 @@ function PANEL:OnRemove()
 end
 
 
-function PANEL:AddLineLeft(var)
-	self.list1:AddLine(var).Columns[1]:SetTextColor(lineTextColor)
+function PANEL:AddLineLeft(text)
+	self.list1:AddLine(text).Columns[1]:SetTextColor(lineTextColor)
 end
-function PANEL:AddLineRight(var)
-	self.list2:AddLine(var).Columns[1]:SetTextColor(lineTextColor)
+function PANEL:AddLineRight(text)
+	self.list2:AddLine(text).Columns[1]:SetTextColor(lineTextColor)
 end
 
 
@@ -274,7 +276,7 @@ function PANEL:PaintScroll(gripColor, gripBG, arrowColor)
 			surface.SetFont("Marlett")
 			surface.SetTextPos(2, 2)
 			if istable(arrowColor) then surface.SetTextColor(arrowColor)
-			else surface.SetTextColor(Color(255, 255, 255)) end
+			else surface.SetTextColor(dialogWhite) end
 			surface.DrawText("5")
 		end
 		panel.btnDown.Paint = function(gripUp, wUp, hUp)
@@ -283,7 +285,7 @@ function PANEL:PaintScroll(gripColor, gripBG, arrowColor)
 			surface.SetFont("Marlett")
 			surface.SetTextPos(2, 1)
 			if istable(arrowColor) then surface.SetTextColor(arrowColor)
-			else surface.SetTextColor(Color(255, 255, 255)) end
+			else surface.SetTextColor(dialogWhite) end
 			surface.DrawText("6")
 		end
 	end

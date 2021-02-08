@@ -16,7 +16,7 @@ function PANEL:Init()
 	self.TextArea:SetTextColor(textColor)
 	self.TextArea.OnChange = function( textarea, val ) self:SetValue( self.TextArea:GetText() ) end
 	self.TextArea.DoClick = function()
-		self.m_bMute = !self.m_bMute
+		self.m_bMute = not self.m_bMute
 		if self.m_bMute then
 			self.TextArea:SetText("Mute")
 		else
@@ -33,10 +33,9 @@ function PANEL:Init()
 		end
 	end
 
-	self.Slider = self:Add( "DSlider", self )
+	self.Slider = self:Add("DSlider", self)
 	self.Slider:SetLockY( 0.5 )
 	self.Slider.TranslateValues = function( slider, x, y ) return self:TranslateSliderValues( x, y ) end
-	self.Slider:SetTrapInside( true )
 	self.Slider:DockMargin(20, 0, 0, 0)
 	self.Slider:Dock( FILL )
 	self.Slider:SetHeight( 16 )
@@ -54,8 +53,8 @@ function PANEL:Init()
 		surface.DrawRect( 0, -3, w, h)
 	end
 
-	self.Scratch = self:Add( "DNumberScratch" )
-	self.Scratch:SetImageVisible( false )
+	self.Scratch = self:Add("DNumberScratch")
+	self.Scratch:SetImageVisible(false)
 
 	self.Scratch:SetVisible(false)
 	self.Scratch.OnValueChanged = function() self:ValueChanged( self.Scratch:GetFloatValue() ) end
@@ -108,7 +107,7 @@ end
 
 function PANEL:SetMin( min )
 
-	if ( !min ) then min = 0 end
+	if ( not min ) then min = 0 end
 
 	self.Scratch:SetMin( tonumber( min ) )
 	self:UpdateNotches()
@@ -116,14 +115,14 @@ end
 
 function PANEL:SetMax( max )
 
-	if ( !max ) then max = 0 end
+	if ( not max ) then max = 0 end
 
 	self.Scratch:SetMax( tonumber( max ) )
 	self:UpdateNotches()
 end
 
 function PANEL:SetValue( val )
-	val = math.Clamp( tonumber( val ) || 0, self:GetMin(), self:GetMax() )
+	val = math.Clamp( tonumber( val ) or 0, self:GetMin(), self:GetMax() )
 	if ( self:GetValue() == val ) then return end
 
 	self.Scratch:SetValue( val ) -- This will also call ValueChanged
@@ -145,7 +144,7 @@ function PANEL:GetDecimals()
 end
 
 function PANEL:IsHovered()
-	return self.Scratch:IsHovered() || self.TextArea:IsHovered() || self.Slider:IsHovered() || vgui.GetHoveredPanel() == self
+	return self.Scratch:IsHovered() or self.TextArea:IsHovered() or self.Slider:IsHovered() or vgui.GetHoveredPanel() == self
 end
 
 function PANEL:SetConVar( cvar )
@@ -154,8 +153,8 @@ end
 
 function PANEL:ValueChanged( val )
 
-	val = math.Clamp( tonumber( val ) || 0, self:GetMin(), self:GetMax() )
-	if ( self.TextArea != vgui.GetKeyboardFocus() ) then
+	val = math.Clamp( tonumber( val ) or 0, self:GetMin(), self:GetMax() )
+	if ( self.TextArea ~= vgui.GetKeyboardFocus() ) then
 		self.TextArea:SetText( self.Scratch:GetTextValue() )
 	end
 
