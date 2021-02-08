@@ -13,7 +13,7 @@ end
 
 function PANEL:SetEnabled( b )
 
-	if !b then
+	if not b then
 		self.Offset = 0
 		self:SetScroll( 0 )
 		self.HasChanged = true
@@ -22,7 +22,7 @@ function PANEL:SetEnabled( b )
 	self:SetMouseInputEnabled( b )
 	self:SetVisible( b )
 
-	if self.Enabled != b then
+	if self.Enabled ~= b then
 
 		self:GetParent():InvalidateLayout()
 
@@ -60,7 +60,7 @@ end
 
 function PANEL:OnMouseWheeled( dlta )
 
-	if !self:IsVisible() then return false end
+	if not self:IsVisible() then return false end
 
 	return self:AddScroll( dlta * -2 )
 
@@ -74,12 +74,12 @@ function PANEL:AddScroll( dlta )
 	self:SetScroll( self:GetScroll() + dlta )
 
 
-	return OldScroll != self:GetScroll()
+	return OldScroll ~= self:GetScroll()
 
 end
 
 function PANEL:SetScroll( scrll )
-	if ( !self.Enabled ) then return end
+	if ( not self.Enabled ) then return end
 
 	self.scroll = math.Clamp( scrll, 0, self.panelSize )
 
@@ -87,12 +87,12 @@ function PANEL:SetScroll( scrll )
 end
 
 function PANEL:GetScroll()
-	if !self.Enabled then return 0 end
+	if not self.Enabled then return 0 end
 	return self.scroll
 end
 
 function PANEL:GetOffset()
-	if !self.Enabled then return 0 end
+	if not self.Enabled then return 0 end
 	return self.scroll * -1
 end
 
@@ -108,8 +108,8 @@ function PANEL:OnMouseReleased()
 end
 
 function PANEL:OnCursorMoved( x, y )
-	if ( !self.Enabled ) then return end
-	if ( !self.Dragging ) then return end
+	if ( not self.Enabled ) then return end
+	if ( not self.Dragging ) then return end
 
 	y = y - self.HoldPos
 
@@ -121,7 +121,7 @@ function PANEL:OnCursorMoved( x, y )
 end
 
 function PANEL:Grip()
-	if !self.Enabled then return end
+	if not self.Enabled then return end
 	if self.barSize == 0 then return end
 
 	self:MouseCapture( true )

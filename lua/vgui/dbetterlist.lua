@@ -30,8 +30,12 @@ function PANEL:Init()
 	self:SetDataHeight( 20 )
 
 	self.Columns = {}
+    --[[
+        The lines to be added to the panel
+    --]]
 	self.Lines = {}
-
+    self.defaultColor = Color(255, 255, 255)
+    -- self:SetDefaultTextColor(text_color)
 	self:SetDirty( true )
 
 	self.container = vgui.Create("Panel" ,self)
@@ -39,6 +43,10 @@ function PANEL:Init()
 
 	self.VBar = vgui.Create( "DSimpleScroll", self )
 	self.VBar:SetZPos( 20 )
+end
+
+function PANEL:IsEmpty()
+    return table.IsEmpty(self.Lines)
 end
 
 function PANEL:RefreshLayout(w, h)
@@ -65,6 +73,16 @@ function PANEL:SetHideHeaders(bool)
 	end
 end
 
+function PANEL:SetDefaultTextColor(color)
+    if color then
+        self.defaultColor = color
+    end
+end
+
+function PANEL:GetDefaultTextColor()
+    return self.defaultColor
+end
+
 function PANEL:SetTextColor(text_color_)
 	text_color = text_color_
 	for _, line in pairs(self.Lines) do
@@ -72,9 +90,9 @@ function PANEL:SetTextColor(text_color_)
 	end
 end
 
-/*
+--[[
     Hover bg for each item
-*/
+--]]
 function PANEL:SetHoverBGColor(hover_color)
     bg_color_hover = hover_color
 	for _, line in pairs(self.Lines) do
@@ -95,18 +113,14 @@ function PANEL:ResetColor(index)
 end
 
 function PANEL:HighlightLine(index, color, txtcolor)
-	if txtcolor then
-		self.Lines[index]:SetTextColor(txtcolor)
-	end
-	if color then
-		self.Lines[index].Paint = function(panel, w, h)
-			surface.SetDrawColor(color)
-			surface.DrawRect(0, 0, w, h)
-		end
-	else
-		self.Lines[index].Paint = function() end
-		self:ResetColor(index)
-	end
+    local line = self.Lines[index]
+    if not IsValid(line) then return end
+    if txtcolor == false then
+        line:SetTextColor(self.defaultColor)
+    else
+        line:SetTextColor(txtcolor)
+    end
+    line:SetBGColor(color)
 end
 
 function PANEL:GetLines()
@@ -122,7 +136,7 @@ function PANEL:AddColumn( strName )
 	pColumn:SetTextColor(Color(255, 255, 255))
 	pColumn:SetContentAlignment( 5 )
 	pColumn.DoClick = function(panel)
-		self.sort = !self.sort
+		self.sort = not self.sort
 		self:SetDirty(true)
 	end
 	pColumn:Dock(TOP)
@@ -145,7 +159,7 @@ end
 
 function PANEL:ColumnWidth( i )
 	local ctrl = self.Columns[ i ]
-	if ( !ctrl ) then return 0 end
+	if ( not ctrl ) then return 0 end
 
 	return ctrl:GetWide()
 end
@@ -216,12 +230,13 @@ function PANEL:OnScrollbarAppear()
 	self:InvalidateLayout()
 end
 
-function PANEL:AddLine( strLine )
+function PANEL:AddLine(strLine)
 	self:SetDirty(true)
 	self:InvalidateLayout()
 
-	local Line = vgui.Create( "DBetterLine", self.panelLine )
+	local Line = vgui.Create("DBetterLine", self.panelLine)
 	Line:SetFont(self.m_FontName)
+    -- Line:SetDefaultTextColor(self.defaultColor)
 	Line.BeforeMousePress = function(panel, index)
 		self:BeforeMousePress(index)
 	end
@@ -253,14 +268,14 @@ function PANEL:AddLine( strLine )
     Line:SetHoverBG(bg_color_hover)
 	Line:SetColumnText( 0, strLine )
 
-	local indexID = table.insert( self.Lines, Line )
-	Line:SetID( indexID )
+	local indexID = table.insert(self.Lines, Line)
+	Line:SetID(indexID)
 
 	return Line
 end
 
 function PANEL:OnMouseWheeled( dlta )
-	if ( !IsValid( self.VBar ) ) then return end
+	if ( not IsValid( self.VBar ) ) then return end
 	return self.VBar:OnMouseWheeled( dlta )
 end
 

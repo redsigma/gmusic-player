@@ -11,23 +11,16 @@ function PANEL:Init()
 	self:SetTall( 16 )
 
 	self.box = vgui.Create( "DBetterCheckBox", self )
-
-	self.box.OnCvarChange = function( panel, oldVal, newVal )
-		self:OnCvarChange(oldVal, newVal)
-	end
-
-	self.box.AfterChange = function( panel, val)
-
-		if self.box:GetAdminOnly() then
-			if self.box:GetIsAdmin() then
-				self:AfterChange(val)
+	self.box.AfterChange = function(panel, val)
+		if self.box:IsAdminOnly() then
+			if LocalPlayer():IsAdmin() then
+			    self:AfterChange(val)
 			end
 		else
 			self:AfterChange(val)
 		end
 	end
-
-	self.box.OnCvarWrong = function( panel, oldVal, newVal )
+	self.box.OnCvarWrong = function(panel, oldVal, newVal)
 		self:OnCvarWrong(oldVal, newVal)
 	end
 
@@ -50,10 +43,11 @@ function PANEL:Init()
 
 	self.m_bInactive = false
 
-	self.label = vgui.Create( "DLabel", self )
-	self.label:SetPos(self.box:GetWide() + 8, -2 )
-	self.label:SetMouseInputEnabled( true )
-	self.label.DoClick = function() self:Toggle() end
+    self.label = vgui.Create( "DLabel", self )
+    self.label:SetPos(self.box:GetWide() + 8, -2 )
+    self.label:SetMouseInputEnabled( true )
+    self.label:SetWide(0)
+    self.label.DoClick = function() self:Toggle() end
 end
 
 function PANEL:SetEnabled( bEnabled )
@@ -69,14 +63,18 @@ function PANEL:IsEnabled()
 	return self.m_bEnabled
 end
 
+function PANEL:RefreshConVar()
+    self.box:RefreshConVar()
+end
+
 function PANEL:SetPos(x, y)
 	self.x = x
 	self.y = y
 	self:SizeToContents()
 end
 
-function PANEL:OnCvarChange(oldVal, newVal)
-	-- override before a value has changed. must return bool to continue
+function PANEL:AfterChangeDelayed( val )
+	-- override used for delayed changes
 end
 
 function PANEL:AfterChange( bool )
@@ -87,16 +85,17 @@ function PANEL:OnCvarWrong(oldValue, newValue)
 	-- override if any problem happened
 end
 
-function PANEL:SetAdminOnly( bool )
-	self.box:SetAdminOnly( bool )
+function PANEL:SetAdminOnly(bool)
+	self.box:SetAdminOnly(bool)
 end
 
-function PANEL:SetCheckedSilent( val )
-	self.box:SetCheckedSilent( val )
+function PANEL:IsAdminOnly()
+	self.box:IsAdminOnly()
 end
 
-function PANEL:SetChecked( val )
-	self.box:SetChecked( val )
+function PANEL:SetChecked(bool)
+  -- print("Set Checked,", bool)
+  self.box:SetChecked(bool)
 end
 
 function PANEL:GetChecked()
@@ -110,13 +109,8 @@ function PANEL:DoClick()
 	self.box:Toggle()
 end
 
-
-function PANEL:ToggleOne()
-	self.box:ToggleOne()
-end
-
 function PANEL:Toggle()
-	if !self.box:GetDisabled() then
+	if not self.box:GetDisabled() then
 		self.box:Toggle()
 	end
 end
@@ -185,10 +179,6 @@ end
 function PANEL:OnCustomCvarChange(newValue)
 end
 
-function PANEL:SetIsAdmin(isAdmin)
-	self.box:SetIsAdmin(isAdmin)
-end
-
 function PANEL:addCheckbox(index, checkbox)
 	self.box:addCheckbox(index, checkbox)
 end
@@ -214,6 +204,10 @@ function PANEL:UpdateSize()
 	end
 end
 
+function PANEL:GetCvarInt()
+  return self.box.cvar:GetInt()
+end
+
 -- Needed to sync Items
 function PANEL:UpdateThink()
 	self.box:ConVarNumberThink()
@@ -222,4 +216,4 @@ end
 function PANEL:Paint()
 end
 
-derma.DefineControl( "DBetterCheckBoxLabel", "CheckboxCustomLabel", PANEL, "DPanel" )
+derma.DefineControl("DBetterCheckBoxLabel", "CheckboxCustomLabel", PANEL, "Panel")
