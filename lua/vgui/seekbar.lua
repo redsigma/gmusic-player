@@ -2,19 +2,16 @@ local PANEL = {}
 
 local round = math.Round
 local textColor = Color(255, 255, 255)
-local slideColor = Color(0, 0, 0, 100)
 
 function PANEL:Init()
-	self.allow = true
-
-	self.TextCurrent = self:Add("DTextEntry")
-	self.TextCurrent:DockMargin(5, 0, 0, 0)
-	self.TextCurrent:Dock(LEFT)
-	self.TextCurrent:SetPaintBackground(false)
-	self.TextCurrent:SetWide(45)
-	self.TextCurrent:SetEditable(false)
-	self.TextCurrent:SetVisible(false)
-	self.TextCurrent.Paint = function(panel, w, h)
+	self.seek_text = self:Add("DTextEntry")
+	self.seek_text:DockMargin(5, 0, 0, 0)
+	self.seek_text:Dock(LEFT)
+	self.seek_text:SetPaintBackground(false)
+	self.seek_text:SetWide(45)
+	self.seek_text:SetEditable(false)
+	self.seek_text:SetVisible(false)
+	self.seek_text.Paint = function(panel, w, h)
 		if ( panel.m_bBackground ) then
 			if ( panel:GetDisabled() ) then
 				self.tex.TextBox_Disabled( 0, 0, w, h )
@@ -27,14 +24,13 @@ function PANEL:Init()
 		panel:DrawTextEntryText( textColor, textColor, textColor)
 	end
 
-	self.TextLength = vgui.Create("DTextEntry", self)
-	self.TextLength:Dock(RIGHT)
-
-	self.TextLength:SetPaintBackground(false)
-	self.TextLength:SetWide(45)
-	self.TextLength:SetEditable(false)
-	self.TextLength:SetVisible(false)
-	self.TextLength.Paint = function(panel, w, h)
+	self.seek_text_max = vgui.Create("DTextEntry", self)
+	self.seek_text_max:Dock(RIGHT)
+	self.seek_text_max:SetPaintBackground(false)
+	self.seek_text_max:SetWide(45)
+	self.seek_text_max:SetEditable(false)
+	self.seek_text_max:SetVisible(false)
+	self.seek_text_max.Paint = function(panel, w, h)
 		if ( panel.m_bBackground ) then
 			if ( panel:GetDisabled() ) then
 				self.tex.TextBox_Disabled( 0, 0, w, h )
@@ -48,111 +44,100 @@ function PANEL:Init()
 		panel:DrawTextEntryText(textColor, textColor, textColor)
 	end
 
-    local right_margin = 15
-	self.Slider = self:Add("DSlider", self)
-	self.Slider:SetSlideY(0)
-	self.Slider:SetLockY(0)
-	self.Slider.TranslateValues = function(slider, x, y) return self:TranslateSliderValues(x, y) end
-	self.Slider:SetTrapInside(true)
-	self.Slider:Dock(FILL)
-    self.Slider:DockMargin(0, 0, right_margin, 0)
-	self.Slider:SetHeight(self:GetTall())
-	self.Slider.Paint = function( panel, w, h )
-		surface.SetDrawColor(slideColor)
-		surface.DrawRect( 0, h / 2 - 1, w, 1 )
+	self.seek_val = vgui.Create("DSeekBarClickLayer", self)
+  self.seek_val:SetDecimals(1)
+	self.seek_val:Dock(FILL)
+  self.seek_val.AfterCursorMove = function(panel, seconds_at_cursor)
+    local pos_slider =
+      math.Remap(panel.seek_seconds_from_slider, 0, panel:GetMax(), 0, 1)
+    self:SetTime(seconds_at_cursor, pos_slider)
+  end
 
-		surface.DrawRect( w / 4, h / 2 + 3, 1, 5 )
-		surface.DrawRect( w / 2, h / 2 + 3, 1, 5 )
-		surface.DrawRect( w - (w / 4), h / 2 + 3, 1, 5 )
-	end
-	self.Slider.Knob.Paint = function(panel, w, h)
-		surface.SetDrawColor( textColor )
-		surface.DrawRect( 0, 5, w, self:GetTall() - 8 )
-	end
+	self.seek_text:SetValue(string.ToMinutesSeconds(0))
+  self.seek_text_max:SetValue(string.ToMinutesSeconds(0))
+end
 
-	self.SeekClick = vgui.Create("DSeekBarClickLayer", self)
-	self.SeekClick:Dock(FILL)
-    self.SeekClick:DockMargin(0, 0, right_margin, 0)
-
-	self.Scratch = self:Add("DNumberScratch")
-	self.Scratch:SetImageVisible(false)
-	self.Scratch:SetDecimals(1)
-	self.Scratch:SetTextColor(textColor)
-	self.Scratch:Dock(FILL)
-
-	self:SetTime(0)
-	self:SetMin(0)
-	self:SetMax(0)
-	self:SetText("")
-	self.TextCurrent:SetValue(string.ToMinutesSeconds(0))
-	self.Scratch:SetFloatValue(0)
-	self.Wang = self.Scratch
+function PANEL:GetSeekLayer()
+    return self.seek_val
 end
 
 function PANEL:isAllowed()
-	return self.allow
+	return self.seek_val.allow_seek
 end
 
 function PANEL:AllowSeek(bool)
-	self.allow = bool
+  self.seek_val.allow_seek = bool
 end
 
+function PANEL:IsCursorMoved()
+  return self.seek_val.cursor_moved
+end
+
+-- function PANEL:ReleaseSeek()
+--     print("[TODO] Release Seek might need rework\n")
+--     self.seek_val:OnMouseReleased()
+-- end
+
 function PANEL:SetTextFont(font)
-	self.TextCurrent:SetFont(font)
-	self.TextLength:SetFont(font)
+	self.seek_text:SetFont(font)
+	self.seek_text_max:SetFont(font)
 end
 
 function PANEL:SetTextColor(color)
-	textColor = color
-	self.TextCurrent.Paint(self.TextCurrent, self.TextCurrent:GetWide(), self.TextCurrent:GetTall())
-	self.TextLength.Paint(self.TextLength, self.TextLength:GetWide(), self.TextLength:GetTall())
-	self.Slider.Knob.Paint(self.Slider.Knob, self.Slider.Knob:GetWide(), self.Slider.Knob:GetTall())
+  textColor = color
+  self.seek_text.Paint(self.seek_text,
+    self.seek_text:GetWide(), self.seek_text:GetTall())
+  self.seek_text_max.Paint(self.seek_text_max,
+    self.seek_text_max:GetWide(), self.seek_text_max:GetTall())
+  self.seek_val:SetTextColor(textColor)
 end
 
 function PANEL:SetSliderColor(color)
-	slideColor = color
+  self.seek_val:SetSliderColor(color)
 end
 
 function PANEL:ResetValue()
-	self.TextCurrent:SetValue(string.ToMinutesSeconds(self:GetMin()))
-	self:SetTime(self:GetMin())
-	self:SetMax(self:GetMin())
+  self.seek_val.Slider.Knob:SetVisible(false)
+  self.seek_val.seek_seconds_from_slider = 0
+  self:SetTime(0, 0)
+  self:SetMax(0)
 end
 
-function PANEL:Invisible()
-	self.Slider.Knob:SetVisible(false)
-	self.Slider.Paint = function() end
-	self.Paint = function() end
+-- TODO be able to write text or image in the invisible place
+function PANEL:ShowSeekBar(bool)
+	self.seek_val:SetVisible(bool)
+end
+
+function PANEL:ShowSeekBarHandle(bool)
+  self.seek_val.Slider.Knob:SetVisible(bool)
 end
 
 function PANEL:DisableNotches()
-	self.Slider:SetNotches( nil )
+	self.seek_val.Slider:SetNotches( nil )
 	return true
 end
 
 function PANEL:ShowSeekTime()
-	self.TextCurrent:SetVisible(true)
+	self.seek_text:SetVisible(true)
 end
 
 function PANEL:ShowSeekLength()
-	self.TextLength:SetVisible(true)
+	self.seek_text_max:SetVisible(true)
 end
 
 function PANEL:SetMinMax(min, max)
-	self.TextLength:SetValue(string.ToMinutesSeconds(tonumber(max)))
-	self.Scratch:SetMin(tonumber(min))
-	self.Scratch:SetMax(tonumber(max))
-	self.SeekClick:SetMin(tonumber(min))
-	self.SeekClick:SetMax(tonumber(max))
+	self.seek_text_max:SetValue(string.ToMinutesSeconds(tonumber(max)))
+	self.seek_val:SetMin(tonumber(min))
+	self.seek_val:SetMax(tonumber(max))
 	self:UpdateNotches()
 end
 
 function PANEL:GetMin()
-	return self.Scratch:GetMin()
+	return self.seek_val:GetMin()
 end
 
 function PANEL:GetMax()
-	return self.Scratch:GetMax()
+	return self.seek_val:GetMax()
 end
 
 function PANEL:GetRange()
@@ -164,8 +149,7 @@ function PANEL:SetMin(min)
 		min = 0
 	end
 
-	self.Scratch:SetMin(tonumber(min))
-	self.SeekClick:SetMin(tonumber(min))
+	self.seek_val:SetMin(tonumber(min))
 	self:UpdateNotches()
 end
 
@@ -174,100 +158,49 @@ function PANEL:SetMax(max)
 		max = 0
 	end
 
-	self.TextLength:SetValue(string.ToMinutesSeconds(tonumber(max)))
-	self.Scratch:SetMax(tonumber(max))
-	self.SeekClick:SetMax(tonumber(max))
+	self.seek_text_max:SetValue(string.ToMinutesSeconds(tonumber(max)))
+	self.seek_val:SetMax(tonumber(max))
 	self:UpdateNotches()
 end
 
-function PANEL:GetValue()
-	return self.SeekClick:GetValue()
-end
-
-function PANEL:IsEditing()
-	return self.Scratch:IsEditing() or self.TextLength:IsEditing() or self.TextCurrent:IsEditing() or self.Slider:IsEditing()
+function PANEL:GetTime()
+	return self.seek_val:GetSeekSeconds()
 end
 
 function PANEL:IsHovered()
-	return self.Scratch:IsHovered() or self.TextLength:IsHovered() or self.TextCurrent:IsHovered() or self.Slider:IsHovered() or vgui.GetHoveredPanel() == self
+	return self.seek_val:IsHovered() or self.seek_text_max:IsHovered() or self.seek_text:IsHovered() or self.seek_val.Slider:IsHovered() or vgui.GetHoveredPanel() == self
 end
 
-function PANEL:ValueChanged(val)
-	local tmp1 = self:GetMin()
-	local tmp2 = self:GetMax()
+function PANEL:SetTime(time_secs, slider_pos)
+  if not self.seek_val.allow_seek then return end
 
-	if val < tmp1 then
-		val = tmp1
-	elseif val > tmp2 then
-		val = tmp2
-	end
-
-	if self.TextCurrent ~= vgui.GetKeyboardFocus() then
-		self.TextCurrent:SetValue(string.ToMinutesSeconds(self.Scratch:GetFloatValue()))
-	end
-
-	local delta = self.Scratch:GetFraction(val)
-
-	self.TextLength:SetValue(string.ToMinutesSeconds(tmp2))
-	self.Slider:SetSlideX(delta)
-
-	if round(delta, 3) == 1 then
-		self.allow = false
-	end
-
+	self.seek_val:SetSeekSeconds(time_secs)
+	self.seek_text:SetValue(string.ToMinutesSeconds(time_secs))
+  self.seek_val:SetSlider(slider_pos)
 end
 
-function PANEL:TranslateSliderValues(x, y)
-	self:SetTime(self.Scratch:GetMin() + (x * self.Scratch:GetRange()))
-	return self.Scratch:GetFraction(), y
+function PANEL:SetSeekText(val)
+  self.seek_text:SetValue(string.ToMinutesSeconds(val))
 end
-
-function PANEL:SetTime( val )
-	if not self.allow then return end
-
-	val = tonumber(val)
-	local tmp1 = self:GetMin()
-	local tmp2 = self:GetMax()
-
-	if (val < tmp1) then
-		val = tmp1
-	elseif (val > tmp2) then
-		val = tmp2
-	end
-
-	self.SeekClick:SetFloatValue(val)
-	self.Scratch:SetFloatValue(val)
-	self.TextCurrent:SetValue(string.ToMinutesSeconds(val))
-
-	self:ValueChanged(val)
-end
-
-function PANEL:GetSeekTime( isfloat )
-	if isfloat then
-		return self.Scratch:GetFloatValue()
-	else
-		return self.TextCurrent:GetValue()
-	end
+function PANEL:GetSeekText()
+	return self.seek_text:GetValue()
 end
 
 function PANEL:GetSeekLength( isfloat )
 	if isfloat then
 		return self:GetMax()
 	else
-		return self.TextLength:GetValue()
+		return self.seek_text_max:GetValue()
 	end
 end
 
 function PANEL:UpdateNotches()
 	if self:DisableNotches() then
-		self.Slider:SetNotches(self:GetMax() / 30)
+		self.seek_val.Slider:SetNotches(self:GetMax() / 30)
 	end
 end
 
 function PANEL:PerformLayout()
-	self.Scratch:SetVisible(false)
-	self.Slider:StretchToParent(0, 0, 0, 0)
-	self.Slider:SetSlideX(self.Scratch:GetFraction())
 end
 
 derma.DefineControl("DSeekBar", "SeekBar Panel", PANEL, "Panel")

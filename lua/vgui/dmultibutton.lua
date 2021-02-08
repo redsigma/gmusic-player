@@ -1,16 +1,14 @@
 local PANEL = {}
 
-AccessorFunc( PANEL, "m_bDisabled",		"Disabled",			FORCE_BOOL )
-
 Derma_Hook( PANEL, "Paint", "Paint", "MenuBar" )
 
 local colorServerState = Color(255, 150, 0, 255)
 
 function PANEL:Init()
 	self.missing = false
-	self:SetDisabled(false)
 	self:SetVisible(false)
 	self.length = ""
+    self.enabled = true
 
 	self.title = vgui.Create("DLabel",self)
 	self.title:SetText("")
@@ -41,8 +39,11 @@ function PANEL:SetTSS( bool )
 	end
 end
 
+function PANEL:GetEnabled()
+    return self.enabled
+end
 function PANEL:SetEnabled(bool)
-	self:SetDisabled(!bool)
+    self.enabled = bool
 end
 
 function PANEL:SizeToContents()
@@ -50,9 +51,9 @@ function PANEL:SizeToContents()
 end
 
 function PANEL:IsMissing()
-	local tmp = self.missing
-	self.missing = false
-	return tmp
+	-- local tmp = self.missing
+	-- self.missing = false
+	return self.missing
 end
 
 function PANEL:SetMissing( bool )
@@ -69,6 +70,10 @@ function PANEL:SetColor( color )
 	self.seek:SetColor(color)
 end
 
+function PANEL:GetTextColor()
+	return self.title:GetColor()
+end
+
 function PANEL:SetTextColor( color )
 	self.title:SetColor(color)
 end
@@ -77,7 +82,7 @@ function PANEL:SetText( title )
 	if isbool(title) then
 		title = "gMusic Player"
 		self.seek:SetVisible(false)
-	elseif !self.seek:IsVisible() then
+	elseif not self.seek:IsVisible() then
 		self.seek:SetVisible(true)
 	end
 	self.title:SetText(title)
@@ -85,7 +90,7 @@ function PANEL:SetText( title )
 end
 
 function PANEL:SetSeekTime( timeFloat )
-	self.seek:SetText( string.ToMinutesSeconds(timeFloat) .. " : " .. self.length )
+	self.seek:SetText(string.ToMinutesSeconds(timeFloat) .. " : " .. self.length)
 	self.seek:SizeToContents()
 end
 
@@ -132,7 +137,7 @@ end
 
 
 function PANEL:Think()	-- doesn't run if not visible
-	if !self:GetDisabled() then
+	if self:GetEnabled() then
 		self:OnThink()
 	end
 end
@@ -142,7 +147,7 @@ function PANEL:OnThink()
 end
 
 function PANEL:PaintOver(w, h)
-	if self:GetDisabled() then
+	if not self:GetEnabled() then
 		surface.SetDrawColor(0, 0, 0, 150)
 		surface.DrawRect(0, 0, w, h-1)
 	elseif self:IsHovered() then

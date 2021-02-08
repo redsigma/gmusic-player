@@ -17,28 +17,36 @@ AccessorFunc( PANEL, "m_bHideHeaders", "HideHeaders" )
 Derma_Hook( PANEL, "Paint", "Paint", "ListView" )
 
 function PANEL:Init()
-	self.m_FontName = "default"
-	self.sort = false
-	self.selectedK = nil
-	self.m_iHeaderHeight = 0
+  self.m_FontName = "default"
+  self.sort = false
+  self.selectedK = nil
+  self.m_iHeaderHeight = 0
 
-	self:SetSortable( true )
-	self:SetMouseInputEnabled( true )
-	self:SetHideHeaders( false )
+  self:SetSortable( true )
+  self:SetMouseInputEnabled( true )
+  self:SetHideHeaders( false )
 
-	self:SetHeaderHeight( 16 )
-	self:SetDataHeight( 20 )
+  self:SetHeaderHeight( 16 )
+  self:SetDataHeight( 20 )
 
-	self.Columns = {}
-	self.Lines = {}
+  self.Columns = {}
+  --[[
+    The lines to be added to the panel
+  --]]
+  self.Lines = {}
+  self.defaultColor = Color(255, 255, 255)
+    -- self:SetDefaultTextColor(text_color)
+  self:SetDirty( true )
 
-	self:SetDirty( true )
+  self.container = vgui.Create("Panel", self)
+  self.panelLine = vgui.Create("Panel", self.container)
 
-	self.container = vgui.Create("Panel" ,self)
-	self.panelLine = vgui.Create("Panel", self.container)
+  self.VBar = vgui.Create("DSimpleScroll", self)
+  self.VBar:SetZPos( 20 )
+end
 
-	self.VBar = vgui.Create( "DSimpleScroll", self )
-	self.VBar:SetZPos( 20 )
+function PANEL:IsEmpty()
+    return table.IsEmpty(self.Lines)
 end
 
 function PANEL:RefreshLayout(w, h)
@@ -46,8 +54,10 @@ function PANEL:RefreshLayout(w, h)
 	self:SetSize(w, h)
 	self.VBar:SetScroll(self.VBar:GetScroll())
 	for k, line in pairs(self.Lines) do
-		self.Lines[k]:SetWide(w)
-		self.Lines[k].Columns[0]:SetWide(w)
+    line:SetWide(w)
+    if not table.IsEmpty(line.Columns) then
+		  line.Columns[0]:SetWide(w)
+    end
 	end
 end
 
@@ -65,6 +75,16 @@ function PANEL:SetHideHeaders(bool)
 	end
 end
 
+function PANEL:SetDefaultTextColor(color)
+  if color then
+    self.defaultColor = color
+  end
+end
+
+function PANEL:GetDefaultTextColor()
+  return self.defaultColor
+end
+
 function PANEL:SetTextColor(text_color_)
 	text_color = text_color_
 	for _, line in pairs(self.Lines) do
@@ -72,13 +92,13 @@ function PANEL:SetTextColor(text_color_)
 	end
 end
 
-/*
+--[[
     Hover bg for each item
-*/
+--]]
 function PANEL:SetHoverBGColor(hover_color)
-    bg_color_hover = hover_color
+  bg_color_hover = hover_color
 	for _, line in pairs(self.Lines) do
-        line:SetHoverBG(bg_color_hover)
+      line:SetHoverBG(bg_color_hover)
 	end
 end
 
@@ -86,7 +106,6 @@ function PANEL:DisableScrollbar()
 	if IsValid( self.VBar) then
 		self.VBar:Remove()
 	end
-
 	self.VBar = nil
 end
 
@@ -95,18 +114,17 @@ function PANEL:ResetColor(index)
 end
 
 function PANEL:HighlightLine(index, color, txtcolor)
-	if txtcolor then
-		self.Lines[index]:SetTextColor(txtcolor)
-	end
-	if color then
-		self.Lines[index].Paint = function(panel, w, h)
-			surface.SetDrawColor(color)
-			surface.DrawRect(0, 0, w, h)
-		end
-	else
-		self.Lines[index].Paint = function() end
-		self:ResetColor(index)
-	end
+  local line = self.Lines[index]
+  if not IsValid(line) then return end
+  line:SetTextColor(txtcolor)
+  line:SetBGColor(color)
+end
+
+function PANEL:HighlightReset(index)
+  local line = self.Lines[index]
+  if not IsValid(line) then return end
+  line:SetTextColor(self.defaultColor)
+  line:SetBGColor(false)
 end
 
 function PANEL:GetLines()
@@ -122,7 +140,7 @@ function PANEL:AddColumn( strName )
 	pColumn:SetTextColor(Color(255, 255, 255))
 	pColumn:SetContentAlignment( 5 )
 	pColumn.DoClick = function(panel)
-		self.sort = !self.sort
+		self.sort = not self.sort
 		self:SetDirty(true)
 	end
 	pColumn:Dock(TOP)
@@ -145,7 +163,7 @@ end
 
 function PANEL:ColumnWidth( i )
 	local ctrl = self.Columns[ i ]
-	if ( !ctrl ) then return 0 end
+	if ( not ctrl ) then return 0 end
 
 	return ctrl:GetWide()
 end
@@ -216,12 +234,14 @@ function PANEL:OnScrollbarAppear()
 	self:InvalidateLayout()
 end
 
-function PANEL:AddLine( strLine )
+function PANEL:AddLine(file, file_path)
 	self:SetDirty(true)
 	self:InvalidateLayout()
 
-	local Line = vgui.Create( "DBetterLine", self.panelLine )
+	local Line = vgui.Create("DBetterLine", self.panelLine)
+  Line.path = file_path .. file
 	Line:SetFont(self.m_FontName)
+    -- Line:SetDefaultTextColor(self.defaultColor)
 	Line.BeforeMousePress = function(panel, index)
 		self:BeforeMousePress(index)
 	end
@@ -249,18 +269,18 @@ function PANEL:AddLine( strLine )
 	Line:SetPos(0, linePos)
 	linePos = linePos + self.m_iDataHeight
 
-    Line:SetTextColor(text_color)
-    Line:SetHoverBG(bg_color_hover)
-	Line:SetColumnText( 0, strLine )
+  Line:SetTextColor(text_color)
+  Line:SetHoverBG(bg_color_hover)
+	Line:SetColumnText(0, string.StripExtension(file))
 
-	local indexID = table.insert( self.Lines, Line )
-	Line:SetID( indexID )
+	local indexID = table.insert(self.Lines, Line)
+	Line:SetID(indexID)
 
 	return Line
 end
 
 function PANEL:OnMouseWheeled( dlta )
-	if ( !IsValid( self.VBar ) ) then return end
+	if ( not IsValid( self.VBar ) ) then return end
 	return self.VBar:OnMouseWheeled( dlta )
 end
 
@@ -275,8 +295,8 @@ function PANEL:GetSelectedLine()
 	return self.selectedK
 end
 
-function PANEL:GetLine( id )
-	return self.Lines[ id ]
+function PANEL:GetLine(id)
+	return self.Lines[id]
 end
 
 function PANEL:BeforeMousePress( index )

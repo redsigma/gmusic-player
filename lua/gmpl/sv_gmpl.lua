@@ -1,238 +1,513 @@
+--[[
+    Handles server related events such as server-side music
+--]]
 include("includes/modules/coms.lua")
-
-local liveSong = ""
-local liveSeek = 0
-local isLooped = false
-local isAutoPlayed = false
-
+-- local server_host.liveSong = ""
+-- local server_host.liveSongIndex = 0
+-- local server_host.liveSeek = 0
+--[[
+    Check if looping is enabled
+--]]
+-- local server_host.isLooped= false
+--[[
+    Check if auto playing is enabled
+--]]
+-- local server_host.isAutoPlayed = false
+--[[
+    Check if song is paused
+--]]
+-- local server_host.isPaused = false
+--[[
+    Check if song is stopped
+--]]
+-- local server_host.isStopped = true
 local userWantLive = 0
-local playerHost = 0
-
-local songAutoPlayed = ""
-
-
+--[[
+    Store the player that is currently playing on server
+--]]
+-- local server_host.player =0
+local server_host = {}
+server_host.player = 0
+server_host.liveSong = 0
+server_host.liveSongIndex = 0
+server_host.liveSeek = 0
+server_host.isLooped = false
+server_host.isAutoPlayed = false
+server_host.isPaused = false
+server_host.isStopped = true
 --[[-------------------------------------------------------------------------
 Tables used for adminAccessDir = true
----------------------------------------------------------------------------]]--
-local songInactiveTable = {}
-local songActiveTable = {}
-
+-------------------------------------------------------------------------]]
+--
+local song_inactive_folders = {}
+local song_active_folders = {}
 --[[-------------------------------------------------------------------------
-Server Options identifiers
----------------------------------------------------------------------------]]--
-local serverJustStarted = true
-local serverSettings =  include("gmpl/sv_cvars.lua")()
----------------------------------------------------------------------------]]--
+Server Settings
+-------------------------------------------------------------------------]]
+--
+local sv_cvars_synced = false
+local shared_settings = nil
 
-local function sendType_ToClient(ply , netMsg )
-	net.Start(netMsg)
-	net.WriteType(playerHost)
-	net.Send(ply)
+local function check_settings_valid()
+  local bool = istable(shared_settings)
+
+  if not bool then
+    -- NOT SURE if it's a good idea but
+    shared_settings = include("includes/func/settings.lua")
+    print("Settings not set. Setting them")
+    debug.Trace()
+  end
+
+  return bool
 end
 
-local function initMenu(ply)
-	net.Start("createMenu")
-	net.WriteBool(ply:IsAdmin())
-	net.Send(ply)
+local function check_player_valid(player)
+  local bool = IsValid(player)
 
-	net.Start("persistClientSettings")
-	net.Send(ply)
+  if not bool then
+    print("PLAYER", player, "not valid")
+    debug.Trace()
+  end
+
+  return bool
 end
 
---[[-------------------------------------------------------------------------
-On Player initial spawn update settings.
----------------------------------------------------------------------------]]--
+local function setup_settings_from_admin(ply)
+  net.Start("cl_update_cvars_from_first_admin")
+  net.Send(ply)
+end
+
+local function initial_spawn(ply)
+  print("Inittial spawn run...")
+  net.Start("cl_gmpl_create")
+  net.Send(ply)
+
+  if check_settings_valid() then
+    net.Start("cl_update_cvars")
+    net.WriteBool(shared_settings:get_admin_server_access())
+    net.WriteBool(shared_settings:get_admin_dir_access())
+    net.WriteTable(song_inactive_folders)
+    net.WriteTable(song_active_folders)
+    net.Send(ply)
+
+    return
+  end
+
+  setup_settings_from_admin(ply)
+end
+
+net.Receive("sv_update_cvars_from_first_admin", function(length, ply)
+  local settings = net.ReadTable()
+  local inactive_dirs = net.ReadTable()
+  local active_dirs = net.ReadTable()
+  shared_settings = include("includes/func/settings.lua")
+  shared_settings:set_admin_server_access(settings.admin_server_access)
+  shared_settings:set_admin_dir_access(settings.admin_dir_access)
+  sv_cvars_synced = true
+  if table.IsEmpty(inactive_dirs) and table.IsEmpty(active_dirs) then return end
+
+  if #song_inactive_folders == 0 and #song_active_folders == 0 then
+    song_inactive_folders = inactive_dirs
+    song_active_folders = active_dirs
+  end
+end)
+
+-- print("\n Server]] Inactive songs:")
+-- PrintTable(song_inactive_folders)
+-- print("\n Server]] Active songs:")
+-- PrintTable(song_active_folders)
+-- // On Server first start
+-- local sql_result = nil
+-- sql.Query("DROP TABLE gmpl_music")
+-- if sql.TableExists("gmpl_music") then
+--     sql_result = sql.Query("DROP TABLE gmpl_music")
+--     print("Table exists. Droping...")
+--     if (sql.TableExists("gmpl_music")) then
+--         PrintMessage(HUD_PRINTCONSOLE,
+--             "[gMusic Player] Unhandled error code 2 |",
+--             sql.LastError(sql_result))
+--     end
+-- end
+-- sql_result = sql.Query("CREATE TABLE gmpl_music (music_folder varchar(255), active int)")
+-- if (sql.TableExists("gmpl_music")) then
+--     print("Created table gmpl_music on server")
+--     print(song_inactive_folders)
+--     for key, folder in pairs(song_inactive_folders) do
+--         sql.Query("INSERT INTO gmpl_music (`music_folder`, `active`)VALUES ('" .. sql.SQLStr(folder, true) .."', '0')")
+--     end
+--     print("Server print table:")
+--     PrintTable(sql.Query("SELECT * FROM gmpl_music"))
+-- else
+--     PrintMessage(HUD_PRINTCONSOLE,
+--         "[gMusic Player] Unhandled error code 3 |",
+--         sql.LastError(sql_result))
+-- end
+-- On Player initial spawn
+-------------------------------------------------------------------------------
 hook.Add("Initialize", "checkUlib", function()
-	if istable(hook.GetTable().ULibLocalPlayerReady) then
-		print("[gMusic Player] Initializing - via Ulib")
-		hook.Add("ULibLocalPlayerReady", "initPlayer", function(ply)
-			initMenu(ply)
-		end)
-	else
-		print("[gMusic Player] Initializing")
-		hook.Add("PlayerInitialSpawn", "initPlayer", function(ply)
-			initMenu(ply)
-		end)
-	end
-end)
-hook.Add("ShowSpare1", "openMenuF3", function( ply )
-	net.Start("press_Key_F3FromServer")
-	net.Send(ply)
-end)
-net.Receive("toServerKey_F3", function(length, sender)
-	if sender:IsValid() then
-		sendType_ToClient(sender,"openmenu")
-	end
+  if istable(hook.GetTable().ULibLocalPlayerReady) then
+    print("[gMusic Player] Initializing - via Ulib")
+
+    hook.Add("ULibLocalPlayerReady", "initPlayer", function(ply)
+      initial_spawn(ply)
+    end)
+  else
+    print("[gMusic Player] Initializing")
+
+    hook.Add("PlayerInitialSpawn", "initPlayer", function(ply)
+      initial_spawn(ply)
+    end)
+  end
 end)
 
-net.Receive("toServerContextMenu", function(length, sender)
-	if sender:IsValid() then
-		sendType_ToClient(sender, "openmenucontext")
-	end
+hook.Add("ShowSpare1", "openMenuF3", function(ply)
+  net.Start("sv_keypress_F3")
+  net.Send(ply)
 end)
----------------------------------------------------------------------------]]--
 
-net.Receive( "serverFirstMade", function(length, sender )
-	if sender:IsValid() then
-		if serverJustStarted then
-			net.Start("getSettingsFromFirstAdmin")
-			net.Send(player.GetAll())
-		else
-			net.Start("sendServerSettings")
-			net.WriteTable(serverSettings)
-			net.Send(sender)
+net.Receive("sv_gmpl_show", function(length, ply)
+  if not check_player_valid(ply) then return end
+  net.Start("cl_gmpl_show")
+  net.WriteType(server_host.player)
+  net.Send(ply)
+end)
 
-			if serverSettings.admin_dir_access then
-				net.Start("refreshSongListFromServer")
-				net.WriteTable(songInactiveTable)
-				net.WriteTable(songActiveTable)
-				net.Send(sender)
-			end
-		end
-	end
-end )
+-- Settings Panel Options
+-------------------------------------------------------------------------------
+local function printMessage(nrMsg, ply, itemVal)
+  local str
 
-net.Receive("updateSettingsFromFirstAdmin", function(length, sender )
-	local tmpSettingsTable = net.ReadTable()
+  if nrMsg == 1 then
+    str = "Admin Access"
+  elseif nrMsg == 2 then
+    str = "Music Dir Access"
+  end
 
-	serverSettings.admin_server_access  = tmpSettingsTable.admin_server_access
-	serverSettings.admin_dir_access = tmpSettingsTable.admin_dir_access
-
-	serverJustStarted = false
-
-	if serverSettings.admin_dir_access then
-		songInactiveTable = net.ReadTable()
-		songActiveTable = net.ReadTable()
-	end
-end )
-
---[[-------------------------------------------------------------------------
-Settings Panel Options
----------------------------------------------------------------------------]]--
-local function printMessage(nrMsg, sender, itemVal)
-	local str
-	if nrMsg == 1 then
-		str = "Admin Access"
-	elseif nrMsg == 2 then
-		str = "Music Dir Access"
-	end
-
-	PrintMessage(HUD_PRINTTALK, str .. " changed to " .. tostring(itemVal) .. " by " .. sender:Nick() )
+  ply:PrintMessage(HUD_PRINTTALK, str .. " changed to " .. tostring(itemVal) .. " by " .. ply:Nick())
 end
 
-net.Receive( "toServerRefreshSongList", function(length, sender )
-	if sender:IsValid() and sender:IsAdmin() then
-		songInactiveTable = net.ReadTable()
-		songActiveTable = net.ReadTable()
+net.Receive("sv_refresh_song_list", function(length, ply)
+  if not check_settings_valid() then return end
+  if not check_player_valid(ply) then return end
+  print("[net] Refreshing song list")
 
-		net.Start("refreshSongListFromServer")
-		net.WriteTable(songInactiveTable)
-		net.WriteTable(songActiveTable)
+  if shared_settings:get_admin_dir_access() then
+    if not ply:IsAdmin() then return end
+  end
 
-		PrintMessage(HUD_PRINTTALK, "Song List has been refresh by " .. sender:Nick() )
-		net.Send(player.GetAll())
-	end
-end )
+  -- if ply:IsAdmin() then
+  song_inactive_folders = net.ReadTable()
+  song_active_folders = net.ReadTable()
+  -- print("\nServer changed server songs")
+  -- print("inactive:")
+  -- PrintTable(song_inactive_folders)
+  -- print("active:")
+  -- PrintTable(song_active_folders)
+  -- print("----------------------------")
+  net.Start("cl_refresh_song_list")
+  net.WriteTable(song_inactive_folders)
+  net.WriteTable(song_active_folders)
+  ply:PrintMessage(HUD_PRINTTALK, "[gMusic Player] " .. ply:Nick() .. " has changed the song directories")
+  net.Send(player.GetAll())
+end)
 
-net.Receive( "toServerUpdateSeek", function(length, sender )
-	if userWantLive:IsValid() and sender:IsValid() then
-		liveSeek = net.ReadDouble()
-		net.Start("playLiveSeek")
+-- end
+-- net.Receive("toServerUpdateSeek", function(length, ply )
+-- 	if IsValid(userWantLive) and IsValid(userWantLive) then
+-- 		server_host.liveSeek = net.ReadDouble()
+-- 		net.Start("playLiveSeek")
+-- 		net.WriteBool(isLooped)
+-- 		net.WriteBool(isAutoPlayed)
+-- 		net.WriteEntity(ply) -- the server_host.player
+-- 		net.WriteString(liveSong)
+-- 		net.WriteDouble(liveSeek)
+-- 		net.Send(userWantLive)
+-- 	end
+-- end )
+net.Receive("sv_set_loop", function(length, ply)
+  if not check_player_valid(ply) then return end
+  server_host.isLooped = net.ReadBool()
 
-		net.WriteBool(isLooped)
-		net.WriteBool(isAutoPlayed)
-		net.WriteEntity(sender) -- the playerHost
-		net.WriteString(liveSong)
-		net.WriteDouble(liveSeek)
+  if server_host.isLooped then
+    server_host.isAutoPlayed = false
+  end
 
-		net.Send(userWantLive)
-	end
-end )
+  net.Start("cl_set_loop")
+  net.WriteBool(server_host.isLooped)
+  net.Send(player.GetAll())
+end)
 
+net.Receive("sv_set_autoplay", function(length, ply)
+  if not check_player_valid(ply) then return end
+  server_host.isAutoPlayed = net.ReadBool()
 
-net.Receive( "toServerAdminPlay", function(length, sender )
-	if IsValid(sender) then
-		if serverSettings.admin_server_access then
-			if sender:IsAdmin() then
-				liveSong = net.ReadString()
-				playerHost = sender
-				isLooped = false
-				net.Start( "playFromServer_adminAccess" )
-				net.WriteString( liveSong )
-				net.WriteEntity( playerHost )
-				net.Send(player.GetAll())
-			else
-				userWantLive = sender
-				if TypeID(playerHost) == TYPE_ENTITY and playerHost:IsPlayer()
-				and playerHost:IsConnected()  then
-						net.Start("askAdminForLiveSeek")
-						net.WriteEntity(sender)
-						net.Send(playerHost)
-				end
-			end
-		else
-			local strFilePath = net.ReadString()
-			isLooped = false
-			net.Start( "playFromServer" )
-			net.WriteString( strFilePath )
-			net.Send(player.GetAll())
-		end
-	end
-end )
-net.Receive( "toServerUpdateLoop", function(length, sender )
-	if sender:IsValid() then
-		isLooped = net.ReadBool()
-		net.Start( "loopFromServer" )
-		net.WriteBool(isLooped)
-		net.Send(player.GetAll())
-	end
-end )
+  if server_host.isAutoPlayed then
+    server_host.isLooped = false
+  end
 
-net.Receive( "sv_autoPlay", function(length, sender )
-	if sender:IsValid() then
-		isAutoPlayed = net.ReadBool()
-		net.Start( "cl_autoPlay" )
-		net.WriteBool(isAutoPlayed)
-		net.Send(player.GetAll())
-	end
-end )
+  net.Start("cl_set_autoplay")
+  net.WriteBool(server_host.isAutoPlayed)
+  net.Send(player.GetAll())
+end)
 
-net.Receive( "sv_getAutoPlaySong", function(length, sender )
-	if !isnumber(playerHost) and playerHost:IsPlayer() then
-		net.Start( "cl_ansAutoPlaySong" )
-		net.WriteString(liveSong)
-		net.Send(playerHost)
-	elseif sender:IsValid() then
-		net.Start( "cl_errAutoPlaySong" )
-		net.Send(sender)
-	end
-end )
+net.Receive("sv_pause_live", function(length, ply)
+  if not check_settings_valid() then return end
+  if not check_player_valid(ply) then return end
+  local admin_only = shared_settings:get_admin_server_access()
+  if shared_settings:get_admin_server_access() and not ply:IsAdmin() then return end
+  server_host.isPaused = net.ReadBool()
+  server_host.liveSeek = net.ReadDouble()
+  -- print("[SERVER] Server pause is:", isPaused)
+  local has_player_host = isentity(server_host.player) and server_host.player:IsPlayer()
+  -- if isPaused then
+  net.Start("cl_pause_live")
+  net.WriteBool(server_host.isPaused)
+  -- net.WriteBool(isAutoPlayed)
+  -- net.WriteBool(isLooped)
+  -- net.WriteDouble(liveSeek)
+  -- net.WriteString(liveSong)
+  -- net.WriteUInt(liveSongIndex, 16)
+  -- if has_player_host then
+  --     net.WriteEntity(server_host.player)
+  -- end
+  net.Send(player.GetAll())
+end)
 
-net.Receive( "toServerAdminStop", function(length, sender )
-	if sender:IsValid() then
-		liveSong = ""
-		liveSeek = 0
-		playerHost = 0
-		isLooped = false
-		isAutoPlayed = false
-		net.Start( "stopFromServerAdmin" )
-		net.Send(player.GetAll())
-	end
-end )
+-- else
+--     if has_player_host then
+--         net.Start("cl_play_live_seek_from_host")
+--         net.WriteEntity(ply)
+--         net.Send(server_host.player)
+--     end
+-- end
+-- net.Start("cl_pause_live")
+-- net.WriteBool(isPaused)
+-- net.Send(ply)
+--[[
+    Triggered when an admin plays song on server
+--]]
+net.Receive("sv_play_live", function(length, ply)
+  if not check_player_valid(ply) then return end
 
+  if not check_settings_valid() then
+    -- ply:PrintMessage(
+    -- HUD_PRINTCONSOLE, "[gMusic Player] Unhandled error code 1")
+    setup_settings_from_admin(ply)
+  end
 
-net.Receive( "toServerStop", function(length, sender )
-	if sender:IsValid() then
-		net.Start( "stopFromServer" )
-		net.Send(player.GetAll())
-	end
-end )
+  if not check_settings_valid() then return end
+  if shared_settings:get_admin_server_access() and not ply:IsAdmin() then return end
+  server_host.player = ply
+  server_host.liveSong = net.ReadString()
+  server_host.liveSongIndex = net.ReadUInt(16)
+  server_host.isPaused = false
+  server_host.isStopped = false
+  net.Start("cl_play_live")
+  net.WriteString(server_host.liveSong)
+  net.WriteBool(server_host.isLooped)
+  net.WriteBool(server_host.isAutoPlayed)
+  net.WriteUInt(server_host.liveSongIndex, 16)
 
-net.Receive( "toServerSeek", function(length, sender )
-	local seekTime = net.ReadDouble()
-	if sender:IsValid() then
-		net.Start( "seekFromServer" )
-		net.WriteDouble(seekTime)
-		net.Send(player.GetAll())
-	end
-end )
+  if isentity(server_host.player) and server_host.player:IsPlayer() and server_host.player:IsConnected() then
+    net.WriteEntity(server_host.player)
+  end
+
+  net.Send(player.GetAll())
+end)
+
+--[[
+    Triggered when an admin stops song on server
+    Note: autoplay and loop is set in another place
+--]]
+net.Receive("sv_stop_live", function(length, ply)
+  if not check_player_valid(ply) then return end
+  server_host.liveSong = ""
+  server_host.liveSeek = 0
+  server_host.player = 0
+  userWantLive = 0
+  server_host.isPaused = false
+  server_host.isStopped = true
+  net.Start("cl_stop_live")
+  -- net.SendOmit(ply)
+  net.Send(player.GetAll())
+end)
+
+-- Seek related sync
+----------------------------------------------------------------------------
+net.Receive("sv_set_seek", function(length, ply)
+  if not check_player_valid(ply) then return end
+  server_host.liveSeek = net.ReadDouble()
+  net.Start("cl_set_seek")
+  net.WriteDouble(server_host.liveSeek)
+  net.Send(player.GetAll())
+end)
+
+-- Sanity checks
+----------------------------------------------------------------------------
+-- --[[
+--     Updates the server side paused status
+-- --]]
+-- net.Receive("updateStatusPauseToServer", function(length, ply)
+--     if not IsValid(ply) then return end
+--     if shared_settings:get_admin_server_access() then
+--         if ply:IsAdmin() then
+--             server_host.isPaused = net.ReadBool()
+--         end
+--     else
+--         server_host.isPaused = net.ReadBool()
+--     end
+--     print("---- [update] isPaused set to:", isPaused)
+-- end)
+--[[
+    Updates the server side seek time by grabing it from the current host
+    and sends it back to the user which asked
+--]]
+net.Receive("sv_play_live_seek_from_host", function(length, ply)
+  if not check_player_valid(ply) then return end
+
+  -- print("--- [SERVER] Is paused:", isPaused)
+  -- ply:PrintMessage(HUD_PRINTCONSOLE, "--- [SERVER] Is paused:" .. tostring(isPaused) )
+  if server_host.isPaused then
+    -- print("[net] sv is paused")
+    net.Start("cl_pause_live")
+    -- net.WriteString(liveSong)
+    net.WriteBool(server_host.isPaused)
+    net.Send(ply)
+  else
+    if isentity(server_host.player) and server_host.player:IsPlayer() then
+      -- print("[net] play live from host")
+      net.Start("cl_play_live_seek_from_host")
+      net.WriteEntity(ply)
+      net.Send(server_host.player)
+      -- Maybe add some OnDisconnect hook so if the playerhost disconnects
+      -- then to make it nil
+      -- Also if asking for liveSeek but server_host.player is not longer here(it was before), so the text should be updated to no songs on server. HMM the net message when switching to Server Mode should handle this i think, so the problem remains if the admin disconnects while a song is playing or when the song ends hmm
+    end
+  end
+end)
+
+--[[
+    Update server seek time from admin and send to user
+--]]
+net.Receive("sv_play_live_seek_for_user", function(length, ply)
+  if not check_settings_valid() then return end
+  if not check_player_valid(ply) then return end
+  local user_wants_live = net.ReadEntity()
+  -- in case admin loses access
+  if shared_settings:get_admin_server_access() and not ply:IsAdmin() then return end
+  server_host.liveSeek = net.ReadDouble()
+  -- local asd = server_host
+  -- ply:PrintMessage(HUD_PRINTCONSOLE, "\n---[SERVER] user wants live:", user_wants_live, IsValid(user_wants_live))
+  -- net.WriteEntity(server_host.player)
+  if not check_player_valid(user_wants_live) then return end
+  net.Start("cl_play_live_seek")
+  net.WriteDouble(server_host.liveSeek)
+  net.WriteString(server_host.liveSong)
+  net.WriteUInt(server_host.liveSongIndex, 16)
+  net.WriteBool(server_host.isAutoPlayed)
+  net.WriteBool(server_host.isLooped)
+  net.Send(user_wants_live)
+end)
+
+-- print("---- [update-liveseek] liveSeek set to:", liveSeek)
+-- print("---- [update-liveseek] liveSong set to:", liveSong)
+--[[
+    Used for switching between client and server modes
+    Clients can only live seek if only admins can play on server
+--]]
+net.Receive("sv_play_live_seek", function(length, ply)
+  if not check_settings_valid() then return end
+  if not check_player_valid(ply) then return end
+
+  if shared_settings:get_admin_server_access() and not ply:IsAdmin() then
+    if isentity(server_host.player) and server_host.player:IsPlayer() then
+      net.Start("cl_play_live_seek_from_host")
+      net.WriteEntity(ply)
+      net.Send(server_host.player)
+
+      return
+    end
+  end
+
+  if #server_host.liveSong == 0 then return end
+  server_host.player = ply
+  server_host.liveSeek = net.ReadDouble()
+  net.Start("cl_play_live_seek")
+  net.WriteDouble(server_host.liveSeek)
+  net.WriteString(server_host.liveSong)
+  net.WriteUInt(server_host.liveSongIndex, 16)
+  net.WriteBool(server_host.isAutoPlayed)
+  net.WriteBool(server_host.isLooped)
+  net.Send(ply)
+end)
+
+net.Receive("sv_refresh_song_state", function(length, ply)
+  if not check_player_valid(ply) then return end
+  -- ply:PrintMessage(HUD_PRINTCONSOLE, "---[SERVER] Song live:" .. liveSong)
+  net.Start("cl_refresh_song_state")
+  net.WriteBool(server_host.isPaused)
+  net.WriteBool(server_host.isAutoPlayed)
+  net.WriteBool(server_host.isLooped)
+  net.WriteDouble(server_host.liveSeek)
+  net.WriteString(server_host.liveSong)
+  net.WriteUInt(server_host.liveSongIndex, 16)
+
+  if isentity(server_host.player) then
+    ply:PrintMessage(HUD_PRINTCONSOLE, "---[SERVER] Writing server_host.player")
+    net.WriteEntity(server_host.player)
+  end
+
+  net.Send(ply)
+end)
+
+-- print("\n---- [request] user request song state")
+net.Receive("sv_update_song_state", function(length, ply)
+  if not check_settings_valid() then return end
+  if not check_player_valid(ply) then return end
+
+  if shared_settings:get_admin_server_access() then
+    if not ply:IsAdmin() then return end
+  end
+
+  server_host.isPaused = net.ReadBool()
+  server_host.isAutoPlayed = net.ReadBool()
+  server_host.isLooped = net.ReadBool()
+  print("[net] update sv states")
+end)
+
+--[[
+    Update shared settings for each client
+--]]
+net.Receive("sv_refresh_access", function(length, ply)
+  if not check_settings_valid() then return end
+  if not check_player_valid(ply) then return end
+  local bVal = net.ReadBool()
+
+  if ply:IsAdmin() then
+    shared_settings:set_admin_server_access(bVal)
+  end
+
+  net.Start("cl_refresh_access")
+  net.WriteBool(shared_settings:get_admin_server_access())
+  printMessage(1, ply, bVal)
+  net.Send(player.GetAll())
+end)
+
+-- net.Receive("sv_update_host", function(length, ply)
+--     if not IsValid(ply) then return end
+--     ply:PrintMessage(HUD_PRINTCONSOLE, "---[SERVER] Request server_host.player")
+--     net.Start("cl_update_host")
+--     if isentity(server_host.player) then
+--         net.WriteEntity(server_host.player)
+--     end
+--     net.Send(ply)
+-- end)
+net.Receive("sv_reset_audio", function(length, ply)
+  server_host.liveSong = ""
+  server_host.liveSongIndex = 0
+  server_host.liveSeek = 0
+  server_host.isLooped = false
+  server_host.isAutoPlayed = false
+  server_host.isPaused = false
+  server_host.isStopped = true
+end)
