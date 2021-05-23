@@ -1,0 +1,5 @@
+describe("Test my table", function()
+    it("has a name property", function()
+      assert.has_property({ name = "Jack" }, "name")
+    end)
+end)
