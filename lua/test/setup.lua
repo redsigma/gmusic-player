@@ -1,3 +1,5 @@
+_G.__asd = describe
+
 local colors = require 'term.colors'
 local say = require("say")
 say:set_namespace("en")
@@ -5,11 +7,22 @@ say:set_namespace("en")
 --[[
     Custom expected messages
 --]]
-say:set("msg_expect", "Expected " .. colors.green("%s") .. " but has "
-    .. colors.red("'%s'") .."\n")
-say:set("msg_expect_highlight", "Media has:\n - line %s, expected %s with color %s, expected %s\n - prev line %s, expected %s, is selected: %s\n")
+say:set("msg_expect", "Media has:\n - title " .. colors.red("%s") ..
+" expected " .. colors.green("%s") .. "\n - text color " .. colors.red("'%s'") .. " expected " .. colors.green("'%s'") .. "\n - bg color " .. colors.red("'%s'") .. " expected " .. colors.green("'%s'") .. "\n")
 
+say:set("msg_expect_highlight", "Media has:" ..
+"\n - line " .. colors.red('%s') .. " expected " .. colors.green('%s') ..
+"\n - line text color " .. colors.red('%s') .. " expected " .. colors.green('%s') ..
+"\n - line bg color " .. colors.red("'%s'") .. " expected " .. colors.green("'%s'") ..
+"\n - prev line " .. colors.red("'%s'") .. " expected " .. colors.green("'%s'") .. ", is selected: '%s'\n")
 
+say:set("msg_expect_theme", "Media theme colors:" ..
+"\n - bg " .. colors.red("%s") .. " expected " .. colors.green("%s") ..
+"\n - bg hover " .. colors.red("'%s'") .. " expected " .. colors.green("'%s'") ..
+"\n - text " .. colors.red("'%s'") .. " expected " .. colors.green("'%s'") ..
+"\n - slider " .. colors.red("'%s'") .. " expected " .. colors.green("'%s'") ..
+"\n - bg list " .. colors.red("'%s'") .. " expected " .. colors.green("'%s'"))
+--------------------------------------------------------------------------------
 local dermaBase = {}
 local function has_property(state, arguments)
     local has_key = false
@@ -32,372 +45,190 @@ assert:register("assertion", "has_property", has_property,
     "assertion.has_property.positive", "assertion.has_property.negative")
 --------------------------------------------------------------------------------
 --[[
-    Expect panel title ui is playing. Checks text, color, and bg color
+    Check text and bg of panel title and context button
+    -1 stop, 0 play, 1 autoplay, 2 pause, 3 loop
 --]]
-local function ui_is_playing(state, arguments)
-    arguments[1] = " Playing: " .. arguments[1]
-    local status_title = dermaBase.main:GetTitle()
+local function ui_top_bar_color(state, args)
+    local status = args[1]
+    local title = " " .. args[2]
+
+    local color_context_title = color.Black
+    local color_title = color.White
+    local color_bg = color.Stop
+
+    -- play
+    if status == 0 then
+        color_context_title = color.Play
+        color_title = color.White
+        color_bg = color.Play
+        title = " Playing:" .. title
+    -- auto play
+    elseif status == 1 then
+        color_context_title = color.APlay
+        color_title = color.Black
+        color_bg = color.APlay
+        title = " Auto Playing:" .. title
+    -- pause
+    elseif status == 2 then
+        color_context_title = color.Pause
+        color_title = color.Black
+        color_bg = color.Pause
+        title = " Paused:" .. title
+    -- loop
+    elseif status == 3 then
+        color_context_title = color.Loop
+        color_title = color.Black
+        color_bg = color.Loop
+        title = " Looping:" .. title
+    end
+
+    local panel_title = dermaBase.main:GetTitle()
+    local panel_color = dermaBase.main:GetTitleColor()
+    local panel_bg = dermaBase.main.title_color
     local context_title = dermaBase.contextmedia.title:GetText()
     local context_color = dermaBase.contextmedia:GetTextColor()
-    if status_title ~= arguments[1] and context_title ~= arguments[1] and
-        dermaBase.main:GetTitleColor() ~= color.White and
-        dermaBase.main.title_color ~= color.Play and
-        context_color ~= color.Play then
-        table.insert(arguments, status_title)
+    if panel_title ~= title or context_title ~= args[2] or
+        panel_color ~= color_title or panel_bg ~= color_bg or
+        context_color ~= color_context_title then
+        args[1] = panel_title
+        args[2] = title
+        args[3] = panel_color.r .. " " .. panel_color.g .. " " .. panel_color.b
+        args[4] = color_title.r .. " " .. color_title.g .. " " .. color_title.b
+        args[5] = panel_bg.r .. " " .. panel_bg.g .. " " .. panel_bg.b
+        args[6] = color_bg.r .. " " .. color_bg.g .. " " .. color_bg.b
+        return false
+    end
+    return true
+end
+assert:register("assertion", "ui_top_bar_color", ui_top_bar_color,
+    "msg_expect", "msg_expect")
+
+
+--[[
+    Check highlight of current and previous line
+    -1 stop, 0 play, 1 autoplay, 2 pause, 3 loop
+--]]
+local function line_highlight(state, args)
+    local is_result_expected = true
+    local status = args[1]
+    local media = args[2]
+    local curr_line = args[3]
+    local prev_line = args[4]
+
+
+    local color_bg = nil
+    local color_revert = color.dark.text
+    local color_text = color_revert
+
+    -- play
+    if status == 0 then
+        color_bg = color.Play
+        color_text = color.dark.text
+    -- auto play
+    elseif status == 1 then
+        color_bg = color.APlay
+        color_text = color.Black
+    -- pause
+    elseif status == 2 then
+        color_bg = color.Pause
+        color_text = color.Black
+    -- loop
+    elseif status == 3 then
+        color_bg = color.Loop
+        color_text = color.Black
+    end
+
+    local is_same_line = curr_line == prev_line
+    if media.song_index ~= curr_line or media.song_prev_index ~= prev_line then
+        is_result_expected = false
+    end
+
+    local selected_color = dermaBase.songlist:GetLine(curr_line):GetTextColor()
+    local selected_bg = dermaBase.songlist:GetLine(curr_line):GetBGColor()
+
+    -- check if line text and bg doesnt match
+    if selected_color ~= color_text and
+        (selected_bg.r ~= nil or selected_bg ~= color_bg) then
+        is_result_expected = false
+    end
+
+    -- check if prev line still selected
+    local select_prev_line = dermaBase.songlist:GetLine(prev_line)
+    local prev_line_selected = false
+    if select_prev_line ~= nil then
+      local prev_line_color = select_prev_line:GetTextColor()
+      local prev_line_bg = select_prev_line:GetBGColor()
+      if prev_line_color ~= color_revert or prev_line_bg.r ~= nil then
+
+          prev_line_selected = true
+          if curr_line ~= prev_line then
+            is_result_expected = false
+          end
+      end
+    end
+
+    if not is_result_expected then
+        args[1] = media.song_index
+        args[2] = curr_line
+        args[3] = selected_color .. ""
+        args[4] = color_text .. ""
+        if (selected_bg.r == nil) then
+            args[5] = "nil"
+        else
+            args[5] = selected_bg .. ""
+        end
+        args[6] = color_bg .. ""
+
+        args[7] = media.song_prev_index
+        args[8] = prev_line
+        if curr_line ~= prev_line and prev_line_selected then
+          args[9] = colors.red(prev_line_selected)
+        else
+          args[9] = colors.green(prev_line_selected)
+        end
+
+    end
+    return is_result_expected
+end
+assert:register("assertion", "line_highlight", line_highlight,
+    "msg_expect_highlight", "msg_expect_highlight")
+
+--[[
+    Check theme colors
+    -1 light, 0 dark
+--]]
+local function ui_theme(state, args)
+    local status = args[1]
+    local painter = args[2]
+
+    local colors = color.light
+    if status == 0 then
+        colors = color.dark
+    end
+
+    if painter.colors.bg ~= colors.bg or
+        painter.colors.bghover ~= colors.bghover or
+        painter.colors.text ~= colors.text or
+        painter.colors.slider ~= colors.slider or
+        painter.colors.bglist ~= colors.bglist then
+        args[1] = painter.colors.bg .. ""
+        args[2] = colors.bg .. ""
+        args[3] = painter.colors.bghover .. ""
+        args[4] = colors.bghover .. ""
+
+        args[5] = painter.colors.text .. ""
+        args[6] = colors.text .. ""
+        args[7] = painter.colors.slider .. ""
+        args[8] = colors.slider .. ""
+
+        args[9] = painter.colors.bglist .. ""
+        args[10] = colors.bglist .. ""
         return false
     end
     return true
 end
 assert:register(
-    "assertion", "ui_is_playing", ui_is_playing, "msg_expect", "msg_expect")
-
---[[
-    Expect panel title ui is paused
---]]
-local function ui_is_paused(state, arguments)
-    arguments[1] = " Paused: " .. arguments[1]
-    local status_title = dermaBase.main:GetTitle()
-    local context_title = dermaBase.contextmedia.title:GetText()
-    local context_color = dermaBase.contextmedia:GetTextColor()
-    if status_title ~= arguments[1] and context_title ~= arguments[1] and
-        dermaBase.main:GetTitleColor() ~= color.Black and
-        dermaBase.main.title_color ~= color.Pause and
-        context_color ~= color.Pause then
-        table.insert(arguments, status_title)
-        return false
-    end
-    return true
-end
-assert:register(
-    "assertion", "ui_is_paused", ui_is_paused, "msg_expect", "msg_expect")
-
---[[
-    Expect panel title ui is looped
---]]
-local function ui_is_looped(state, arguments)
-    arguments[1] = " Looping: " .. arguments[1]
-    local status_title = dermaBase.main:GetTitle()
-    local context_title = dermaBase.contextmedia.title:GetText()
-    local context_color = dermaBase.contextmedia:GetTextColor()
-    if status_title ~= arguments[1] and context_title ~= arguments[1] and
-        dermaBase.main:GetTitleColor() ~= color.Black and
-        dermaBase.main.title_color ~= color.Loop and
-        context_color ~= color.Loop then
-        table.insert(arguments, status_title)
-        return false
-    end
-    return true
-end
-assert:register(
-    "assertion", "ui_is_looped", ui_is_looped, "msg_expect", "msg_expect")
-
---[[
-    Expect panel title ui is auto played
---]]
-local function ui_is_autoplay(state, arguments)
-    arguments[1] = " Auto Playing: " .. arguments[1]
-    local status_title = dermaBase.main:GetTitle()
-    local context_title = dermaBase.contextmedia.title:GetText()
-    local context_color = dermaBase.contextmedia:GetTextColor()
-    if status_title ~= arguments[1] and context_title ~= arguments[1] and
-        dermaBase.main:GetTitleColor() ~= color.Black and
-        dermaBase.main.title_color ~= color.APlay and
-        context_color ~= color.APlay then
-        table.insert(arguments, status_title)
-        return false
-    end
-    return true
-end
-assert:register(
-    "assertion", "ui_is_autoplay", ui_is_autoplay, "msg_expect", "msg_expect")
-
---[[
-    Expect panel title ui is stopped
---]]
-local function ui_is_stopped(state, arguments)
-    local status_title = dermaBase.main:GetTitle()
-    local context_title = dermaBase.contextmedia.title:GetText()
-    local context_color = dermaBase.contextmedia:GetTextColor()
-    if status_title ~= arguments[1] and context_title ~= arguments[1] and
-        dermaBase.main:GetTitleColor() ~= color.White and
-        dermaBase.main.title_color ~= color.Stop and
-        context_color ~= color.Black then
-        table.insert(arguments, status_title)
-        return false
-    end
-    return true
-end
-assert:register(
-    "assertion", "ui_is_stopped", ui_is_stopped, "msg_expect", "msg_expect")
-
---[[
-    Check highlight of current and previous line when playing
---]]
-local function line_highlight_play(state, arguments)
-    local is_correct = true
-    local media = arguments[1]
-    local curr_line = arguments[2]
-    local prev_line = arguments[3]
-    local color_bg = color.Play
-    local color_text = color_dark.text
-    if media.song_index ~= curr_line or media.song_prev_index ~= prev_line then
-        is_correct = false
-    end
-
-    local selected_color = dermaBase.songlist:GetLine(curr_line):GetTextColor()
-    local selected_bg = dermaBase.songlist:GetLine(curr_line):GetBGColor()
-    if selected_color.r ~= color_text.r or
-        selected_color.g ~= color_text.g or
-        selected_color.b ~= color_text.b or
-        selected_bg.r ~= color_bg.r or selected_bg.g ~= color_bg.g or
-        selected_bg.b ~= color_bg.b then
-        is_correct = false
-    end
-
-    local select_prev_line = dermaBase.songlist:GetLine(prev_line)
-    local line_selected = false
-    if select_prev_line ~= nil then
-        local prev_line_color = select_prev_line:GetTextColor()
-        local prev_line_bg = select_prev_line:GetBGColor()
-        if prev_line_color.r ~= color_dark.text.r or
-            prev_line_color.g ~= color_dark.text.g or
-            prev_line_color.b ~= color_dark.text.b or
-            prev_line_bg.r ~= nil then
-
-            line_selected = true
-            is_correct = false
-        end
-    end
-    if not is_correct then
-        arguments[1] = media.song_index
-        arguments[2] = curr_line
-        arguments[3] = { selected_color.r, selected_color.g, selected_color.b }
-        arguments[4] = color_dark.text.r .. " " .. color_dark.text.g .. " "
-            .. color_dark.text.b
-
-        arguments[5] = media.song_prev_index
-        arguments[6] = prev_line
-        arguments[7] = line_selected
-    end
-    return is_correct
-end
-assert:register("assertion", "line_highlight_play", line_highlight_play,
-    "msg_expect_highlight", "msg_expect_highlight")
-
---[[
-    Check highlight of current and previous line when paused
---]]
-local function line_highlight_pause(state, arguments)
-    local is_correct = true
-    local media = arguments[1]
-    local curr_line = arguments[2]
-    local prev_line = arguments[3]
-    local color_bg = color.Pause
-    local color_text = color.Black
-    if media.song_index ~= curr_line or media.song_prev_index ~= prev_line then
-        is_correct = false
-    end
-
-    local selected_color = dermaBase.songlist:GetLine(curr_line):GetTextColor()
-    local selected_bg = dermaBase.songlist:GetLine(curr_line):GetBGColor()
-    if selected_color.r ~= color_text.r or
-        selected_color.g ~= color_text.g or
-        selected_color.b ~= color_text.b or
-        selected_bg.r ~= color_bg.r or selected_bg.g ~= color_bg.g or
-        selected_bg.b ~= color_bg.b then
-        is_correct = false
-    end
-
-    local select_prev_line = dermaBase.songlist:GetLine(prev_line)
-    local line_selected = false
-    if select_prev_line ~= nil then
-        local prev_line_color = select_prev_line:GetTextColor()
-        local prev_line_bg = select_prev_line:GetBGColor()
-        if prev_line_color.r ~= color_dark.text.r or
-            prev_line_color.g ~= color_dark.text.g or
-            prev_line_color.b ~= color_dark.text.b or
-            prev_line_bg.r ~= nil then
-
-            line_selected = true
-            is_correct = false
-        end
-    end
-    if not is_correct then
-        arguments[1] = media.song_index
-        arguments[2] = curr_line
-        arguments[3] = { selected_color.r, selected_color.g, selected_color.b }
-        arguments[4] = color_dark.text.r .. " " .. color_dark.text.g .. " "
-            .. color_dark.text.b
-
-        arguments[5] = media.song_prev_index
-        arguments[6] = prev_line
-        arguments[7] = line_selected
-    end
-    return is_correct
-end
-assert:register("assertion", "line_highlight_pause", line_highlight_pause,
-    "msg_expect_highlight", "msg_expect_highlight")
-
---[[
-    Check highlight of current and previous line when auto played
---]]
-local function line_highlight_autoplay(state, arguments)
-    local is_correct = true
-    local media = arguments[1]
-    local curr_line = arguments[2]
-    local prev_line = arguments[3]
-    local color_bg = color.APlay
-    local color_text = color.Black
-    if media.song_index ~= curr_line or media.song_prev_index ~= prev_line then
-        is_correct = false
-    end
-
-    local selected_color = dermaBase.songlist:GetLine(curr_line):GetTextColor()
-    local selected_bg = dermaBase.songlist:GetLine(curr_line):GetBGColor()
-    if selected_color.r ~= color_text.r or
-        selected_color.g ~= color_text.g or
-        selected_color.b ~= color_text.b or
-        selected_bg.r ~= color_bg.r or selected_bg.g ~= color_bg.g or
-        selected_bg.b ~= color_bg.b then
-        is_correct = false
-    end
-
-    local select_prev_line = dermaBase.songlist:GetLine(prev_line)
-    local line_selected = false
-    if select_prev_line ~= nil then
-        local prev_line_color = select_prev_line:GetTextColor()
-        local prev_line_bg = select_prev_line:GetBGColor()
-        if prev_line_color.r ~= color_dark.text.r or
-            prev_line_color.g ~= color_dark.text.g or
-            prev_line_color.b ~= color_dark.text.b or
-            prev_line_bg.r ~= nil then
-
-            line_selected = true
-            is_correct = false
-        end
-    end
-    if not is_correct then
-        arguments[1] = media.song_index
-        arguments[2] = curr_line
-        arguments[3] = { selected_color.r, selected_color.g, selected_color.b }
-        arguments[4] = color_dark.text.r .. " " .. color_dark.text.g .. " "
-            .. color_dark.text.b
-
-        arguments[5] = media.song_prev_index
-        arguments[6] = prev_line
-        arguments[7] = line_selected
-    end
-    return is_correct
-end
-assert:register("assertion", "line_highlight_autoplay", line_highlight_autoplay,
-    "msg_expect_highlight", "msg_expect_highlight")
-
---[[
-    Check highlight of current and previous line when auto played
---]]
-local function line_highlight_loop(state, arguments)
-    local is_correct = true
-    local media = arguments[1]
-    local curr_line = arguments[2]
-    local prev_line = arguments[3]
-    local color_bg = color.Loop
-    local color_text = color.Black
-    if media.song_index ~= curr_line or media.song_prev_index ~= prev_line then
-        is_correct = false
-    end
-
-    local selected_color = dermaBase.songlist:GetLine(curr_line):GetTextColor()
-    local selected_bg = dermaBase.songlist:GetLine(curr_line):GetBGColor()
-    if selected_color.r ~= color_text.r or
-        selected_color.g ~= color_text.g or
-        selected_color.b ~= color_text.b or
-        selected_bg.r ~= color_bg.r or selected_bg.g ~= color_bg.g or
-        selected_bg.b ~= color_bg.b then
-        is_correct = false
-    end
-
-    local select_prev_line = dermaBase.songlist:GetLine(prev_line)
-    local line_selected = false
-    if select_prev_line ~= nil then
-        local prev_line_color = select_prev_line:GetTextColor()
-        local prev_line_bg = select_prev_line:GetBGColor()
-        if prev_line_color.r ~= color_dark.text.r or
-            prev_line_color.g ~= color_dark.text.g or
-            prev_line_color.b ~= color_dark.text.b or
-            prev_line_bg.r ~= nil then
-
-            line_selected = true
-            is_correct = false
-        end
-    end
-    if not is_correct then
-        arguments[1] = media.song_index
-        arguments[2] = curr_line
-        arguments[3] = { selected_color.r, selected_color.g, selected_color.b }
-        arguments[4] = color_dark.text.r .. " " .. color_dark.text.g .. " "
-            .. color_dark.text.b
-
-        arguments[5] = media.song_prev_index
-        arguments[6] = prev_line
-        arguments[7] = line_selected
-    end
-    return is_correct
-end
-assert:register("assertion", "line_highlight_loop", line_highlight_loop,
-    "msg_expect_highlight", "msg_expect_highlight")
-
---[[
-    Check highlight of current and previous line when stopped
---]]
-local function line_highlight_stop(state, arguments)
-    local is_correct = true
-    local media = arguments[1]
-    local curr_line = arguments[2]
-    local prev_line = arguments[3]
-    local color_bg = color.APlay
-    local color_text = color_dark.text
-    if media.song_index ~= curr_line or media.song_prev_index ~= prev_line then
-        is_correct = false
-    end
-
-    local selected_color = dermaBase.songlist:GetLine(curr_line):GetTextColor()
-    local selected_bg = dermaBase.songlist:GetLine(curr_line):GetBGColor()
-    if selected_color.r ~= color_text.r or
-        selected_color.g ~= color_text.g or
-        selected_color.b ~= color_text.b or
-        selected_bg.r ~= nil then
-        is_correct = false
-    end
-
-    local select_prev_line = dermaBase.songlist:GetLine(prev_line)
-    local line_selected = false
-    if select_prev_line ~= nil then
-        local prev_line_color = select_prev_line:GetTextColor()
-        local prev_line_bg = select_prev_line:GetBGColor()
-        if prev_line_color.r ~= color_dark.text.r or
-            prev_line_color.g ~= color_dark.text.g or
-            prev_line_color.b ~= color_dark.text.b or
-            prev_line_bg.r ~= nil then
-
-            line_selected = true
-            is_correct = false
-        end
-    end
-    if not is_correct then
-        arguments[1] = media.song_index
-        arguments[2] = curr_line
-        arguments[3] = { selected_color.r, selected_color.g, selected_color.b }
-        arguments[4] = color_dark.text.r .. " " .. color_dark.text.g .. " "
-            .. color_dark.text.b
-
-        arguments[5] = media.song_prev_index
-        arguments[6] = prev_line
-        arguments[7] = line_selected
-    end
-    return is_correct
-end
-assert:register("assertion", "line_highlight_stop", line_highlight_stop,
-    "msg_expect_highlight", "msg_expect_highlight")
+    "assertion", "ui_theme", ui_theme, "msg_expect_theme", "msg_expect_theme")
 
 
 local function set_derma(state, arguments)
@@ -411,3 +242,6 @@ say:set("assertion.set_derma_message",
     "Expected %s to be a table with derma panels\n")
 assert:register("assertion", "set_derma", set_derma,
     "assertion.set_derma_message", "assertion.set_derma_message")
+
+-- Set busted funcs for shared unit tests
+set_shared_interface(insulate, describe, it, assert)

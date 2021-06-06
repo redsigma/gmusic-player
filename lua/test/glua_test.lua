@@ -20,7 +20,9 @@ end
 return function(options)
   local busted = require 'busted'
   local handler = require 'busted.outputHandlers.base'()
+  handler.failures_headers = {}
   options.verbose = true
+  options.deferPrint = true
 
   local repeatSuiteString = '\nRepeating all tests (run %u of %u) . . .\n\n'
   local randomizeString  = colors.yellow('Note: Randomizing test order with a seed of %u.\n')
@@ -103,6 +105,7 @@ return function(options)
     return fileline
   end
 
+  -- Debug glua crash here
   local getTestList = function(status, count, list, getDescription)
     local string = ''
     local header = summaryStrings[status].header
@@ -114,7 +117,7 @@ return function(options)
       local testString = summaryStrings[status].test
       if testString then
         for _, t in ipairs(list) do
-          local fullname = getFileLine(t.element) .. colors.bright(t.name)
+          local fullname = getFileLine(t.element) .. colors.white(handler.failures_headers[_]) .. ": " .. colors.yellow(t.name)
           string = string .. string_format(testString, fullname)
           if options.deferPrint then
             string = string .. getDescription(t)
@@ -307,11 +310,13 @@ return function(options)
 
     -- Workaround to support tests in multiple files
     if (#handler.failures > 0) then
-        for _, failure in pairs(handler.failures) do
-            io_write(failureDescription(failure))
-        end
-        io_flush()
-        if not _G.continue_busted then os.exit(0, true) end
+      io_write(colors.red("============================================================================================\n"))
+      io_flush()
+      for _, failure in pairs(handler.failures) do
+          io_write(failureDescription(failure))
+      end
+      io_flush()
+      if not _G.continue_busted then os.exit(0, true) end
     end
     return nil, true
   end
@@ -364,8 +369,12 @@ return function(options)
       skippedCount = skippedCount + 1
       string = skippedString
     elseif status == 'failure' then
+      while parent.attributes.envmode == nil do
+        parent = busted.parent(parent)
+      end
       failureCount = failureCount + 1
       string = failureString
+      handler.failures_headers[#handler.failures_headers + 1] = parent.name
     elseif status == 'error' then
       errorCount = errorCount + 1
       string = errorString
@@ -378,10 +387,14 @@ return function(options)
   end
 
   handler.testFailure = function(element, parent, message, debug)
-    if not options.deferPrint then
-      io_write(failureDescription(handler.failures[#handler.failures]))
-      io_flush()
-    end
+    local custom_element = {}
+    custom_element.message = message
+    custom_element.element = {}
+    custom_element.element.trace = element.trace
+    custom_element.element.trace.short_src = element.trace.short_src
+    custom_element.element.trace.currentline = element.trace.currentline
+    custom_element.name = element.name
+    handler.failures[#handler.failures] = custom_element
     return nil, true
   end
 

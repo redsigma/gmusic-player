@@ -10,7 +10,7 @@ require("test/mock/vgui")
 
 AddCSLuaFile("vgui/seekbarclicklayer.lua")
 AddCSLuaFile("vgui/seekbar.lua")
-AddCSLuaFile("vgui/numslidernolabel.lua")
+AddCSLuaFile("vgui/volumebar.lua")
 AddCSLuaFile("vgui/doublelist.lua")
 AddCSLuaFile("vgui/doptions.lua")
 AddCSLuaFile("vgui/playerframe.lua")
@@ -26,6 +26,12 @@ AddCSLuaFile("vgui/dbetterbutton.lua")
 
 require("test/mock/hook")
 require("test/mock/net")
+require("includes/modules/coms")
+require("gmpl/sv_gmpl")
+
+-- Shared unit tests
+require("test/sh/interface")
+
 _G.view_context_menu = {}
 _G.color = {}
 _G.color.Play	= Color(0, 150, 0)
@@ -40,31 +46,50 @@ _G.color.White 	= Color(255, 255, 255)
 _G.color.Stop   = Color(150, 150, 150)
 
 -- colors used for dark mode
-_G.color_light = {}
-_G.color_light.bg       = Color(20, 150, 240)
-_G.color_light.bghover  = Color(30, 30, 30, 130)
-_G.color_light.text     = Color(0, 0, 0)
-_G.color_light.bglist   = Color(245, 245, 245)
-_G.color_light.slider   = Color(0, 0, 0, 100)
+_G.color.light = {}
+_G.color.light.bg       = Color(20, 150, 240)
+_G.color.light.bghover  = Color(30, 30, 30, 130)
+_G.color.light.text     = Color(0, 0, 0)
+_G.color.light.bglist   = Color(245, 245, 245)
+_G.color.light.slider   = Color(0, 0, 0, 100)
 
-_G.color_dark = {}
-_G.color_dark.bg       = Color(15, 110, 175)
-_G.color_dark.bghover  = Color(230, 230, 230, 50)
-_G.color_dark.text     = Color(230, 230, 230)
-_G.color_dark.bglist   = Color(35, 35, 35)
-_G.color_dark.slider   = Color(0, 0, 0, 100)
+_G.color.dark = {}
+_G.color.dark.bg       = Color(15, 110, 175)
+_G.color.dark.bghover  = Color(230, 230, 230, 50)
+_G.color.dark.text     = Color(230, 230, 230)
+_G.color.dark.bglist   = Color(35, 35, 35)
+_G.color.dark.slider   = Color(0, 0, 0, 100)
+
 _G.create_with_dark_mode = function()
-    local dermaBase =
-        include("includes/modules/meth_base.lua")(view_context_menu, -1)
-    dermaBase.mediaplayer:net_init()
-    dermaBase.painter:change_theme(true)
-    dermaBase.song_data:load_from_disk()
-    dermaBase.create(view_context_menu)
-    dermaBase.painter:update_colors()
-    local media = dermaBase.mediaplayer
-    dermaPanel = dermaBase
-    return dermaBase, media
+  local dermaBase =
+    include("includes/modules/meth_base.lua")(view_context_menu, -1)
+  dermaBase.mediaplayer:net_init()
+  dermaBase.painter:theme_dark(true)
+  dermaBase.song_data:load_from_disk()
+  dermaBase.create(view_context_menu)
+  dermaBase.painter:update_colors()
+  include("gmpl/cl_cvars.lua")(dermaBase)
+  require("gmpl/sv_cvars")
+  local media = dermaBase.mediaplayer
+  dermaPanel = dermaBase
+  return dermaBase, media
 end
+_G.call_as_admin = function(callback)
+  local previous_admin_state = _get_player_admin()
+  _set_player_admin(true)
+  callback()
+  _set_player_admin(previous_admin_state)
+end
+_G.init_sv_shared_settings = function()
+  call_as_admin(function()
+    net.Start("cl_update_cvars_from_first_admin")
+    net.Send(ply)
+  end)
+end
+-- local insulate = nil
+-- local describe = 0
+-- local it = nil
+-- local assert = nil
 
 
 -- // TODO
@@ -154,7 +179,6 @@ insulate("-- EXPERImeNT On Click --\n", function()
     require("gmpl/sv_gmpl")
     require("gmpl/cl_gmpl")
 
-    _set_player_admin(true)
     hook._Run("Initialize")
     hook._Run("PlayerInitialSpawn")
     -- require("includes/modules/musicplayerclass")
