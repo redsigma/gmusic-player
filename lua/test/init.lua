@@ -6,6 +6,7 @@ else
 end
 
 require("test/mock/base")
+require("test/mock/util")
 require("test/mock/vgui")
 
 AddCSLuaFile("vgui/seekbarclicklayer.lua")
@@ -29,8 +30,9 @@ require("test/mock/net")
 require("includes/modules/coms")
 require("gmpl/sv_gmpl")
 
--- Shared unit tests
-require("test/sh/interface")
+-- Unit tests used in multiple files
+require("test/common/interface")
+require("test/common/interface_sh")
 
 _G.view_context_menu = {}
 _G.color = {}
@@ -60,12 +62,25 @@ _G.color.dark.text     = Color(230, 230, 230)
 _G.color.dark.bglist   = Color(35, 35, 35)
 _G.color.dark.slider   = Color(0, 0, 0, 100)
 
+local files_local = {}
+files_local.folder1 = {"Example1.mp3", "Example2.mp3"}
+files_local.folder2 = {"Example3.mp3", "Example4.mp3", "example5.mp3"}
+local files_workshop = {}
+files_workshop.folder1 = {"Example20.mp3"}
+files_workshop.folder2 = {"Example30.mp3"}
+
+_set_audio_files("GAME", {"folder1", "folder2"}, files_local)
+_set_audio_files("WORKSHOP", {"folder1", "folder2"}, files_workshop)
+
 _G.create_with_dark_mode = function()
   local dermaBase =
     include("includes/modules/meth_base.lua")(view_context_menu, -1)
   dermaBase.mediaplayer:net_init()
   dermaBase.painter:theme_dark(true)
-  dermaBase.song_data:load_from_disk()
+  string._Explode_Separator("\\n")
+  local loaded = dermaBase.song_data:load_from_disk()
+  if loaded then dermaBase.song_data:populate_song_page() end
+
   dermaBase.create(view_context_menu)
   dermaBase.painter:update_colors()
   include("gmpl/cl_cvars.lua")(dermaBase)
@@ -83,8 +98,17 @@ end
 _G.init_sv_shared_settings = function()
   call_as_admin(function()
     net.Start("cl_update_cvars_from_first_admin")
-    net.Send(ply)
+    net.Send(_LocalAdmin)
   end)
+end
+
+_G._dermaBase = {}
+_G.set_derma = function(state, arguments)
+  if not type(arguments[1]) == "table" then
+    return false
+  end
+  _G._dermaBase = arguments[1]
+  return true
 end
 -- local insulate = nil
 -- local describe = 0

@@ -108,7 +108,9 @@ return function(options)
   -- Debug glua crash here
   local getTestList = function(status, count, list, getDescription)
     local string = ''
+    local separator_listed = "================================================================================\n"
     local header = summaryStrings[status].header
+      .. colors.yellow(separator_listed)
     if count > 0 and header then
       local tests = (count == 1 and 'test' or 'tests')
       local errors = (count == 1 and 'error' or 'errors')

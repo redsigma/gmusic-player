@@ -1,5 +1,3 @@
-_G.__asd = describe
-
 local colors = require 'term.colors'
 local say = require("say")
 say:set_namespace("en")
@@ -23,7 +21,6 @@ say:set("msg_expect_theme", "Media theme colors:" ..
 "\n - slider " .. colors.red("'%s'") .. " expected " .. colors.green("'%s'") ..
 "\n - bg list " .. colors.red("'%s'") .. " expected " .. colors.green("'%s'"))
 --------------------------------------------------------------------------------
-local dermaBase = {}
 local function has_property(state, arguments)
     local has_key = false
 
@@ -57,36 +54,42 @@ local function ui_top_bar_color(state, args)
     local color_bg = color.Stop
 
     -- play
-    if status == 0 then
+    if status == 1 then
         color_context_title = color.Play
         color_title = color.White
         color_bg = color.Play
         title = " Playing:" .. title
     -- auto play
-    elseif status == 1 then
+    elseif status == 2 then
         color_context_title = color.APlay
         color_title = color.Black
         color_bg = color.APlay
         title = " Auto Playing:" .. title
     -- pause
-    elseif status == 2 then
+    elseif status == 3 then
         color_context_title = color.Pause
         color_title = color.Black
         color_bg = color.Pause
         title = " Paused:" .. title
     -- loop
-    elseif status == 3 then
+    elseif status == 4 then
         color_context_title = color.Loop
         color_title = color.Black
         color_bg = color.Loop
         title = " Looping:" .. title
+    -- pause live seek
+    elseif status == 5 then
+      color_context_title = color.APause
+      color_title = color.Black
+      color_bg = color.APause
+      title = " Muted:" .. title
     end
 
-    local panel_title = dermaBase.main:GetTitle()
-    local panel_color = dermaBase.main:GetTitleColor()
-    local panel_bg = dermaBase.main.title_color
-    local context_title = dermaBase.contextmedia.title:GetText()
-    local context_color = dermaBase.contextmedia:GetTextColor()
+    local panel_title = _dermaBase.main:GetTitle()
+    local panel_color = _dermaBase.main:GetTitleColor()
+    local panel_bg = _dermaBase.main.title_color
+    local context_title = _dermaBase.contextmedia.title:GetText()
+    local context_color = _dermaBase.contextmedia:GetTextColor()
     if panel_title ~= title or context_title ~= args[2] or
         panel_color ~= color_title or panel_bg ~= color_bg or
         context_color ~= color_context_title then
@@ -101,64 +104,86 @@ local function ui_top_bar_color(state, args)
     return true
 end
 assert:register("assertion", "ui_top_bar_color", ui_top_bar_color,
-    "msg_expect", "msg_expect")
+  "msg_expect", "msg_expect")
 
 
 --[[
     Check highlight of current and previous line
-    -1 stop, 0 play, 1 autoplay, 2 pause, 3 loop
+    -1 stop, 0 play, 1 autoplay, 2 pause, 3 loop, 4 pause live
 --]]
 local function line_highlight(state, args)
     local is_result_expected = true
+
     local status = args[1]
-    local media = args[2]
-    local curr_line = args[3]
-    local prev_line = args[4]
+    local curr_line = args[2]
+    local prev_line = args[3]
+    local channel = args[4]
 
-
-    local color_bg = nil
+    local no_color = Color(-1, -1, -1)
+    local color_bg = color.Stop
     local color_revert = color.dark.text
     local color_text = color_revert
 
+    local curr_color_bg = no_color
+    local curr_color_text = color_revert
+
+    -- no highlight
+    if status == -1 then
+      color_bg = no_color
+      color_text = color_revert
+    -- stop
+    elseif status == 0 then
+      color_bg = color.Stop
+      color_text = color.dark.text
     -- play
-    if status == 0 then
-        color_bg = color.Play
-        color_text = color.dark.text
-    -- auto play
     elseif status == 1 then
-        color_bg = color.APlay
-        color_text = color.Black
-    -- pause
+      color_bg = color.Play
+      color_text = color.dark.text
+    -- auto play
     elseif status == 2 then
-        color_bg = color.Pause
-        color_text = color.Black
-    -- loop
+      color_bg = color.APlay
+      color_text = color.Black
+    -- pause
     elseif status == 3 then
-        color_bg = color.Loop
-        color_text = color.Black
+      color_bg = color.Pause
+      color_text = color.Black
+    -- loop
+    elseif status == 4 then
+      color_bg = color.Loop
+      color_text = color.Black
+    -- pause live seek
+    elseif status == 5 then
+      color_bg = color.APause
+      color_text = color.Black
     end
 
-    local is_same_line = curr_line == prev_line
-    if media.song_index ~= curr_line or media.song_prev_index ~= prev_line then
-        is_result_expected = false
+    if channel == nil then
+      channel = _dermaBase.mediaplayer:get_channel()
+    end
+    if channel.song_index ~= curr_line or
+      channel.song_prev_index ~= prev_line then
+      is_result_expected = false
     end
 
-    local selected_color = dermaBase.songlist:GetLine(curr_line):GetTextColor()
-    local selected_bg = dermaBase.songlist:GetLine(curr_line):GetBGColor()
+    local select_curr_line = _dermaBase.songlist:GetLine(curr_line)
+    if select_curr_line ~= nil then
+      curr_color_text = select_curr_line:GetTextColor()
+      curr_color_bg = select_curr_line:GetBGColor()
 
-    -- check if line text and bg doesnt match
-    if selected_color ~= color_text and
-        (selected_bg.r ~= nil or selected_bg ~= color_bg) then
-        is_result_expected = false
+      -- check if line text or bg doesnt match the expected
+      if curr_color_text ~= color_text or
+          (curr_color_bg.r ~= nil and curr_color_bg ~= color_bg) then
+          is_result_expected = false
+      end
     end
 
     -- check if prev line still selected
-    local select_prev_line = dermaBase.songlist:GetLine(prev_line)
     local prev_line_selected = false
+    local select_prev_line = _dermaBase.songlist:GetLine(prev_line)
     if select_prev_line ~= nil then
-      local prev_line_color = select_prev_line:GetTextColor()
-      local prev_line_bg = select_prev_line:GetBGColor()
-      if prev_line_color ~= color_revert or prev_line_bg.r ~= nil then
+      local prev_color_text = select_prev_line:GetTextColor()
+      local prev_color_bg = select_prev_line:GetBGColor()
+      if prev_color_text ~= color_revert or prev_color_bg.r ~= nil then
 
           prev_line_selected = true
           if curr_line ~= prev_line then
@@ -168,18 +193,18 @@ local function line_highlight(state, args)
     end
 
     if not is_result_expected then
-        args[1] = media.song_index
+        args[1] = channel.song_index
         args[2] = curr_line
-        args[3] = selected_color .. ""
+        args[3] = curr_color_text .. ""
         args[4] = color_text .. ""
-        if (selected_bg.r == nil) then
+        if (curr_color_bg.r == nil) then
             args[5] = "nil"
         else
-            args[5] = selected_bg .. ""
+            args[5] = curr_color_bg .. ""
         end
         args[6] = color_bg .. ""
 
-        args[7] = media.song_prev_index
+        args[7] = channel.song_prev_index
         args[8] = prev_line
         if curr_line ~= prev_line and prev_line_selected then
           args[9] = colors.red(prev_line_selected)
@@ -228,20 +253,21 @@ local function ui_theme(state, args)
     return true
 end
 assert:register(
-    "assertion", "ui_theme", ui_theme, "msg_expect_theme", "msg_expect_theme")
+  "assertion", "ui_theme", ui_theme, "msg_expect_theme", "msg_expect_theme")
 
 
-local function set_derma(state, arguments)
-    if not type(arguments[1]) == "table" then
-        return false
-    end
-    dermaBase = arguments[1]
-    return true
-end
+-- local function set_derma(state, arguments)
+--     if not type(arguments[1]) == "table" then
+--         return false
+--     end
+--     _dermaBase = arguments[1]
+--     return true
+-- end
 say:set("assertion.set_derma_message",
-    "Expected %s to be a table with derma panels\n")
-assert:register("assertion", "set_derma", set_derma,
-    "assertion.set_derma_message", "assertion.set_derma_message")
+  "Expected %s to be a table with derma panels\n")
+assert:register("assertion", "set_derma", _G.set_derma,
+  "assertion.set_derma_message", "assertion.set_derma_message")
 
 -- Set busted funcs for shared unit tests
-set_shared_interface(insulate, describe, it, assert)
+init_unit_test_func(insulate, describe, it, assert)
+setup_sh_interface(insulate, describe, it, assert)

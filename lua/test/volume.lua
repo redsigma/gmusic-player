@@ -15,6 +15,9 @@
 --9. OnCursorMoved - lua/vgui/dslider.lua:108
 --10. unknown - lua/vgui/dslider.lua:135
 
+-- TODO
+-- 1. Add tests for pause live and also when switching from server to client so nothing breaks cuz there was a bug which made it break when switch to client and then come back to server and disable it
+
 
 
 
