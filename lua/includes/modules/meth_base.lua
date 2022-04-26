@@ -7,8 +7,22 @@ local count_equals = 0
 local affect_ui_buttons = false
 -- callbacks from audio logic
 local callbacks = {}
-callbacks.OnClientAudioChange = function(media) end -- TODO also check for media:is_looped() cuz i think pause is on false if -- looping so this might not get paused if loop > pause -- if media:is_paused() then --   print("Pause seek end, in paused") --   -- timer.Pause("gmpl_seek_end") -- elseif media:is_stopped() or media:is_missing() then --   print("Pause seek end in stopped") --   -- timer.Pause("gmpl_seek_end") --   dermaBase.sliderseek:ShowSeekBarHandle(false) -- elseif media:is_playing() then --   print("Unpause seek end") --   -- timer.UnPause("gmpl_seek_end") --   dermaBase.sliderseek:ShowSeekBarHandle(true) -- end
+callbacks.OnClientAudioChange = function(media) end
 
+-- TODO also check for media:is_looped() cuz i think pause is on false if
+-- looping so this might not get paused if loop > pause
+-- if media:is_paused() then
+--   print("Pause seek end, in paused")
+---- timer.Pause("gmpl_seek_end")
+-- elseif media:is_stopped() or media:is_missing() then
+--   print("Pause seek end in stopped")
+---- timer.Pause("gmpl_seek_end")
+--   dermaBase.sliderseek:ShowSeekBarHandle(false)
+-- elseif media:is_playing() then
+--   print("Unpause seek end")
+---- timer.UnPause("gmpl_seek_end")
+--   dermaBase.sliderseek:ShowSeekBarHandle(true)
+-- end
 local function init(contextMenu, contextMargin)
   dermaBase = {
     cl_seek = 0,
@@ -122,29 +136,30 @@ local function init(contextMenu, contextMargin)
     end
 
     if dermaBase.musicsheet:IsVisible() or dermaBase.audiodirsheet:IsVisible() then
-      local musicsheet_sidebar_items = dermaBase.musicsheet:GetSideBarItems()
+      local sidebar_button_1 = dermaBase.musicsheet:GetSideBarItems()[1].Button
+      local sidebar_button_2 = dermaBase.musicsheet:GetSideBarItems()[2].Button
 
       if dermaBase.cbadmindir:GetChecked() then
         if dermaBase.audiodirsheet:IsVisible() and not LocalPlayer():IsAdmin() then
-          dermaBase.musicsheet:SetActiveButton(musicsheet_sidebar_items[1].Button)
+          dermaBase.musicsheet:SetActiveButton(sidebar_button_1)
         end
 
         if LocalPlayer():IsAdmin() then
-          if not musicsheet_sidebar_items[2].Button:IsVisible() then
-            musicsheet_sidebar_items[2].Button:SetVisible(true)
+          if not sidebar_button_2:IsVisible() then
+            sidebar_button_2:SetVisible(true)
             dermaBase.musicsheet.sidebar:InvalidateChildren()
           end
-        elseif musicsheet_sidebar_items[2].Button:IsVisible() then
-          musicsheet_sidebar_items[2].Button:SetVisible(false)
+        elseif sidebar_button_2:IsVisible() then
+          sidebar_button_2:SetVisible(false)
           dermaBase.musicsheet.sidebar:InvalidateChildren()
         end
       else
-        if musicsheet_sidebar_items[2].Button:GetDisabled() then
-          musicsheet_sidebar_items[2].Button:SetEnabled(true)
+        if sidebar_button_2:GetDisabled() then
+          sidebar_button_2:SetEnabled(true)
         end
 
-        if not musicsheet_sidebar_items[2].Button:IsVisible() then
-          musicsheet_sidebar_items[2].Button:SetVisible(true)
+        if not sidebar_button_2:IsVisible() then
+          sidebar_button_2:SetVisible(true)
           dermaBase.musicsheet.sidebar:InvalidateChildren()
         end
       end
