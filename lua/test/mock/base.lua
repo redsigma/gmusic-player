@@ -1,5 +1,6 @@
 -- Base
 --------------------------------------------------------------------------------
+_G.PrintTable = function() end
 _G.include = function(path_no_ext)
     local str = string.gsub(path_no_ext, ".lua", "")
     return require(str)
@@ -8,60 +9,111 @@ _G.AddCSLuaFile = function(file)
     include(file)
 end
 
+_G.make_copy = function(copy_from)
+  local copy_to = {}
+  for k,v in pairs(copy_from) do
+    copy_to[k] = v
+  end
+  return copy_to
+end
+_G.keyValuePairs = function(state)
+	state.Index = state.Index + 1
+	local keyValue = state.KeyValues[state.Index]
+	if not keyValue then return end
+	return keyValue.key, keyValue.val
+end
+_G.toKeyValues = function(tbl)
+	local result = {}
+	for k,v in pairs(tbl) do
+		table.insert(result, { key = k, val = v })
+	end
+	return result
+end
+_G.SortedPairsByValue = function(pTable, Desc)
+	local sortedTbl = toKeyValues(pTable)
+	if Desc then
+		table.sort(sortedTbl, function(a, b) return a.val > b.val end)
+	else
+		table.sort(sortedTbl, function(a, b) return a.val < b.val end)
+	end
+	return keyValuePairs, { Index = 0, KeyValues = sortedTbl }
+end
+
 _G.HUD_PRINTNOTIFY	= 1
 _G.HUD_PRINTCONSOLE	= 2
 _G.HUD_PRINTTALK	= 3
 _G.HUD_PRINTCENTER  = 4
+local _mock_is_admin = false
+local _mock_sending_cl_info = false
+local _all_players_are_admin = true
 _G.Player = {}
 _G.Player.IsValid = function(self) return true end
-_G.Player.IsAdmin = function(self)
-    return self.is_admin
-end
+_G.Player.IsPlayer = function(self) return true end
+_G.Player.Nick = function(self) return "Player Nick" end
+_G.Player.IsConnected = function(self) return not _mock_sending_cl_info end
+_G.Player.IsAdmin = function(self) return self.is_admin or false end
 _G.Player.PrintMessage = function(self, ...)
-    local args = { ... }
-    local str_result = ""
-	for _, v in ipairs( args ) do
-        if isstring(v) then
-            str_result = str_result .. " " .. v
-        end
-        if isnumber(v) then
-            if _ == 1 and v == _G.HUD_PRINTCONSOLE then
-                str_result = str_result .. "CONSOLE:"
-            else
-                str_result = str_result .. " " .. v
-            end
-        end
-        if isbool(v) then
-            if v then
-                str_result = str_result .. " true"
-            else
-                str_result = str_result .. " false"
-            end
-        end
-	end
-    print(str_result)
-end
-_G.LocalPlayer = {}
-local _mock_is_admin = false
-setmetatable(_G.LocalPlayer, { __call = function(self)
-    local player = {}
-    player.is_admin = _mock_is_admin
-    for k,v in pairs(_G.Player) do
-        player[k] = v
+  local args = { ... }
+  local str_result = ""
+  for _, v in ipairs( args ) do
+    if isstring(v) then
+      str_result = str_result .. " " .. v
     end
-    return player
-end })
-_G._set_player_admin = function(bool)
-    _mock_is_admin = bool
+    if isnumber(v) then
+      if _ == 1 and v == _G.HUD_PRINTCONSOLE then
+        str_result = str_result .. "CONSOLE:"
+      else
+        str_result = str_result .. " " .. v
+      end
+    end
+    if isbool(v) then
+      if v then
+        str_result = str_result .. " true"
+      else
+        str_result = str_result .. " false"
+      end
+    end
+  end
+  print(str_result)
 end
 
-_G.Color = function(r,g,b)
+_G._LocalAdmin = _G.Player
+_G._LocalAdmin.is_admin = true
+_G._LocalAdmin.was_GetAll = false
+
+-- Color
+--------------------------------------------------------------------------------
+_G.Color = {}
+_G.Color.len = function(color)
+  -- lua 5.1 doesnt support # on tables
+  local size = 0
+  for _, _ in pairs(color) do
+    size = size + 1
+  end
+  return size
+end
+local function compare(color_left, color_right)
+    if color_left.r ~= color_right.r or color_left.g ~= color_right.g or
+    color_left.b ~= color_right.b or color_left.a ~= color_right.a then
+        return false
+    end
+    return true
+end
+local function merge(self, rhs)
+    return self.r .. " " .. self.g .. " " .. self.b .. rhs
+end
+setmetatable(_G.Color,  {
+  __call = function(self, r, g, b, a)
     local color = {}
     color.r = r
     color.g = g
     color.b = b
+    color.a = a
+    setmetatable(color, { __eq = compare, __concat = merge })
     return color
-end
+  end
+})
+
 _G.ScrW = function()
     return 800
 end
@@ -69,9 +121,10 @@ _G.ScrH = function()
     return 600
 end
 _G.timer = {}
+_G.timer.Pause = function() end
+_G.timer.UnPause = function() end
 _G.timer.Create = function() end
 _G.timer.Start = function() end
-_G.timer.Pause = function() end
 _G.timer.Stop = function() end
 
 _G.surface = {}
@@ -81,6 +134,7 @@ _G.surface.DrawRect = function() end
 
 -- Cvar
 --------------------------------------------------------------------------------
+local cvar_list = {}
 _G.ConVar = {}
 _G.ConVar.GetName = function(self)
     return self.name
@@ -96,20 +150,36 @@ _G.ConVar.GetFloat = function(self)
     return self.value
 end
 _G.ConVar.GetBool = function(self)
-    if self.value == 0 then
-        return false
-    else
-        return true
-    end
+  if self.value == 0 then
+    return false
+  else
+    return true
+  end
+end
+_G.ConVar.SetBool = function(self, bool)
+  if bool then
+    self.value = 1
+  else
+    self.value = 0
+  end
 end
 _G.ConVar.SetString = function(self, val_str)
-    local tmp = self.value
-    self.value = tonumber(val_str) or nil
-    if self.value == nil then
-        self.value = tmp
-    else
-        self.oldvalue = tmp
+    local current_val = self.value
+    local new_val = tonumber(val_str) or nil
+    if current_val == new_val then
+        return
     end
+    if current_val ~= nil then
+        self.value = new_val
+        self.oldvalue = current_val
+    end
+    if #self.name > 0 then
+      local cvar = cvar_list[self.name]
+      if cvar ~= nil then
+        cvar.callback(cvar.name, cvar.oldvalue, cvar.value)
+      end
+    end
+
 end
 setmetatable(_G.ConVar, {  __call = function()
     local cvar = {}
@@ -118,7 +188,6 @@ setmetatable(_G.ConVar, {  __call = function()
     end
     return cvar
 end })
-local cvar_list = {}
 _G.CreateClientConVar = function(name, default_val, will_save, info, help_text)
     local cvar = ConVar()
     cvar.name = name
@@ -146,8 +215,9 @@ _G.GetConVar = function(cvar_name)
 end
 _G.cvars = {}
 _G.cvars.AddChangeCallback = function(cvar_name, callback)
-    local cvar = cvar_list[cvar_name]
-    callback(cvar.name, callback(cvar_name, cvar.oldvalue, cvar.value))
+    -- local cvar = cvar_list[cvar_name]
+    cvar_list[cvar_name].callback = callback
+    -- callback(cvar.name, callback(cvar_name, cvar.oldvalue, cvar.value))
 end
 _G.RunConsoleCommand = function(cvar_name, str_val)
     cvar_list[cvar_name]:SetString(str_val)
@@ -159,11 +229,15 @@ _G.concommand.Add = function(cmd_name, callback) end
 -- Math
 --------------------------------------------------------------------------------
 _G.math.Clamp = function(input, min, max)
-    math.min(math.max(input, min), max)
+    return math.min(math.max(input, min), max)
 end
 _G.math.Round = function(num, idp)
 	local mult = 10 ^ (idp or 0)
 	return math.floor(num * mult + 0.5) / mult
+end
+_G.math.Remap = function(value, in_min, in_max, out_min, out_max)
+	return
+      out_min + ( ((value - in_min) / (in_max - in_min)) * (out_max - out_min))
 end
 --------------------------------------------------------------------------------
 
@@ -201,7 +275,16 @@ _G.string.Totable = function(str)
 	end
 	return tbl
 end
+-- fix for escaping backslashes
+local explode_separator = nil
+_G.string._Explode_Separator = function(str)
+  explode_separator = str
+end
 _G.string.Explode = function(separator, str, pattern)
+  if explode_separator ~= nil then
+    separator = explode_separator
+    explode_separator = nil
+  end
 	if separator == "" then return string.ToTable(str) end
 	if pattern == nil then pattern = false end
 
@@ -210,7 +293,7 @@ _G.string.Explode = function(separator, str, pattern)
 
 	for i = 1, string.len(str) do
 		local start_pos, end_pos =
-            string.find(str, separator, current_pos, not pattern)
+      string.find(str, separator, current_pos, not pattern)
 		if not start_pos then break end
 		ret[i] = string.sub(str, current_pos, start_pos - 1)
 		current_pos = end_pos + 1
@@ -239,10 +322,10 @@ end
 -- Validity
 --------------------------------------------------------------------------------
 _G.IsValid = function(obj)
-    if obj ~= nil and obj.IsValid ~= nil then
-        return obj:IsValid()
-    end
-    return false
+  if obj ~= nil and obj.IsValid ~= nil then
+    return obj:IsValid()
+  end
+  return false
 end
 _G.isstring = function(str)
     return type(str) == 'string'
@@ -311,14 +394,23 @@ _G.AudioChannel.IsValid = function() return true end
 _G.AudioChannel.SetTime = function(self, new_time)
     self._time = new_time
 end
+_G.AudioChannel.GetTime = function(self)
+  return self._time
+end
+_G.AudioChannel._SetMaxTime = function(self, max_time)
+    self._time_max = max_time
+end
 _G.AudioChannel.EnableLooping = function(self, bool)
     self._loop = bool
+end
+_G.AudioChannel.GetVolume = function(self)
+  return self._volume
 end
 _G.AudioChannel.SetVolume = function(self, new_vol)
     self._volume = new_vol
 end
 _G.AudioChannel.GetLength = function(self)
-    return 310.80
+    return self._time_max
 end
 _G.AudioChannel.GetState = function(self)
     return self._state
@@ -334,6 +426,7 @@ _G.AudioChannel.Stop = function(self)
 end
 setmetatable(_G.AudioChannel, {  __call = function()
     local chann = {}
+    chann._time_max = 0
     chann._time = 0
     chann._loop = false
     chann._state = GMOD_CHANNEL_STOPPED
@@ -388,27 +481,121 @@ storage.GAME = {}
 storage.WORKSHOP = {}
 storage["GAME"].sound = {}
 storage["WORKSHOP"].sound = {}
-storage["GAME"].sound.folder1 = { "Example1.mp3", "Example2.mp3"}
-storage["WORKSHOP"].sound.folder1 = { "Example10.mp3"}
-storage["GAME"].sound.folder2 = { "Example3.mp3", "Example4.mp3"}
-storage["WORKSHOP"].sound.folder2 = { "Example30.mp3"}
-storage["WORKSHOP"].sound.folder3 = { "Audio_addon1.mp3"}
-storage["WORKSHOP"].sound.folder4 = { "Audio_addon2.mp3"}
+-- storage["GAME"].sound.folder1 = { "Example1.mp3", "Example2.mp3"}
+-- storage["WORKSHOP"].sound.folder1 = { "Example10.mp3"}
+-- storage["GAME"].sound.folder2 = { "Example3.mp3", "Example4.mp3"}
+-- storage["WORKSHOP"].sound.folder2 = { "Example30.mp3"}
+-- storage["WORKSHOP"].sound.folder3 = { "Audio_addon1.mp3"}
+-- storage["WORKSHOP"].sound.folder4 = { "Audio_addon2.mp3"}
+
+
+_G._reset_audio_files = function()
+  storage["GAME"].sound = {}
+  storage["WORKSHOP"].sound = {}
+end
+_G._set_audio_files = function(type, search_folders, folders)
+  storage[type].sound = {}
+  for k, folder in pairs(search_folders) do
+    storage[type].sound[folder] = {}
+    local search_folder = folders[folder]
+    for dir, file in pairs(search_folder) do
+      if istable(file) then
+        storage[type].sound[folder][dir] = {}
+        for _, subfolder_file in pairs(file) do
+          table.insert(storage[type].sound[folder][dir], subfolder_file)
+        end
+      else
+        table.insert(storage[type].sound[folder], file)
+      end
+    end
+  end
+end
+
 _G.file = {}
+_G.file.Write = function(path) end
+_G.file.Append = function(file, text) end
 _G.file.Exists = function(self) return true end
 _G.file.Find = function(path, path_type)
     local folders = _G.string.Explode("/", path)
-    local song_table = {}
-    if #folders > 3 then
-        song_table = storage[path_type][folders[1]][folders[2]][folders[3]]
-    else
-        song_table = storage[path_type][folders[1]][folders[2]]
+    local data_game = {}
+    local data_workshop = {}
+    if #folders == 3 then
+      local folder = folders[2]
+      data_game = storage["GAME"].sound[folder]
+      data_workshop = storage["WORKSHOP"].sound[folder]
     end
-    return song_table, { folders[2] }
+    if #folders == 4 then
+      local folder = folders[2]
+      local subfolder = folders[3]
+      data_game = storage["GAME"].sound[folder]
+      if data_game == nil then
+        data_game = {}
+      else
+        data_game = data_game[subfolder]
+      end
+
+      data_workshop = storage["WORKSHOP"].sound[folder]
+      if data_workshop == nil then
+        data_workshop = {}
+      else
+        data_workshop = data_workshop[subfolder]
+      end
+    end
+
+    if data_game == nil and data_workshop == nil then
+      return nil, nil
+    end
+
+    local sub_folders = {}
+    local sub_folders_workshop = {}
+    local files = {}
+    local files_workshop = {}
+
+    if path_type == "GAME" then
+      if data_game ~= nil then
+        for folder, file in pairs(data_game) do
+          if istable(file) then
+            table.insert(sub_folders, folder)
+          --   for k, subfile in pairs(file) do
+          --     table.insert(files, subfile)
+          --   end
+          else
+            table.insert(files, file)
+          end
+        end
+      end
+
+      if data_workshop ~= nil then
+        for folder, file in pairs(data_workshop) do
+          if istable(file) then
+            table.insert(sub_folders_workshop, folder)
+          --   for k, subfile in pairs(file) do
+          --     table.insert(files_workshop, subfile)
+          --   end
+          else
+            table.insert(files_workshop, file)
+          end
+        end
+      end
+    end
+    table.Add(files, files_workshop)
+    table.Add(sub_folders, sub_folders_workshop)
+    return files, sub_folders
 end
+local folder_data = {}
 _G.file.Read = function(self)
-    local fake_data = "folder1\nfolder2\nfolder3\n"
-    return fake_data
+  folder_data = {}
+  for folder, _ in pairs(storage["GAME"].sound) do
+    folder_data[folder] = 1
+  end
+  for folder, _ in pairs(storage["WORKSHOP"].sound) do
+    folder_data[folder] = (folder_data[folder] or 0) + 2
+  end
+  local folders = ""
+  for folder, _ in pairs(folder_data) do
+    folders = folders .. folder .. "\\n"
+  end
+  return folders
 end
 --------------------------------------------------------------------------------
 
