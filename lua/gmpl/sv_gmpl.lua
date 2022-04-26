@@ -25,10 +25,9 @@ local userWantLive = 0
 --[[
     Store the player that is currently playing on server
 --]]
--- local server_host.player =0
 local server_host = {}
 server_host.player = 0
-server_host.liveSong = 0
+server_host.liveSong = ""
 server_host.liveSongIndex = 0
 server_host.liveSeek = 0
 server_host.isLooped = false
@@ -47,29 +46,44 @@ Server Settings
 --
 local sv_cvars_synced = false
 local shared_settings = nil
+local has_first_setup = false
 
-local function check_settings_valid()
-  local bool = istable(shared_settings)
+local function has_valid_settings()
+  return istable(shared_settings)
+end
 
-  if not bool then
+local function validate_settings()
+  if not has_valid_settings() then
     -- NOT SURE if it's a good idea but
     shared_settings = include("includes/func/settings.lua")
-    print("Settings not set. Setting them")
-    debug.Trace()
+    -- print("Settings not set. Setting them")
+    -- debug.Trace()
+  end
+end
+
+local function is_player_valid(player)
+  local bool = IsValid(player)
+
+  if not bool then
+    print("PLAYER", player, "not valid")
+    -- debug.Trace()
   end
 
   return bool
 end
 
-local function check_player_valid(player)
-  local bool = IsValid(player)
+local function has_admin_server_access(player)
+  if not is_player_valid(player) or not has_valid_settings() then return false end
 
-  if not bool then
-    print("PLAYER", player, "not valid")
-    debug.Trace()
+  if shared_settings:get_admin_server_access() then
+    if not player:IsAdmin() then return false end
   end
 
-  return bool
+  return true
+end
+
+local function is_valid_server_host_player()
+  return isentity(server_host.player) and server_host.player:IsPlayer()
 end
 
 local function setup_settings_from_admin(ply)
@@ -82,7 +96,7 @@ local function initial_spawn(ply)
   net.Start("cl_gmpl_create")
   net.Send(ply)
 
-  if check_settings_valid() then
+  if has_valid_settings() then
     net.Start("cl_update_cvars")
     net.WriteBool(shared_settings:get_admin_server_access())
     net.WriteBool(shared_settings:get_admin_dir_access())
@@ -91,6 +105,8 @@ local function initial_spawn(ply)
     net.Send(ply)
 
     return
+  else
+    validate_settings()
   end
 
   setup_settings_from_admin(ply)
@@ -166,7 +182,7 @@ hook.Add("ShowSpare1", "openMenuF3", function(ply)
 end)
 
 net.Receive("sv_gmpl_show", function(length, ply)
-  if not check_player_valid(ply) then return end
+  if not is_player_valid(ply) then return end
   net.Start("cl_gmpl_show")
   net.WriteType(server_host.player)
   net.Send(ply)
@@ -187,8 +203,9 @@ local function printMessage(nrMsg, ply, itemVal)
 end
 
 net.Receive("sv_refresh_song_list", function(length, ply)
-  if not check_settings_valid() then return end
-  if not check_player_valid(ply) then return end
+  -- if not validate_settings() then return end
+  validate_settings()
+  if not is_player_valid(ply) then return end
   print("[net] Refreshing song list")
 
   if shared_settings:get_admin_dir_access() then
@@ -225,7 +242,7 @@ end)
 -- 	end
 -- end )
 net.Receive("sv_set_loop", function(length, ply)
-  if not check_player_valid(ply) then return end
+  if not is_player_valid(ply) then return end
   server_host.isLooped = net.ReadBool()
 
   if server_host.isLooped then
@@ -238,7 +255,7 @@ net.Receive("sv_set_loop", function(length, ply)
 end)
 
 net.Receive("sv_set_autoplay", function(length, ply)
-  if not check_player_valid(ply) then return end
+  if not is_player_valid(ply) then return end
   server_host.isAutoPlayed = net.ReadBool()
 
   if server_host.isAutoPlayed then
@@ -251,14 +268,14 @@ net.Receive("sv_set_autoplay", function(length, ply)
 end)
 
 net.Receive("sv_pause_live", function(length, ply)
-  if not check_settings_valid() then return end
-  if not check_player_valid(ply) then return end
-  local admin_only = shared_settings:get_admin_server_access()
-  if shared_settings:get_admin_server_access() and not ply:IsAdmin() then return end
+  -- if not validate_settings() then return end
+  validate_settings()
+  if not is_player_valid(ply) then return end
+  if not has_admin_server_access(ply) then return end
   server_host.isPaused = net.ReadBool()
   server_host.liveSeek = net.ReadDouble()
   -- print("[SERVER] Server pause is:", isPaused)
-  local has_player_host = isentity(server_host.player) and server_host.player:IsPlayer()
+  local has_player_host = is_valid_server_host_player()
   -- if isPaused then
   net.Start("cl_pause_live")
   net.WriteBool(server_host.isPaused)
@@ -286,29 +303,31 @@ end)
 --[[
     Triggered when an admin plays song on server
 --]]
-net.Receive("sv_play_live", function(length, ply)
-  if not check_player_valid(ply) then return end
+net.Receive("sv_play_live", function(length, sender)
+  validate_settings()
+  if not is_player_valid(sender) then return end
+  if not has_admin_server_access(sender) then return end
 
-  if not check_settings_valid() then
-    -- ply:PrintMessage(
+  if not has_valid_settings() and not has_first_setup then
+    -- sender:PrintMessage(
     -- HUD_PRINTCONSOLE, "[gMusic Player] Unhandled error code 1")
-    setup_settings_from_admin(ply)
+    setup_settings_from_admin(sender)
+    has_first_setup = true
   end
 
-  if not check_settings_valid() then return end
-  if shared_settings:get_admin_server_access() and not ply:IsAdmin() then return end
-  server_host.player = ply
-  server_host.liveSong = net.ReadString()
-  server_host.liveSongIndex = net.ReadUInt(16)
-  server_host.isPaused = false
-  server_host.isStopped = false
+  -- if not validate_settings() then return end
+  -- server_host.player = sender
+  -- server_host.liveSong = net.ReadString()
+  -- server_host.liveSongIndex = net.ReadUInt(16)
+  -- server_host.isPaused = false
+  -- server_host.isStopped = false
   net.Start("cl_play_live")
   net.WriteString(server_host.liveSong)
   net.WriteBool(server_host.isLooped)
   net.WriteBool(server_host.isAutoPlayed)
   net.WriteUInt(server_host.liveSongIndex, 16)
 
-  if isentity(server_host.player) and server_host.player:IsPlayer() and server_host.player:IsConnected() then
+  if is_valid_server_host_player() and server_host.player:IsConnected() then
     net.WriteEntity(server_host.player)
   end
 
@@ -320,7 +339,7 @@ end)
     Note: autoplay and loop is set in another place
 --]]
 net.Receive("sv_stop_live", function(length, ply)
-  if not check_player_valid(ply) then return end
+  if not is_player_valid(ply) then return end
   server_host.liveSong = ""
   server_host.liveSeek = 0
   server_host.player = 0
@@ -335,7 +354,7 @@ end)
 -- Seek related sync
 ----------------------------------------------------------------------------
 net.Receive("sv_set_seek", function(length, ply)
-  if not check_player_valid(ply) then return end
+  if not is_player_valid(ply) then return end
   server_host.liveSeek = net.ReadDouble()
   net.Start("cl_set_seek")
   net.WriteDouble(server_host.liveSeek)
@@ -362,8 +381,8 @@ end)
     Updates the server side seek time by grabing it from the current host
     and sends it back to the user which asked
 --]]
-net.Receive("sv_play_live_seek_from_host", function(length, ply)
-  if not check_player_valid(ply) then return end
+net.Receive("sv_play_live_seek_from_host", function(length, sender)
+  if not is_player_valid(sender) then return end
 
   -- print("--- [SERVER] Is paused:", isPaused)
   -- ply:PrintMessage(HUD_PRINTCONSOLE, "--- [SERVER] Is paused:" .. tostring(isPaused) )
@@ -372,12 +391,12 @@ net.Receive("sv_play_live_seek_from_host", function(length, ply)
     net.Start("cl_pause_live")
     -- net.WriteString(liveSong)
     net.WriteBool(server_host.isPaused)
-    net.Send(ply)
+    net.Send(sender)
   else
-    if isentity(server_host.player) and server_host.player:IsPlayer() then
+    if is_valid_server_host_player() then
       -- print("[net] play live from host")
       net.Start("cl_play_live_seek_from_host")
-      net.WriteEntity(ply)
+      net.WriteEntity(sender)
       net.Send(server_host.player)
       -- Maybe add some OnDisconnect hook so if the playerhost disconnects
       -- then to make it nil
@@ -389,17 +408,18 @@ end)
 --[[
     Update server seek time from admin and send to user
 --]]
-net.Receive("sv_play_live_seek_for_user", function(length, ply)
-  if not check_settings_valid() then return end
-  if not check_player_valid(ply) then return end
+net.Receive("sv_play_live_seek_for_user", function(length, sender)
+  -- if not validate_settings() then return end
+  validate_settings()
+  if not is_player_valid(sender) then return end
+  if not has_admin_server_access(sender) then return end
   local user_wants_live = net.ReadEntity()
   -- in case admin loses access
-  if shared_settings:get_admin_server_access() and not ply:IsAdmin() then return end
   server_host.liveSeek = net.ReadDouble()
   -- local asd = server_host
-  -- ply:PrintMessage(HUD_PRINTCONSOLE, "\n---[SERVER] user wants live:", user_wants_live, IsValid(user_wants_live))
+  -- sender:PrintMessage(HUD_PRINTCONSOLE, "\n---[SERVER] user wants live:", user_wants_live, IsValid(user_wants_live))
   -- net.WriteEntity(server_host.player)
-  if not check_player_valid(user_wants_live) then return end
+  if not is_player_valid(user_wants_live) then return end
   net.Start("cl_play_live_seek")
   net.WriteDouble(server_host.liveSeek)
   net.WriteString(server_host.liveSong)
@@ -415,22 +435,22 @@ end)
     Used for switching between client and server modes
     Clients can only live seek if only admins can play on server
 --]]
-net.Receive("sv_play_live_seek", function(length, ply)
-  if not check_settings_valid() then return end
-  if not check_player_valid(ply) then return end
+net.Receive("sv_play_live_seek", function(length, sender)
+  -- if not validate_settings() then return end
+  validate_settings()
+  if not is_player_valid(sender) then return end
+  if not has_admin_server_access(sender) then return end
 
-  if shared_settings:get_admin_server_access() and not ply:IsAdmin() then
-    if isentity(server_host.player) and server_host.player:IsPlayer() then
-      net.Start("cl_play_live_seek_from_host")
-      net.WriteEntity(ply)
-      net.Send(server_host.player)
+  if is_valid_server_host_player() then
+    net.Start("cl_play_live_seek_from_host")
+    net.WriteEntity(sender)
+    net.Send(server_host.player)
 
-      return
-    end
+    return
   end
 
   if #server_host.liveSong == 0 then return end
-  server_host.player = ply
+  server_host.player = sender
   server_host.liveSeek = net.ReadDouble()
   net.Start("cl_play_live_seek")
   net.WriteDouble(server_host.liveSeek)
@@ -438,11 +458,11 @@ net.Receive("sv_play_live_seek", function(length, ply)
   net.WriteUInt(server_host.liveSongIndex, 16)
   net.WriteBool(server_host.isAutoPlayed)
   net.WriteBool(server_host.isLooped)
-  net.Send(ply)
+  net.Send(sender)
 end)
 
 net.Receive("sv_refresh_song_state", function(length, ply)
-  if not check_player_valid(ply) then return end
+  if not is_player_valid(ply) then return end
   -- ply:PrintMessage(HUD_PRINTCONSOLE, "---[SERVER] Song live:" .. liveSong)
   net.Start("cl_refresh_song_state")
   net.WriteBool(server_host.isPaused)
@@ -461,14 +481,11 @@ net.Receive("sv_refresh_song_state", function(length, ply)
 end)
 
 -- print("\n---- [request] user request song state")
-net.Receive("sv_update_song_state", function(length, ply)
-  if not check_settings_valid() then return end
-  if not check_player_valid(ply) then return end
-
-  if shared_settings:get_admin_server_access() then
-    if not ply:IsAdmin() then return end
-  end
-
+net.Receive("sv_update_song_state", function(length, sender)
+  -- if not validate_settings() then return end
+  validate_settings()
+  if not is_player_valid(sender) then return end
+  if not has_admin_server_access(sender) then return end
   server_host.isPaused = net.ReadBool()
   server_host.isAutoPlayed = net.ReadBool()
   server_host.isLooped = net.ReadBool()
@@ -479,8 +496,9 @@ end)
     Update shared settings for each client
 --]]
 net.Receive("sv_refresh_access", function(length, ply)
-  if not check_settings_valid() then return end
-  if not check_player_valid(ply) then return end
+  -- if not validate_settings() then return end
+  validate_settings()
+  if not is_player_valid(ply) then return end
   local bVal = net.ReadBool()
 
   if ply:IsAdmin() then
@@ -502,7 +520,22 @@ end)
 --     end
 --     net.Send(ply)
 -- end)
+net.Receive("sv_update_server_side_channel", function(length, sender)
+  if not is_player_valid(sender) then return end
+  if not has_admin_server_access(sender) then return end
+  local channel_attributes = net.ReadTable()
+  server_host.player = sender
+  server_host.liveSong = channel_attributes.song
+  server_host.liveSongIndex = channel_attributes.song_index
+  server_host.liveSeek = channel_attributes.seek
+  server_host.isLooped = channel_attributes.isLooped
+  server_host.isAutoPlayed = channel_attributes.isAutoPlaying
+  server_host.isPaused = channel_attributes.isPaused
+  server_host.isStopped = channel_attributes.isStopped
+end)
+
 net.Receive("sv_reset_audio", function(length, ply)
+  server_host.player = 0
   server_host.liveSong = ""
   server_host.liveSongIndex = 0
   server_host.liveSeek = 0

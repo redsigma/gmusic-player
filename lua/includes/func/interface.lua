@@ -1,3 +1,12 @@
+-- if the_player.IsValid == nil then
+--   the_player.is_admin = _mock_is_admin
+--   -- used for net.SendServer
+--   the_player.is_net_admin = _all_players_are_admin
+--   the_player.was_GetAll = false
+--   for k, v in pairs(_G.Player) do
+--     the_player[k] = v
+--   end
+-- end
 local cvarMediaVolume = CreateClientConVar("gmpl_vol", "100", true, false, "[gMusic Player] Sets the Volume of music player")
 local interface = {}
 local dermaBase = {}
@@ -19,6 +28,13 @@ local is_context_open = false
     Used to store the active anchor panel when the window is visible
 --]]
 local anchor_parent = nil
+
+local function update_server_side_channel()
+  local server_channel_attributes = dermaBase.mediaplayer.sv_PlayingSong.attrs
+  net.Start("sv_update_server_side_channel")
+  net.WriteTable(server_channel_attributes)
+  net.SendToServer()
+end
 
 local function init(baseMenu)
   dermaBase = baseMenu
@@ -196,6 +212,12 @@ local function create_media_player()
       return
     end
 
+    if dermaBase.main:IsServerMode() then
+      local is_autoplaying = dermaBase.mediaplayer:is_autoplaying()
+      dermaBase.mediaplayer:play(song_path, line_index, is_autoplaying)
+    end
+
+    update_server_side_channel()
     net.Start("sv_play_live")
     net.WriteString(song_path)
     net.WriteUInt(line_index, 16)

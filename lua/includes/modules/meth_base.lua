@@ -282,11 +282,10 @@ local function init(contextMenu, contextMargin)
   -- end
   dermaBase.buttonpause.DoRightClick = function()
     if not dermaBase.mediaplayer:hasValidity() then return end
+    if dermaBase.mediaplayer:is_paused() then return end
 
     if not dermaBase.main:IsServerMode() then
-      if not dermaBase.mediaplayer:is_paused() then
-        dermaBase.mediaplayer:loop()
-      end
+      dermaBase.mediaplayer:loop()
 
       return
     end
