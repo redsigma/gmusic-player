@@ -23,6 +23,17 @@ callbacks.OnClientAudioChange = function(media) end
 ---- timer.UnPause("gmpl_seek_end")
 --   dermaBase.sliderseek:ShowSeekBarHandle(true)
 -- end
+local function update_server_side_channel()
+  local server_channel_attributes = dermaBase.mediaplayer.sv_PlayingSong.attrs
+  net.Start("sv_update_server_side_channel")
+  net.WriteTable(server_channel_attributes)
+  net.SendToServer()
+end
+
+local function player_requires_admin_but_not_admin()
+  return dermaBase.cbadminaccess:GetChecked() and not LocalPlayer():IsAdmin()
+end
+
 local function init(contextMenu, contextMargin)
   dermaBase = {
     cl_seek = 0,
@@ -189,17 +200,17 @@ local function init(contextMenu, contextMargin)
   end
 
   dermaBase.sliderseek.seek_val.Slider.OnMousePressed = function(self, mcode)
-    if dermaBase.main:IsServerMode() and dermaBase.cbadminaccess:GetChecked() and not LocalPlayer():IsAdmin() then return end
+    if dermaBase.main:IsServerMode() and player_requires_admin_but_not_admin() then return end
     dermaBase.sliderseek.seek_val:OnMousePressed(mcode)
   end
 
   dermaBase.sliderseek.seek_val.Slider.OnMouseReleased = function(self, mcode)
-    if dermaBase.main:IsServerMode() and dermaBase.cbadminaccess:GetChecked() and not LocalPlayer():IsAdmin() then return end
+    if dermaBase.main:IsServerMode() and player_requires_admin_but_not_admin() then return end
     dermaBase.sliderseek.seek_val:OnMouseReleased(mcode)
   end
 
   dermaBase.sliderseek.seek_val.can_reset_slider = function(self)
-    if dermaBase.main:IsServerMode() and dermaBase.cbadminaccess:GetChecked() and not LocalPlayer():IsAdmin() then return false end
+    if dermaBase.main:IsServerMode() and player_requires_admin_but_not_admin() then return false end
 
     return true
   end
@@ -290,7 +301,8 @@ local function init(contextMenu, contextMargin)
       return
     end
 
-    if dermaBase.cbadminaccess:GetChecked() and not LocalPlayer():IsAdmin() then return end
+    if player_requires_admin_but_not_admin() then return end
+
     -- if dermaBase.cbadminaccess:GetChecked() then
     --     if LocalPlayer():IsAdmin() then
     --         dermaBase.mediaplayer:loop()
@@ -300,8 +312,12 @@ local function init(contextMenu, contextMargin)
     --     end
     -- else
     -- dermaBase.mediaplayer:loop()
+    if dermaBase.main:IsServerMode() then
+      dermaBase.mediaplayer:loop()
+    end
+
+    update_server_side_channel()
     net.Start("sv_set_loop")
-    net.WriteBool(not dermaBase.mediaplayer:is_looped())
     net.SendToServer()
   end
 

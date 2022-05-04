@@ -30,10 +30,18 @@ local is_context_open = false
 local anchor_parent = nil
 
 local function update_server_side_channel()
+  -- TODO this is a duplicate in meth_base too
+  -- - i gotta fix this somehow
   local server_channel_attributes = dermaBase.mediaplayer.sv_PlayingSong.attrs
   net.Start("sv_update_server_side_channel")
   net.WriteTable(server_channel_attributes)
   net.SendToServer()
+end
+
+local function player_requires_admin_but_not_admin()
+  -- TODO this is duplicate in meth_base too so maybe make it a `util` function
+  -- - maybe in the same settings table
+  return dermaBase.cbadminaccess:GetChecked() and not LocalPlayer():IsAdmin()
 end
 
 local function init(baseMenu)
@@ -119,7 +127,7 @@ local function create_media_player()
 
     -- dermaBase.set_server_TSS(true)
     -- local playingFromOtherMode = dermaBase.main:playingFromAnotherMode()
-    if dermaBase.cbadminaccess:GetChecked() and not LocalPlayer():IsAdmin() then
+    if player_requires_admin_but_not_admin() then
       -- block future live plays
       dermaBase.mediaplayer:pause_live()
 
@@ -131,9 +139,14 @@ local function create_media_player()
       return
     end
 
+    if dermaBase.main:IsServerMode() then
+      dermaBase.mediaplayer:sv_pause()
+    end
+
+    update_server_side_channel()
     net.Start("sv_pause_live")
-    net.WriteBool(not dermaBase.mediaplayer:sv_is_pause())
-    net.WriteDouble(dermaBase.mediaplayer:get_time())
+    -- net.WriteBool(not dermaBase.mediaplayer:sv_is_pause())
+    -- net.WriteDouble(dermaBase.mediaplayer:get_time())
     net.SendToServer()
   end
 
@@ -205,7 +218,7 @@ local function create_media_player()
 
     dermaBase.set_server_TSS(true)
 
-    if dermaBase.cbadminaccess:GetChecked() and not LocalPlayer():IsAdmin() then
+    if player_requires_admin_but_not_admin() then
       net.Start("sv_play_live_seek_from_host")
       net.SendToServer()
 
@@ -219,8 +232,6 @@ local function create_media_player()
 
     update_server_side_channel()
     net.Start("sv_play_live")
-    net.WriteString(song_path)
-    net.WriteUInt(line_index, 16)
     net.SendToServer()
   end
 
@@ -251,7 +262,7 @@ local function create_media_player()
       return
     end
 
-    if dermaBase.cbadminaccess:GetChecked() and not LocalPlayer():IsAdmin() then return end
+    if player_requires_admin_but_not_admin() then return end
 
     if dermaBase.mediaplayer:hasState() == GMOD_CHANNEL_PAUSED then
       dermaBase.buttonpause:DoClick()
@@ -259,10 +270,14 @@ local function create_media_player()
       return
     end
 
+    if dermaBase.main:IsServerMode() then
+      dermaBase.mediaplayer:autoplay()
+    end
+
     -- dermaBase.mediaplayer:autoplay()
-    print("[autplay] is autoplay:", not dermaBase.mediaplayer:sv_is_autoplay())
+    -- print("[autplay] is autoplay:", not dermaBase.mediaplayer:sv_is_autoplay())
+    update_server_side_channel()
     net.Start("sv_set_autoplay")
-    net.WriteBool(not dermaBase.mediaplayer:sv_is_autoplay())
     net.SendToServer()
   end
 
@@ -301,7 +316,7 @@ local function create_media_player()
       return
     end
 
-    if dermaBase.cbadminaccess:GetChecked() and not LocalPlayer():IsAdmin() then return end
+    if player_requires_admin_but_not_admin() then return end
 
     if dermaBase.mediaplayer:hasState() == GMOD_CHANNEL_PAUSED then
       dermaBase.mediaplayer:seek(seekSecs)
@@ -452,7 +467,7 @@ local function toggle_listen_ui(self)
 end
 
 local function toggle_bottom_ui(self)
-  if dermaBase.cbadminaccess:GetChecked() and not LocalPlayer():IsAdmin() then
+  if player_requires_admin_but_not_admin() then
     toggle_listen_ui(self)
   else
     toggle_normal_ui(self)

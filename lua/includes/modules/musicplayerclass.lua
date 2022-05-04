@@ -131,7 +131,7 @@ function Media:net_init()
       --     print("[net] update ui seek")
       --     dermaBase.interface.refresh_seek()
       -- end
-    else
+      -- else
     end
   end)
 
@@ -190,7 +190,7 @@ function Media:net_init()
     --   return
     -- end
     if is_server_paused then
-      dermaBase.mediaplayer:sv_pause(is_server_pause)
+      dermaBase.mediaplayer:sv_pause(is_server_paused)
       dermaBase.mediaplayer:sv_uiRefresh()
     else
       net.Start("sv_play_live_seek_from_host")
@@ -239,15 +239,38 @@ function Media:net_init()
   net.Receive("cl_play_live_seek", function(length, ply)
     if not dermaBase.main:IsServerMode() then return end
     -- dermaBase.set_server_TSS(true)
-    local live_seek = net.ReadDouble()
+    -- local live_seek = net.ReadDouble()
+    -- local live_song = net.ReadString()
+    -- local live_song_index = net.ReadUInt(16)
+    -- local is_autoplayed = net.ReadBool()
+    -- local is_looped = net.ReadBool()
+    --
     local live_song = net.ReadString()
     local live_song_index = net.ReadUInt(16)
-    local is_autoplayed = net.ReadBool()
+    local live_seek = net.ReadDouble()
     local is_looped = net.ReadBool()
+    local is_autoplayed = net.ReadBool()
+    local is_paused = net.ReadBool()
+    local is_stopped = net.ReadBool()
+    local live_host = net.ReadEntity()
+    dermaBase.interface.set_song_host(live_host)
+
     -- print("[net] seek sv song:", live_song_index, live_seek, "| loop:", is_looped, "| autoplay:", is_autoplayed)
     -- dermaBase.mediaplayer:clientControl(false)
     -- might change it with simple play and pass the PlayingServer obj
+    if is_stopped then
+      dermaBase.mediaplayer:sv_stop()
+      dermaBase.labelswap:SetText("No song currently playing")
+
+      return
+    end
+
     dermaBase.mediaplayer:play_server(live_song, live_song_index, is_autoplayed, is_looped, live_seek)
+
+    if is_paused then
+      dermaBase.mediaplayer:sv_pause(is_server_pause)
+      dermaBase.mediaplayer:sv_uiRefresh()
+    end
   end)
 
   net.Receive("cl_refresh_song_state", function(length, ply)

@@ -91,6 +91,37 @@ local function setup_settings_from_admin(ply)
   net.Send(ply)
 end
 
+local function play_server_song_to_player(player)
+  if not is_player_valid(player) then
+    local is_list_of_all_players = istable(player)
+    if not is_list_of_all_players then return end
+  end
+
+  -- net.Start("cl_play_live_seek_from_host")
+  -- net.WriteEntity(player)
+  -- net.Send(server_host.player)
+  net.Start("cl_play_live_seek")
+  -- net.WriteDouble(server_host.liveSeek)
+  -- net.WriteString(server_host.liveSong)
+  -- net.WriteUInt(server_host.liveSongIndex, 16)
+  -- net.WriteBool(server_host.isAutoPlayed)
+  -- net.WriteBool(server_host.isLooped)
+  --
+  net.WriteString(server_host.liveSong)
+  net.WriteUInt(server_host.liveSongIndex, 16)
+  net.WriteDouble(server_host.liveSeek)
+  net.WriteBool(server_host.isLooped)
+  net.WriteBool(server_host.isAutoPlayed)
+  net.WriteBool(server_host.isPaused)
+  net.WriteBool(server_host.isStopped)
+
+  if is_valid_server_host_player() and server_host.player:IsConnected() then
+    net.WriteEntity(server_host.player)
+  end
+
+  net.Send(player)
+end
+
 local function initial_spawn(ply)
   print("Inittial spawn run...")
   net.Start("cl_gmpl_create")
@@ -243,12 +274,10 @@ end)
 -- end )
 net.Receive("sv_set_loop", function(length, ply)
   if not is_player_valid(ply) then return end
-  server_host.isLooped = net.ReadBool()
-
-  if server_host.isLooped then
-    server_host.isAutoPlayed = false
-  end
-
+  -- COMM_BEFORE_ISOLATE server_host.isLooped = net.ReadBool()
+  -- if server_host.isLooped then
+  -- COMM_BEFORE_ISOLATE server_host.isAutoPlayed = false
+  -- end
   net.Start("cl_set_loop")
   net.WriteBool(server_host.isLooped)
   net.Send(player.GetAll())
@@ -256,12 +285,10 @@ end)
 
 net.Receive("sv_set_autoplay", function(length, ply)
   if not is_player_valid(ply) then return end
-  server_host.isAutoPlayed = net.ReadBool()
-
-  if server_host.isAutoPlayed then
-    server_host.isLooped = false
-  end
-
+  -- COMM_BEFORE_ISOLATE server_host.isAutoPlayed = net.ReadBool()
+  -- if server_host.isAutoPlayed then
+  -- COMM_BEFORE_ISOLATE   server_host.isLooped = false
+  -- end
   net.Start("cl_set_autoplay")
   net.WriteBool(server_host.isAutoPlayed)
   net.Send(player.GetAll())
@@ -272,8 +299,8 @@ net.Receive("sv_pause_live", function(length, ply)
   validate_settings()
   if not is_player_valid(ply) then return end
   if not has_admin_server_access(ply) then return end
-  server_host.isPaused = net.ReadBool()
-  server_host.liveSeek = net.ReadDouble()
+  -- COMM_BEFORE_ISOLATE server_host.isPaused = net.ReadBool()
+  -- COMM_BEFORE_ISOLATE server_host.liveSeek = net.ReadDouble()
   -- print("[SERVER] Server pause is:", isPaused)
   local has_player_host = is_valid_server_host_player()
   -- if isPaused then
@@ -321,17 +348,17 @@ net.Receive("sv_play_live", function(length, sender)
   -- server_host.liveSongIndex = net.ReadUInt(16)
   -- server_host.isPaused = false
   -- server_host.isStopped = false
-  net.Start("cl_play_live")
-  net.WriteString(server_host.liveSong)
-  net.WriteBool(server_host.isLooped)
-  net.WriteBool(server_host.isAutoPlayed)
-  net.WriteUInt(server_host.liveSongIndex, 16)
-
-  if is_valid_server_host_player() and server_host.player:IsConnected() then
-    net.WriteEntity(server_host.player)
-  end
-
-  net.Send(player.GetAll())
+  play_server_song_to_player(player.GetAll())
+  -- net.Start("cl_play_live")
+  -- net.WriteString(server_host.liveSong)
+  -- net.WriteBool(server_host.isLooped)
+  -- net.WriteBool(server_host.isAutoPlayed)
+  -- net.WriteUInt(server_host.liveSongIndex, 16)
+  -- if is_valid_server_host_player() and server_host.player:IsConnected() then
+  --   net.WriteEntity(server_host.player)
+  -- end
+  -- net.Send(player.GetAll())
+  local todo_remove_test = 0
 end)
 
 --[[
@@ -340,12 +367,12 @@ end)
 --]]
 net.Receive("sv_stop_live", function(length, ply)
   if not is_player_valid(ply) then return end
-  server_host.liveSong = ""
-  server_host.liveSeek = 0
+  -- COMM_BEFORE_ISOLATE server_host.liveSong = ""
+  -- COMM_BEFORE_ISOLATE server_host.liveSeek = 0
   server_host.player = 0
   userWantLive = 0
-  server_host.isPaused = false
-  server_host.isStopped = true
+  -- COMM_BEFORE_ISOLATE server_host.isPaused = false
+  -- COMM_BEFORE_ISOLATE server_host.isStopped = true
   net.Start("cl_stop_live")
   -- net.SendOmit(ply)
   net.Send(player.GetAll())
@@ -355,7 +382,7 @@ end)
 ----------------------------------------------------------------------------
 net.Receive("sv_set_seek", function(length, ply)
   if not is_player_valid(ply) then return end
-  server_host.liveSeek = net.ReadDouble()
+  -- COMM_BEFORE_ISOLATE server_host.liveSeek = net.ReadDouble()
   net.Start("cl_set_seek")
   net.WriteDouble(server_host.liveSeek)
   net.Send(player.GetAll())
@@ -386,22 +413,20 @@ net.Receive("sv_play_live_seek_from_host", function(length, sender)
 
   -- print("--- [SERVER] Is paused:", isPaused)
   -- ply:PrintMessage(HUD_PRINTCONSOLE, "--- [SERVER] Is paused:" .. tostring(isPaused) )
-  if server_host.isPaused then
-    -- print("[net] sv is paused")
-    net.Start("cl_pause_live")
-    -- net.WriteString(liveSong)
-    net.WriteBool(server_host.isPaused)
-    net.Send(sender)
-  else
-    if is_valid_server_host_player() then
-      -- print("[net] play live from host")
-      net.Start("cl_play_live_seek_from_host")
-      net.WriteEntity(sender)
-      net.Send(server_host.player)
-      -- Maybe add some OnDisconnect hook so if the playerhost disconnects
-      -- then to make it nil
-      -- Also if asking for liveSeek but server_host.player is not longer here(it was before), so the text should be updated to no songs on server. HMM the net message when switching to Server Mode should handle this i think, so the problem remains if the admin disconnects while a song is playing or when the song ends hmm
-    end
+  -- if server_host.isPaused then
+  --   -- print("[net] sv is paused")
+  --   net.Start("cl_pause_live")
+  --   -- net.WriteString(liveSong)
+  --   net.WriteBool(server_host.isPaused)
+  --   net.Send(sender)
+  --   return
+  -- end
+  if is_valid_server_host_player() then
+    -- print("[net] play live from host")
+    play_server_song_to_player(sender)
+    -- Maybe add some OnDisconnect hook so if the playerhost disconnects
+    -- then to make it nil
+    -- Also if asking for liveSeek but server_host.player is not longer here(it was before), so the text should be updated to no songs on server. HMM the net message when switching to Server Mode should handle this i think, so the problem remains if the admin disconnects while a song is playing or when the song ends hmm
   end
 end)
 
@@ -415,8 +440,7 @@ net.Receive("sv_play_live_seek_for_user", function(length, sender)
   if not has_admin_server_access(sender) then return end
   local user_wants_live = net.ReadEntity()
   -- in case admin loses access
-  server_host.liveSeek = net.ReadDouble()
-  -- local asd = server_host
+  -- COMM_BEFORE_ISOLATE server_host.liveSeek = net.ReadDouble()
   -- sender:PrintMessage(HUD_PRINTCONSOLE, "\n---[SERVER] user wants live:", user_wants_live, IsValid(user_wants_live))
   -- net.WriteEntity(server_host.player)
   if not is_player_valid(user_wants_live) then return end
@@ -450,8 +474,8 @@ net.Receive("sv_play_live_seek", function(length, sender)
   end
 
   if #server_host.liveSong == 0 then return end
-  server_host.player = sender
-  server_host.liveSeek = net.ReadDouble()
+  -- COMM_BEFORE_ISOLATE server_host.player = sender
+  -- COMM_BEFORE_ISOLATE server_host.liveSeek = net.ReadDouble()
   net.Start("cl_play_live_seek")
   net.WriteDouble(server_host.liveSeek)
   net.WriteString(server_host.liveSong)
@@ -486,9 +510,9 @@ net.Receive("sv_update_song_state", function(length, sender)
   validate_settings()
   if not is_player_valid(sender) then return end
   if not has_admin_server_access(sender) then return end
-  server_host.isPaused = net.ReadBool()
-  server_host.isAutoPlayed = net.ReadBool()
-  server_host.isLooped = net.ReadBool()
+  -- COMM_BEFORE_ISOLATE server_host.isPaused = net.ReadBool()
+  -- COMM_BEFORE_ISOLATE server_host.isAutoPlayed = net.ReadBool()
+  -- COMM_BEFORE_ISOLATE server_host.isLooped = net.ReadBool()
   print("[net] update sv states")
 end)
 

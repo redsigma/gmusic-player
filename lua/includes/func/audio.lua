@@ -316,7 +316,7 @@ GMPL_AUDIO.new = function(self, channel_mode)
         channel:Play()
       end
     end,
-    pause_live = function(self, bool)
+    mute_live = function(self, bool)
       if self.isStopped or not self:IsValid() then return end
       self.isLivePaused = not self.isLivePaused
 
@@ -997,7 +997,7 @@ local function play_next_song(self, channel)
     channel = get_audio_channel(self)
   end
 
-  if not channel:IsValid() then
+  if not IsValid(channel) then
     print("channel not valid")
 
     return
@@ -1093,7 +1093,7 @@ end
 
 local function pause_live(self)
   if not IsValid(self.sv_PlayingSong) then return end
-  self.sv_PlayingSong:pause_live()
+  self.sv_PlayingSong:mute_live()
   update_ui_selection(self, self.sv_PlayingSong)
 end
 
