@@ -225,13 +225,14 @@ local function create_media_player()
       return
     end
 
-    if dermaBase.main:IsServerMode() then
-      local is_autoplaying = dermaBase.mediaplayer:is_autoplaying()
-      dermaBase.mediaplayer:play(song_path, line_index, is_autoplaying)
-    end
-
+    -- if dermaBase.main:IsServerMode() then
+    --   local is_autoplaying = dermaBase.mediaplayer:is_autoplaying()
+    --   dermaBase.mediaplayer:play(song_path, line_index, is_autoplaying)
+    -- end
     update_server_side_channel()
     net.Start("sv_play_live")
+    net.WriteString(song_path)
+    net.WriteUInt(line_index, 16)
     net.SendToServer()
   end
 

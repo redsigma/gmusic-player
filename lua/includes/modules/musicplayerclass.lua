@@ -64,6 +64,33 @@ local function song_host_disconnected(ply)
 end
 
 -----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+--[[
+    Get server audio state
+--]]
+local function get_server_side_audio_states()
+  local live_song = net.ReadString()
+  local live_song_index = net.ReadUInt(16)
+  local live_seek = net.ReadDouble()
+  local is_looped = net.ReadBool()
+  local is_autoplayed = net.ReadBool()
+  local is_paused = net.ReadBool()
+  local is_stopped = net.ReadBool()
+  local live_host = net.ReadEntity()
+  local states = {}
+  states.live_song = live_song
+  states.live_song_index = live_song_index
+  states.live_seek = live_seek
+  states.is_looped = is_looped
+  states.is_autoplayed = is_autoplayed
+  states.is_paused = is_paused
+  states.is_stopped = is_stopped
+  states.live_host = live_host
+
+  return states
+end
+
+-----------------------------------------------------------------------------
 -- ingame-debugging
 -- local think_indicator = vgui.Create("Panel")
 -- think_indicator:SetSize(50,50)
@@ -236,44 +263,55 @@ function Media:net_init()
     net.SendToServer()
   end)
 
-  net.Receive("cl_play_live_seek", function(length, ply)
+  net.Receive("cl_play_live_seek", function(length)
     if not dermaBase.main:IsServerMode() then return end
-    -- dermaBase.set_server_TSS(true)
-    -- local live_seek = net.ReadDouble()
+    print("PLAY LIVE SEEK -- EVERYBODY")
     -- local live_song = net.ReadString()
     -- local live_song_index = net.ReadUInt(16)
-    -- local is_autoplayed = net.ReadBool()
+    -- local live_seek = net.ReadDouble()
     -- local is_looped = net.ReadBool()
-    --
-    local live_song = net.ReadString()
-    local live_song_index = net.ReadUInt(16)
-    local live_seek = net.ReadDouble()
-    local is_looped = net.ReadBool()
-    local is_autoplayed = net.ReadBool()
-    local is_paused = net.ReadBool()
-    local is_stopped = net.ReadBool()
-    local live_host = net.ReadEntity()
-    dermaBase.interface.set_song_host(live_host)
+    -- local is_autoplayed = net.ReadBool()
+    -- local is_paused = net.ReadBool()
+    -- local is_stopped = net.ReadBool()
+    -- local live_host = net.ReadEntity()
+    local states = get_server_side_audio_states()
+    dermaBase.interface.set_song_host(states.live_host)
 
     -- print("[net] seek sv song:", live_song_index, live_seek, "| loop:", is_looped, "| autoplay:", is_autoplayed)
     -- dermaBase.mediaplayer:clientControl(false)
     -- might change it with simple play and pass the PlayingServer obj
-    if is_stopped then
+    if states.is_stopped then
       dermaBase.mediaplayer:sv_stop()
       dermaBase.labelswap:SetText("No song currently playing")
 
       return
     end
 
-    dermaBase.mediaplayer:play_server(live_song, live_song_index, is_autoplayed, is_looped, live_seek)
+    dermaBase.mediaplayer:play_server(states.live_song, states.live_song_index, states.is_autoplayed, states.is_looped, states.live_seek)
 
-    if is_paused then
-      dermaBase.mediaplayer:sv_pause(is_server_pause)
+    if states.is_paused then
+      dermaBase.mediaplayer:sv_pause(states.is_paused)
       dermaBase.mediaplayer:sv_uiRefresh()
     end
   end)
 
-  net.Receive("cl_refresh_song_state", function(length, ply)
+  net.Receive("cl_play_live_seek__admin_only", function(length)
+    if not dermaBase.main:IsServerMode() then return end
+    print("PLAY LIVE SEEK -- ADMIN ONLY")
+    local states = get_server_side_audio_states()
+    dermaBase.interface.set_song_host(states.live_host)
+    -- print("[net] seek sv song:", live_song_index, live_seek, "| loop:", is_looped, "| autoplay:", is_autoplayed)
+    -- dermaBase.mediaplayer:clientControl(false)
+    -- might change it with simple play and pass the PlayingServer obj
+    dermaBase.mediaplayer:play_server(states.live_song, states.live_song_index, states.is_autoplayed, states.is_looped, states.live_seek)
+
+    if states.is_paused then
+      dermaBase.mediaplayer:sv_pause(states.is_paused)
+      dermaBase.mediaplayer:sv_uiRefresh()
+    end
+  end)
+
+  net.Receive("cl_refresh_song_state", function(length)
     local is_paused = net.ReadBool()
     local is_autoplayed = net.ReadBool()
     local is_looped = net.ReadBool()

@@ -2,6 +2,7 @@
     Handles server related events such as server-side music
 --]]
 include("includes/modules/coms.lua")
+local sv_util = include("includes/func/server.lua")
 -- local server_host.liveSong = ""
 -- local server_host.liveSongIndex = 0
 -- local server_host.liveSeek = 0
@@ -331,6 +332,13 @@ end)
     Triggered when an admin plays song on server
 --]]
 net.Receive("sv_play_live", function(length, sender)
+  print("Play LIVE FOR ALL")
+  local sender_host = {}
+  sender_host.liveSong = net.ReadString()
+  sender_host.liveSongIndex = net.ReadUInt(16)
+  local all_players = player.GetAll()
+  sv_util:play_song_for_players(all_players, server_host, sender_host)
+  --[[
   validate_settings()
   if not is_player_valid(sender) then return end
   if not has_admin_server_access(sender) then return end
@@ -358,6 +366,7 @@ net.Receive("sv_play_live", function(length, sender)
   --   net.WriteEntity(server_host.player)
   -- end
   -- net.Send(player.GetAll())
+  ]]
   local todo_remove_test = 0
 end)
 
