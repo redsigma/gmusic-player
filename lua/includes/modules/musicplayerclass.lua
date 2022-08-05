@@ -68,7 +68,7 @@ end
 --[[
     Get server audio state
 --]]
-local function get_server_side_audio_states()
+local function net_get_channel_data()
   local live_song = net.ReadString()
   local live_song_index = net.ReadUInt(16)
   local live_seek = net.ReadDouble()
@@ -77,17 +77,17 @@ local function get_server_side_audio_states()
   local is_paused = net.ReadBool()
   local is_stopped = net.ReadBool()
   local live_host = net.ReadEntity()
-  local states = {}
-  states.live_song = live_song
-  states.live_song_index = live_song_index
-  states.live_seek = live_seek
-  states.is_looped = is_looped
-  states.is_autoplayed = is_autoplayed
-  states.is_paused = is_paused
-  states.is_stopped = is_stopped
-  states.live_host = live_host
+  local channel_data = {}
+  channel_data.live_song = live_song
+  channel_data.live_song_index = live_song_index
+  channel_data.live_seek = live_seek
+  channel_data.is_looped = is_looped
+  channel_data.is_autoplayed = is_autoplayed
+  channel_data.is_paused = is_paused
+  channel_data.is_stopped = is_stopped
+  channel_data.live_host = live_host
 
-  return states
+  return channel_data
 end
 
 -----------------------------------------------------------------------------
@@ -118,6 +118,8 @@ end
 -- 	end
 -- end)
 function Media:net_init()
+  include("includes/func/net_calls_audio.lua")(dermaBase)
+
   net.Receive("cl_stop_live", function(length, ply)
     print("cl_net - cl_stop_live")
     print("is autoplay", dermaBase.mediaplayer:sv_is_autoplay())
@@ -127,9 +129,6 @@ function Media:net_init()
       dermaBase.sliderseek:AllowSeek(true)
       -- set time to audio channel not to the slider
       dermaBase.sliderseek:SetTime(dermaBase.sliderseek:GetMin(), dermaBase.sliderseek:GetMin())
-    elseif dermaBase.mediaplayer:sv_is_autoplay() then
-      print("is autopalying")
-      dermaBase.mediaplayer:sv_play_next()
     else
       dermaBase.mediaplayer:sv_stop()
       dermaBase.labelswap:SetText("No song currently playing")
@@ -263,42 +262,10 @@ function Media:net_init()
     net.SendToServer()
   end)
 
-  net.Receive("cl_play_live_seek", function(length)
-    if not dermaBase.main:IsServerMode() then return end
-    print("PLAY LIVE SEEK -- EVERYBODY")
-    -- local live_song = net.ReadString()
-    -- local live_song_index = net.ReadUInt(16)
-    -- local live_seek = net.ReadDouble()
-    -- local is_looped = net.ReadBool()
-    -- local is_autoplayed = net.ReadBool()
-    -- local is_paused = net.ReadBool()
-    -- local is_stopped = net.ReadBool()
-    -- local live_host = net.ReadEntity()
-    local states = get_server_side_audio_states()
-    dermaBase.interface.set_song_host(states.live_host)
-
-    -- print("[net] seek sv song:", live_song_index, live_seek, "| loop:", is_looped, "| autoplay:", is_autoplayed)
-    -- dermaBase.mediaplayer:clientControl(false)
-    -- might change it with simple play and pass the PlayingServer obj
-    if states.is_stopped then
-      dermaBase.mediaplayer:sv_stop()
-      dermaBase.labelswap:SetText("No song currently playing")
-
-      return
-    end
-
-    dermaBase.mediaplayer:play_server(states.live_song, states.live_song_index, states.is_autoplayed, states.is_looped, states.live_seek)
-
-    if states.is_paused then
-      dermaBase.mediaplayer:sv_pause(states.is_paused)
-      dermaBase.mediaplayer:sv_uiRefresh()
-    end
-  end)
-
   net.Receive("cl_play_live_seek__admin_only", function(length)
     if not dermaBase.main:IsServerMode() then return end
     print("PLAY LIVE SEEK -- ADMIN ONLY")
-    local states = get_server_side_audio_states()
+    local states = net_get_channel_data()
     dermaBase.interface.set_song_host(states.live_host)
     -- print("[net] seek sv song:", live_song_index, live_seek, "| loop:", is_looped, "| autoplay:", is_autoplayed)
     -- dermaBase.mediaplayer:clientControl(false)

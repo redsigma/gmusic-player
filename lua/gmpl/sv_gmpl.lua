@@ -27,7 +27,7 @@ local userWantLive = 0
     Store the player that is currently playing on server
 --]]
 local server_host = {}
-server_host.player = 0
+server_host.player = nil
 server_host.liveSong = ""
 server_host.liveSongIndex = 0
 server_host.liveSeek = 0
@@ -71,6 +71,13 @@ local function is_player_valid(player)
   end
 
   return bool
+end
+
+local function is_player_the_current_host(player)
+  if not is_player_valid(server_host.player) then return false end
+  if server_host.player == player then return true end
+
+  return false
 end
 
 local function has_admin_server_access(player)
@@ -124,7 +131,6 @@ local function play_server_song_to_player(player)
 end
 
 local function initial_spawn(ply)
-  print("Inittial spawn run...")
   net.Start("cl_gmpl_create")
   net.Send(ply)
 
@@ -333,11 +339,11 @@ end)
 --]]
 net.Receive("sv_play_live", function(length, sender)
   print("Play LIVE FOR ALL")
-  local sender_host = {}
-  sender_host.liveSong = net.ReadString()
-  sender_host.liveSongIndex = net.ReadUInt(16)
+  local sender_channel = {}
+  sender_channel.liveSong = net.ReadString()
+  sender_channel.liveSongIndex = net.ReadUInt(16)
   local all_players = player.GetAll()
-  sv_util:play_song_for_players(all_players, server_host, sender_host)
+  sv_util:play_song_for_players(all_players, server_host, sender_channel)
   --[[
   validate_settings()
   if not is_player_valid(sender) then return end
@@ -376,9 +382,15 @@ end)
 --]]
 net.Receive("sv_stop_live", function(length, ply)
   if not is_player_valid(ply) then return end
-  -- COMM_BEFORE_ISOLATE server_host.liveSong = ""
-  -- COMM_BEFORE_ISOLATE server_host.liveSeek = 0
-  server_host.player = 0
+
+  if server_host.isAutoPlayed then
+    net.Start("cl_play_next")
+    net.Send(player.GetAll())
+
+    return
+  end
+
+  server_host.player = nil
   userWantLive = 0
   -- COMM_BEFORE_ISOLATE server_host.isPaused = false
   -- COMM_BEFORE_ISOLATE server_host.isStopped = true
@@ -526,9 +538,9 @@ net.Receive("sv_update_song_state", function(length, sender)
 end)
 
 --[[
-    Update shared settings for each client
+    Update shared settings
 --]]
-net.Receive("sv_refresh_access", function(length, ply)
+net.Receive("sv_settings_edit_live_access", function(length, ply)
   -- if not validate_settings() then return end
   validate_settings()
   if not is_player_valid(ply) then return end
@@ -538,10 +550,28 @@ net.Receive("sv_refresh_access", function(length, ply)
     shared_settings:set_admin_server_access(bVal)
   end
 
-  net.Start("cl_refresh_access")
+  net.Start("cl_settings_update")
   net.WriteBool(shared_settings:get_admin_server_access())
-  printMessage(1, ply, bVal)
+  net.WriteBool(shared_settings:get_admin_dir_access())
   net.Send(player.GetAll())
+  local a = 0
+end)
+
+net.Receive("sv_settings_edit_dir_access", function(length, ply)
+  -- if not validate_settings() then return end
+  validate_settings()
+  if not is_player_valid(ply) then return end
+  local bVal = net.ReadBool()
+
+  if ply:IsAdmin() then
+    shared_settings:set_admin_dir_access(bVal)
+  end
+
+  net.Start("cl_settings_update")
+  net.WriteBool(shared_settings:get_admin_server_access())
+  net.WriteBool(shared_settings:get_admin_dir_access())
+  net.Send(player.GetAll())
+  local a = 0
 end)
 
 -- net.Receive("sv_update_host", function(length, ply)
@@ -553,22 +583,41 @@ end)
 --     end
 --     net.Send(ply)
 -- end)
-net.Receive("sv_update_server_side_channel", function(length, sender)
+net.Receive("sv_ask_live_channel_data", function(_, sender)
+  if not is_player_valid(sender) then return end
+  if is_player_the_current_host(sender) then return end
+  net.Start("cl_ask_live_channel_data")
+  net.WriteString(server_host.liveSong)
+  net.WriteUInt(server_host.liveSongIndex, 16)
+  net.WriteDouble(server_host.liveSeek)
+  net.WriteBool(server_host.isLooped)
+  net.WriteBool(server_host.isAutoPlayed)
+  net.WriteBool(server_host.isPaused)
+  net.WriteBool(server_host.isStopped)
+
+  if is_valid_server_host_player() and server_host.player:IsConnected() then
+    net.WriteEntity(server_host.player)
+  end
+
+  net.Send(sender)
+end)
+
+net.Receive("sv_update_channel_data", function(length, sender)
   if not is_player_valid(sender) then return end
   if not has_admin_server_access(sender) then return end
-  local channel_attributes = net.ReadTable()
+  local channel_data = net.ReadTable()
   server_host.player = sender
-  server_host.liveSong = channel_attributes.song
-  server_host.liveSongIndex = channel_attributes.song_index
-  server_host.liveSeek = channel_attributes.seek
-  server_host.isLooped = channel_attributes.isLooped
-  server_host.isAutoPlayed = channel_attributes.isAutoPlaying
-  server_host.isPaused = channel_attributes.isPaused
-  server_host.isStopped = channel_attributes.isStopped
+  server_host.liveSong = channel_data.song
+  server_host.liveSongIndex = channel_data.song_index
+  server_host.liveSeek = channel_data.seek
+  server_host.isLooped = channel_data.isLooped
+  server_host.isAutoPlayed = channel_data.isAutoPlaying
+  server_host.isPaused = channel_data.isPaused
+  server_host.isStopped = channel_data.isStopped
 end)
 
 net.Receive("sv_reset_audio", function(length, ply)
-  server_host.player = 0
+  server_host.player = nil
   server_host.liveSong = ""
   server_host.liveSongIndex = 0
   server_host.liveSeek = 0

@@ -202,6 +202,25 @@ end
 function PANEL:OnClose()
 end
 
+function PANEL:SwitchModeServer()
+  self.is_server_mode = true
+  self.buttonMode:SetText("SERVER")
+
+  self.buttonMode.Paint = function(panel, w, h)
+    surface.SetDrawColor(20, 150, 240, 255)
+    surface.DrawRect(0, 0, w, h)
+  end
+
+  self:OnServerMode()
+end
+
+function PANEL:SwitchModeClient()
+  self.is_server_mode = false
+  self.buttonMode:SetText("CLIENT")
+  self.buttonMode.Paint = function() end
+  self:OnClientMode()
+end
+
 function PANEL:SwitchMode(is_server)
   local is_server_mode = self.is_server_mode
 
@@ -210,20 +229,9 @@ function PANEL:SwitchMode(is_server)
   end
 
   if is_server_mode then
-    self.is_server_mode = false
-    self.buttonMode:SetText("CLIENT")
-    self.buttonMode.Paint = function() end
-    self:OnClientMode()
+    self:SwitchModeClient()
   else
-    self.is_server_mode = true
-    self.buttonMode:SetText("SERVER")
-
-    self.buttonMode.Paint = function(panel, w, h)
-      surface.SetDrawColor(20, 150, 240, 255)
-      surface.DrawRect(0, 0, w, h)
-    end
-
-    self:OnServerMode()
+    self:SwitchModeServer()
   end
 end
 

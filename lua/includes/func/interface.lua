@@ -29,11 +29,11 @@ local is_context_open = false
 --]]
 local anchor_parent = nil
 
-local function update_server_side_channel()
+local function update_server_channel()
   -- TODO this is a duplicate in meth_base too
   -- - i gotta fix this somehow
   local server_channel_attributes = dermaBase.mediaplayer.sv_PlayingSong.attrs
-  net.Start("sv_update_server_side_channel")
+  net.Start("sv_update_channel_data")
   net.WriteTable(server_channel_attributes)
   net.SendToServer()
 end
@@ -143,7 +143,7 @@ local function create_media_player()
       dermaBase.mediaplayer:sv_pause()
     end
 
-    update_server_side_channel()
+    update_server_channel()
     net.Start("sv_pause_live")
     -- net.WriteBool(not dermaBase.mediaplayer:sv_is_pause())
     -- net.WriteDouble(dermaBase.mediaplayer:get_time())
@@ -229,7 +229,7 @@ local function create_media_player()
     --   local is_autoplaying = dermaBase.mediaplayer:is_autoplaying()
     --   dermaBase.mediaplayer:play(song_path, line_index, is_autoplaying)
     -- end
-    update_server_side_channel()
+    update_server_channel()
     net.Start("sv_play_live")
     net.WriteString(song_path)
     net.WriteUInt(line_index, 16)
@@ -277,7 +277,7 @@ local function create_media_player()
 
     -- dermaBase.mediaplayer:autoplay()
     -- print("[autplay] is autoplay:", not dermaBase.mediaplayer:sv_is_autoplay())
-    update_server_side_channel()
+    update_server_channel()
     net.Start("sv_set_autoplay")
     net.SendToServer()
   end

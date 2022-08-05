@@ -1,11 +1,11 @@
-if not _G.gmusic then return {} end
+if not _G.gmusic_sv then return {} end
 local Settings = {}
 
 local function init_network()
-  if not _G.gmusic.shared_settings then return end
+  if not _G.gmusic_sv.shared_settings then return end
 
   net.Receive("sv_ask_server_settings", function(_, sender)
-    local settings = _G.gmusic.shared_settings
+    local settings = _G.gmusic_sv.shared_settings
     local server_access = settings:get_admin_server_access()
     local dir_access = settings:get_admin_dir_access()
     print("On server", server_access, dir_access, sender)
@@ -17,14 +17,14 @@ local function init_network()
 end
 
 local function init()
-  if _G.gmusic.shared_settings then return _G.gmusic.shared_settings end
+  if _G.gmusic_sv.shared_settings then return _G.gmusic_sv.shared_settings end
   print("[gmpl] Init settings")
   Settings.admin_server_access = true
   Settings.admin_dir_access = false
-  _G.gmusic.shared_settings = Settings
+  _G.gmusic_sv.shared_settings = Settings
   init_network()
 
-  return _G.gmusic.shared_settings
+  return _G.gmusic_sv.shared_settings
 end
 
 function Settings:set_admin_server_access(bVal)

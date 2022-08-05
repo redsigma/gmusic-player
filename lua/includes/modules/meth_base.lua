@@ -25,13 +25,18 @@ callbacks.OnClientAudioChange = function(media) end
 -- end
 local function update_server_side_channel()
   local server_channel_attributes = dermaBase.mediaplayer.sv_PlayingSong.attrs
-  net.Start("sv_update_server_side_channel")
+  net.Start("sv_update_channel_data")
   net.WriteTable(server_channel_attributes)
   net.SendToServer()
 end
 
 local function player_requires_admin_but_not_admin()
   return dermaBase.cbadminaccess:GetChecked() and not LocalPlayer():IsAdmin()
+end
+
+local function update_server_mode_with_live_song()
+  net.Start("sv_ask_live_channel_data")
+  net.SendToServer()
 end
 
 local function init(contextMenu, contextMargin)
@@ -197,6 +202,7 @@ local function init(contextMenu, contextMargin)
     dermaBase.mediaplayer:update_ui_highlight()
     dermaBase.sliderseek:ShowSeekBarHandle(is_playing)
     dermaBase.set_server_TSS(true)
+    update_server_mode_with_live_song()
   end
 
   dermaBase.sliderseek.seek_val.Slider.OnMousePressed = function(self, mcode)
@@ -375,14 +381,14 @@ local function init(contextMenu, contextMargin)
 
   dermaBase.cbadminaccess.AfterChange = function(panel, val)
     local bVal = tobool(val)
-    net.Start("sv_refresh_access")
+    net.Start("sv_settings_edit_live_access")
     net.WriteBool(bVal)
     net.SendToServer()
   end
 
   dermaBase.cbadmindir.AfterChange = function(panel, val)
     local bVal = tobool(val)
-    net.Start("toServerRefreshAccessDir")
+    net.Start("sv_settings_edit_dir_access")
     net.WriteBool(bVal)
     net.SendToServer()
   end
@@ -525,6 +531,8 @@ local function init(contextMenu, contextMargin)
     dermaBase.interface.build()
     dermaBase.interface.init_context_view(context_menu)
   end
+
+  include("includes/func/net_calls_mandatory.lua")(dermaBase)
 
   return dermaBase
 end

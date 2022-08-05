@@ -169,7 +169,6 @@ GMPL_AUDIO.new = function(self, channel_mode)
       end
     end,
     set_autoplay = function(self, bool)
-      print("recv autoplay", bool, self)
       if not self:is_playing() then return end
 
       if bool == nil then
@@ -237,6 +236,7 @@ GMPL_AUDIO.new = function(self, channel_mode)
       if not isstring(song) then return end
       self:silent_stop()
       if not self.isStopped then return end
+      self.title_song = string.StripExtension(string.GetFileFromFilename(song))
 
       sound.PlayFile(song, "noblock noplay", function(CurrentSong, ErrorID, ErrorName)
         local is_audio_valid = IsValid(CurrentSong)
@@ -255,7 +255,6 @@ GMPL_AUDIO.new = function(self, channel_mode)
           self.song_index = song_index
         end
 
-        self.title_song = string.StripExtension(string.GetFileFromFilename(song))
         channel = CurrentSong
         CurrentSong:SetTime((seek or 0))
         self:set_volume(dermaBase.slidervol:GetVolume() / 100)
@@ -942,12 +941,11 @@ local function playSong(self, song, song_index, is_autoplay, is_loop, seek, chan
     local on_server_mode = _channel:is_server_channel() and dermaBase.main:IsServerMode()
     local on_client_mode = not _channel:is_server_channel() and not dermaBase.main:IsServerMode()
 
-    if _channel:is_server_channel() then
-      if _channel.title_song ~= nil or #_channel.title_song > 0 then
-        chat.AddText(Color(0, 220, 220), "[gMusic Player] Playing: " .. _channel.title_song)
-      end
-    end
-
+    -- if _channel:is_server_channel() then
+    -- if _channel.title_song ~= nil or #_channel.title_song > 0 then
+    -- chat.AddText(Color(0, 220, 220), "[gMusic Player] Playing: " .. _channel.title_song)
+    -- end
+    -- end
     if not dermaBase.main:IsServerMode() then
       dermaBase.mediaplayer:sv_mute(true)
     end
@@ -966,28 +964,6 @@ local function playSong(self, song, song_index, is_autoplay, is_loop, seek, chan
       update_ui_selection(self, _channel)
     end
   end)
-  -- if not is_valid then
-  --   dermaBase.sliderseek:ResetValue()
-  --   return
-  -- end
-  -- local is_server_mode = dermaBase.main:IsServerMode()
-  -- if media:is_server_channel() then
-  --   if is_server_mode then
-  --     update_ui_selection(self, media)
-  --   else
-  --     media:sv_mute()
-  --   end
-  --   if media.title_song ~= nil or #media.title_song > 0 then
-  --     chat.AddText(Color(0,220,220),
-  --       "[gMusic Player] Playing: " .. media.title_song)
-  --   end
-  -- -- else
-  -- --   if not is_server_mode then
-  -- --     update_ui_selection(self, media)
-  -- --   end
-  -- end
-  -- think of this
-  -- OnClientAudioChange(_channel)
 
   return song_name
 end
@@ -997,11 +973,7 @@ local function play_next_song(self, channel)
     channel = get_audio_channel(self)
   end
 
-  if not IsValid(channel) then
-    print("channel not valid")
-
-    return
-  end
+  if not IsValid(channel) then return end
 
   if dermaBase.songlist:IsEmpty() then
     channel:stop()
@@ -1019,7 +991,7 @@ local function sv_play_next_song(self)
 end
 
 local function playSongServer(self, song, song_index, is_autoplay, is_loop, seek)
-  playSong(self, song, song_index, is_autoplay, is_loop, seek)
+  playSong(self, song, song_index, is_autoplay, is_loop, seek, self.sv_PlayingSong)
 end
 
 local function resumeSong(self)

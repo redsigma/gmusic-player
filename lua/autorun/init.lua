@@ -1,6 +1,6 @@
 if (SERVER) then
-  _G.gmusic = {}
-  -- server only
+  _G.gmusic_sv = {}
+  -- server and shared ( i think )
   include("includes/modules/coms.lua")
   include("includes/func/settings.lua")
   include("gmpl/sv_gmpl.lua")
@@ -26,11 +26,17 @@ if (SERVER) then
   AddCSLuaFile("includes/modules/meth_song.lua")
   AddCSLuaFile("includes/func/interface.lua")
   AddCSLuaFile("includes/func/audio.lua")
+  --- register client only
+  AddCSLuaFile("includes/func/net_calls_mandatory.lua")
+  AddCSLuaFile("includes/func/net_calls_audio.lua")
+  AddCSLuaFile("includes/func/messages.lua")
+  ---
   -- AddCSLuaFile("includes/func/settings.lua")
   AddCSLuaFile("gmpl/cl_gmpl.lua")
   AddCSLuaFile("gmpl/cl_cvars.lua")
   --
   include("gmpl/sv_cvars.lua")
 else
+  _G.gmusic_cl = {}
   include("gmpl/cl_gmpl.lua")
 end
