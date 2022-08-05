@@ -43,8 +43,12 @@ _G._slider_seek = function(slider_pos)
   _dermaBase.sliderseek.seek_val:OnCursorMoved(slider_pos)
 end
 
-_G._channel_reach_end = function(is_server)
-  _dermaBase.sliderseek.seek_val:OnEndReached(is_server)
+_G._sv_channel_reach_end = function()
+  _dermaBase.sliderseek.seek_val:OnEndReached(true)
+end
+
+_G._cl_channel_reach_end = function()
+  _dermaBase.sliderseek.seek_val:OnEndReached(false)
 end
 
 _G._set_server_mode = function(is_server)
