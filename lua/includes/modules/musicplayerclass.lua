@@ -69,7 +69,7 @@ local function adminAcessChangeButtons()
 end
 
 local function adminAccessDirChangeButton()
-	if dermaBase.audiodirsheet:IsVisible() and !playerIsAdmin then
+	if dermaBase.audiodirsheet:IsVisible() and not playerIsAdmin then
 		dermaBase.musicsheet:SetActiveButton(dermaBase.musicsheet.Items[1].Button)
 	end
 
@@ -77,7 +77,7 @@ local function adminAccessDirChangeButton()
 		if dermaBase.musicsheet.Items[2].Button:GetDisabled() then
 			dermaBase.musicsheet.Items[2].Button:SetEnabled(true)
 		end
-	elseif !dermaBase.musicsheet.Items[2].Button:GetDisabled() then
+	elseif not dermaBase.musicsheet.Items[2].Button:GetDisabled() then
 		dermaBase.musicsheet.Items[2].Button:SetEnabled(false)
 	end
 end
@@ -90,7 +90,7 @@ end
 
 local function thinkServerOptions()
 	if dermaBase.main.IsServerOn() then
-		if !playerIsAdmin then
+		if not playerIsAdmin then
 			adminAcessChangeButtons()
 		else
 			adminAcessRevertButtons()
@@ -152,7 +152,7 @@ local function getSongList( folderRightTable )
 end
 
 local function enableServerTSS(bool)
-	if !dermaBase.main:isTSS() then
+	if not dermaBase.main:isTSS() then
 		dermaBase.main:SetTSSEnabled(true)
 	end
 
@@ -198,7 +198,7 @@ local function sanityCheckActiveList()
 
 	for j = 1, #folderRight do
 		local path = "sound/" .. folderRight[j]
-		if !file.Exists( path, "GAME" ) then -- this doesn't look in WORKSHOP we prove it exists using folderLeftAddon 
+		if not file.Exists( path, "GAME" ) then -- this doesn't look in WORKSHOP we prove it exists using folderLeftAddon
 			local found = false
 			for k,addonSong in pairs(folderLeftAddon) do
 				if rawequal(addonSong, folderRight[j]) then	-- use folderLeftAddon just to check for existence
@@ -207,7 +207,7 @@ local function sanityCheckActiveList()
 				end
 				if found then break end
 			end
-			if !found then
+			if not found then
 				folderRight[j] = nil
 			end
 		end
@@ -369,7 +369,7 @@ local function createMediaPlayer()
 
 	dermaBase.musicsheet.Items[2].Button.DoClick = function(self)
 		dermaBase.foldersearch:selectFirstLine()
-		if !dermaBase.audiodirsheet:IsVisible() then
+		if not dermaBase.audiodirsheet:IsVisible() then
 			dermaBase.musicsheet:SetActiveButton(self)
 		end
 	end
@@ -391,7 +391,7 @@ local function createMediaPlayer()
 
 	dermaBase.buttonstop.DoClick = function()
 		if dermaBase.main.IsServerOn() then
-			if !dermaBase.cbadminaccess:GetbID() then
+			if not dermaBase.cbadminaccess:GetbID() then
 				net.Start( "toServerStop" )
 				net.SendToServer()
 			elseif playerIsAdmin then
@@ -399,7 +399,7 @@ local function createMediaPlayer()
 				net.SendToServer()
 			end
 		else
-			if !Media.isMissing() then
+			if not Media.isMissing() then
 				Media.stop()
 			end
 		end
@@ -431,7 +431,7 @@ local function createMediaPlayer()
 
 	dermaBase.buttonplay.DoClick = function( songFile )
 		if isnumber(dermaBase.songlist:GetSelectedLine()) then
-			if !isstring(songFile) then
+			if not isstring(songFile) then
 				songFile = populatedSongs[dermaBase.songlist:GetSelectedLine()]
 			end
 			if dermaBase.main.IsServerOn() then
@@ -447,7 +447,7 @@ local function createMediaPlayer()
 				enableServerTSS(false)
 			end
 		else
-			if !( dermaBase.main.IsServerOn() and  !playerIsAdmin and dermaBase.cbadminaccess:GetbID() ) then
+			if not ( dermaBase.main.IsServerOn() and  not playerIsAdmin and dermaBase.cbadminaccess:GetbID() ) then
 				chat.AddText( Color(255,0,0),"[gMusic Player] Please select a song")
 			else
 				net.Start( "toServerAdminPlay" )
@@ -530,7 +530,7 @@ local function createMediaPlayer()
 	dermaBase.sliderseek.SeekClick.OnValueChanged = function(seekClickLayer, seekSecs)
 		if Media.hasValidity() then
 			if dermaBase.main.IsServerOn() then
-				if !dermaBase.cbadminaccess:GetbID() then
+				if not dermaBase.cbadminaccess:GetbID() then
 					if Media.hasState() == GMOD_CHANNEL_PAUSED then
 						Media.seek(seekSecs)
 						dermaBase.sliderseek:SetTime(seekSecs)
@@ -591,7 +591,7 @@ local function createMediaPlayer()
 		dermaBase.musicsheet:SetVisible(false)
 	end
 	dermaBase.main.AfterResizing = function()
-		dermaBase.musicsheet:SetVisible(!dermaBase.musicsheet:IsVisible())
+		dermaBase.musicsheet:SetVisible(not dermaBase.musicsheet:IsVisible())
 	end
 
 	dermaBase.main.OnSettingsClick = function(panel)
@@ -603,7 +603,7 @@ local function createMediaPlayer()
 	end
 
 	dermaBase.main.OnModeChanged = function()
-		if !dermaBase.main.IsServerOn() then
+		if not dermaBase.main.IsServerOn() then
 			adminAcessRevertButtons()
 		end
 	end
@@ -753,7 +753,7 @@ net.Receive( "playFromServer_adminAccess", function(length, sender)
 end)
 
 net.Receive( "stopFromServerAdmin", function(length, sender)
-	if dermaBase.main.IsServerOn() and !Media.isMissing() then
+	if dermaBase.main.IsServerOn() and not Media.isMissing() then
 		Media.stop()
 		dermaBase.labelswap:SetText("No song currently playing")
 	end
@@ -785,7 +785,7 @@ net.Receive( "loopFromServer", function(length, sender)
 end)
 
 net.Receive( "stopFromServer", function(length, sender)
-	if dermaBase.main.IsServerOn() and !Media.isMissing() then
+	if dermaBase.main.IsServerOn() and not Media.isMissing() then
 		Media.stop()
 	end
 end)

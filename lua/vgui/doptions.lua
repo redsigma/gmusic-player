@@ -133,7 +133,7 @@ function PANEL:MultiCheckBox( nrChecked, strLabel, adminOnly, optionNumber )
 			option.y = 20
 		end
 		if nrChecked then
-			if !isnumber(nrChecked) then nrChecked = 1 end
+			if not isnumber(nrChecked) then nrChecked = 1 end
 			left.box.child[tonumber(nrChecked)]:SetChecked(true)
 		end
 
@@ -152,7 +152,7 @@ function PANEL:Rebuild()
 end
 
 function PANEL:OnMouseWheeled( dlta )
-	if ( !IsValid( self.VBar ) ) then return end
+	if ( not IsValid( self.VBar ) ) then return end
 	return self.VBar:OnMouseWheeled( dlta )
 end
 

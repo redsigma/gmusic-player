@@ -73,7 +73,7 @@ end
 
 function PANEL:PersistConvar( newCvar, booleanize )
 	self.cvar = newCvar
-	if !ConVarExists(self.cvar:GetName()) then
+	if not ConVarExists(self.cvar:GetName()) then
 		self.cvar:SetInt(self.cvar:GetDefault())
 	end
 	if booleanize then
@@ -92,7 +92,7 @@ end
 
 function PANEL:ConVarChanged(strNewValue)
 
-	if ( !self.m_strConVar ) then return end
+	if ( not self.m_strConVar ) then return end
 	RunConsoleCommand( self.m_strConVar, strNewValue )
 end
 
@@ -185,13 +185,13 @@ end
 
 function PANEL:ConVarNumberThink()
 
-	if ( !self.m_strConVar ) then -- if nil return false
+	if ( not self.m_strConVar ) then -- if nil return false
 	 return end
 
 	local strValue = GetConVar(self.cvar:GetName()):GetInt()
 
 	-- In case the convar is a "nan"
-	if ( strValue != strValue ) then return end
+	if ( strValue ~= strValue ) then return end
 	if ( self.m_strConVarValue == strValue ) then return end
 
 	self.m_strConVarValue = strValue
@@ -205,7 +205,7 @@ function PANEL:Think()
 			if self:GetIsAdmin() then
 				if self:GetDisabled() then self:SetEnabled(true) end
 			else
-				if !self:GetDisabled() then self:SetEnabled(false) end
+				if not self:GetDisabled() then self:SetEnabled(false) end
 			end
 		end
 	end

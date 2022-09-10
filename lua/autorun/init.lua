@@ -15,6 +15,7 @@ if (SERVER) then
 	AddCSLuaFile("vgui/dmultibutton.lua")
 
 
+  AddCSLuaFile "includes/modules/setup.lua"
 	AddCSLuaFile "includes/modules/musicplayerclass.lua"
 	AddCSLuaFile "includes/modules/meth_base.lua"
 	AddCSLuaFile "includes/modules/meth_paint.lua"

@@ -68,6 +68,16 @@ local function waitBuffer()
 	end
 end
 
+local function reset_line_color()
+  local default_text_color = dermaBase.theme_color.text
+
+  currSelection = dermaBase.songlist:GetSelectedLine()
+  if IsValid(dermaBase.songlist:GetLines()[currSelection]) then
+    dermaBase.contextmedia:SetTextColor(default_text_color)
+    dermaBase.songlist:HighlightLine(currSelection, false, default_text_color)
+  end
+end
+
 local function updateListSelection(color, textcolor)
 	currSelection = dermaBase.songlist:GetSelectedLine()
 
@@ -104,6 +114,7 @@ local function updateTitleSong(status,songFilePath)
 		updateListSelection(colLoop, colBlack)
 	else
 		dermaBase.main:SetBGColor(150, 150, 150)
+    reset_line_color()
 	end
 
 	if songFilePath == false then
@@ -148,7 +159,7 @@ local function playSong(song)
 end
 
 local function resumeSong(song)
-	if PlayingSong:GetFileName() == song and !stateStop then
+	if PlayingSong:GetFileName() == song and not stateStop then
 		PlayingSong:Play()
 		if PlayingSong:IsLooping() then
 			updateTitleSong(3, song)
@@ -165,7 +176,7 @@ local function actionPauseL()
 		if PlayingSong:GetState() == GMOD_CHANNEL_PLAYING then
 		PlayingSong:Pause()
 		updateTitleSong(2, PlayingSong:GetFileName())
-		elseif PlayingSong:GetState() == GMOD_CHANNEL_PAUSED and !stateStop then
+		elseif PlayingSong:GetState() == GMOD_CHANNEL_PAUSED and not stateStop then
 			PlayingSong:Play()
 
 			if PlayingSong:IsLooping() == true then
