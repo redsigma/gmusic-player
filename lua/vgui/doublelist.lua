@@ -8,6 +8,7 @@ local midPanelH = 0
 local bgHeader = Color(20, 150, 240)
 local bgColor = Color(255, 255, 255)
 local textColor = Color(255, 255, 255)
+local headerColor = Color(255, 255, 255)
 
 function PANEL:Init()
 
@@ -21,7 +22,7 @@ function PANEL:Init()
 		surface.SetDrawColor( bgHeader )
 		surface.DrawRect(0, 0, w, h)
 		panel:SetFontInternal("default")
-		panel:SetColor(textColor)
+		panel:SetColor(headerColor)
 	end
 	self.list1.Paint = function(panel, w, h)
 		surface.SetDrawColor( bgHeader )
@@ -64,7 +65,7 @@ function PANEL:Init()
 		surface.SetDrawColor(bgHeader)
 		surface.DrawRect(0, 0, w, h)
 		panel:SetFontInternal("default")
-		panel:SetColor(textColor)
+		panel:SetColor(headerColor)
 	end
 	self.list2.Paint = function(panel, w, h)
 		surface.SetDrawColor( bgColor )
@@ -147,15 +148,6 @@ function PANEL:UpdateColors(bgHead, bgCol, textCol)
 	textColor = textCol
 	bgHeader = bgHead
 	bgColor = bgCol
-	self.btnRebuildMid:SetTextColor(textColor)
-	self.btnAddMid:SetTextColor(textColor)
-	self.btnRemMid:SetTextColor(textColor)
-
-	local list1 = self.list1:GetChildren()[2].Header
-	local list2 = self.list2:GetChildren()[2].Header
-
-	list1.Paint(list1, list1:GetWide(), list1:GetTall())
-	list2.Paint(list2, list2:GetWide(), list2:GetTall())
 
 	self.list1.Paint(self.list1, self.list1:GetWide(), self.list1:GetTall())
 	self.list2.Paint(self.list2, self.list2:GetWide(), self.list2:GetTall())
@@ -169,14 +161,23 @@ function PANEL:UpdateColors(bgHead, bgCol, textCol)
 	self.list1.VBar.btnDown.Paint(self.list2.VBar.btnDown, self.list2.VBar.btnDown:GetWide(), self.list2.VBar.btnDown:GetTall())
 	self.list2.VBar.btnDown.Paint(self.list2.VBar.btnDown, self.list2.VBar.btnDown:GetWide(), self.list2.VBar.btnDown:GetTall())
 
+  for k, line in pairs(self.list1:GetLines()) do
+    local text_column = line.Columns[1]
+    text_column:SetTextColor(textColor)
+  end
+
+  for k, line in pairs(self.list2:GetLines()) do
+    local text_column = line.Columns[1]
+    text_column:SetTextColor(textColor)
+  end
 end
 
 function PANEL:selectFirstLine()
-	if !isnumber(self.list1:GetSelectedLine()) then
+	if not isnumber(self.list1:GetSelectedLine()) then
 		self.list1:SelectFirstItem()
 	end
 
-	if !isnumber(self.list2:GetSelectedLine()) then
+	if isnumber(self.list2:GetSelectedLine()) then
 		self.list2:SelectFirstItem()
 	end
 end
@@ -263,7 +264,7 @@ end
 
 function PANEL:OnButtonAdd()
 	for k,v in pairs(self.list1:GetSelected()) do
-		self.list2:AddLine(v:GetColumnText(1))
+    self:AddLineRight(v:GetColumnText(1))
 		self.list1:RemoveLine(v:GetID())
 	end
 
@@ -275,7 +276,7 @@ end
 
 function PANEL:OnButtonRem()
 	for k,v in pairs(self.list2:GetSelected()) do
-		self.list1:AddLine(v:GetColumnText(1))
+    self:AddLineLeft(v:GetColumnText(1))
 		self.list2:RemoveLine(v:GetID())
 	end
 
@@ -287,10 +288,17 @@ end
 
 
 function PANEL:AddLineLeft(var)
-	self.list1:AddLine(var)
+	local line = self.list1:AddLine(var)
+
+  local text_column = line.Columns[1]
+  text_column:SetTextColor(textColor)
 end
+
 function PANEL:AddLineRight(var)
-	self.list2:AddLine(var)
+	local line = self.list2:AddLine(var)
+
+  local text_column = line.Columns[1]
+  text_column:SetTextColor(textColor)
 end
 
 

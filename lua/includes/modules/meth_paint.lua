@@ -1,6 +1,6 @@
 local paintMethod = {}
-local headerColor = {}
-local panelColor = {}
+local headerColor = { hue = 0, sat = 0, bright = 0 }
+local panelColor = { hue = 0, sat = 0, bright = 0 }
 
 local function init(skinTable)
 for skinIndex,skins in pairs(skinTable) do
@@ -16,19 +16,22 @@ end
 local function getColors()
 	local colors = {}
 
-	if (panelColor.bright > 0.5 or headerColor.bright > 0.5) then
-		colors.bg = Color(20, 150, 240)
-		colors.text = Color(255, 255, 255)
-		colors.chktext = Color(0, 0, 0)
-		colors.bglist = Color(255, 255, 255)
-		colors.slider = Color(0, 0, 0, 100)
-	else
-		colors.bg = Color(15, 110, 175)
-		colors.text = Color(255, 255, 255)
-		colors.chktext = Color(255, 255, 255)
-		colors.bglist = Color(35, 35, 35)
-		colors.slider = Color(0, 0, 0, 100)
-	end
+  local threshold_dark_mode = 0.5
+  local has_white_theme = panelColor.bright < threshold_dark_mode or headerColor.bright < threshold_dark_mode
+
+  colors.fallback_text = Color(255, 255, 255)
+
+  if has_white_theme then
+    colors.bg = Color(20, 150, 240)
+    colors.text = Color(0, 0, 0)
+    colors.bglist = Color(255, 255, 255)
+    colors.slider = Color(0, 0, 0, 100)
+  else
+    colors.bg = Color(15, 110, 175)
+    colors.text = Color(255, 255, 255)
+    colors.bglist = Color(35, 35, 35)
+    colors.slider = Color(0, 0, 0, 100)
+  end
 
 	return colors
 end
@@ -60,7 +63,7 @@ end
 local function paintList(panel)
 	local bgColor = getColors().bg
 	local bgList = getColors().bglist
-	local colorText = getColors().chktext
+	local colorText = getColors().text
 
 	panel:UpdateColors(bgColor, bgList, colorText)
 
@@ -68,7 +71,7 @@ end
 
 local function paintOptions(panel)
 	local bgColor = getColors().bg
-	local colorText = getColors().chktext
+	local colorText = getColors().text
 	local bgList = getColors().bglist
 
 	panel.Paint = function(self, w, h)
@@ -105,18 +108,18 @@ end
 
 
 local function paintButton(panel)
-	panel:SetTextColor(getColors().text)
+	panel:SetTextColor(getColors().fallback_text)
 	panel.Paint = function() end
 end
 
 local function paintSlider(panel)
 	panel:SetSliderColor(getColors().slider)
-	panel:SetTextColor(getColors().text)
+	panel:SetTextColor(getColors().fallback_text)
 	panel.Slider.Paint(panel.Slider, panel.Slider:GetWide(), panel.Slider:GetTall())
 end
 
 local function paintText(panel)
-	panel:SetTextColor(getColors().chktext)
+	panel:SetTextColor(getColors().text)
 end
 
 local function paintDisabled(panel)
@@ -133,5 +136,5 @@ paintMethod.paintList 		=	paintList
 paintMethod.paintDoubleList =	paintDoubleList
 paintMethod.paintOptions 	=	paintOptions
 paintMethod.paintText 		=	paintText
-
+paintMethod.getColors 		=	getColors
 return init
