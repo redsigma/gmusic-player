@@ -17,7 +17,7 @@ function PANEL:Init()
 	self.TextArea:SetTextColor(textColor)
 	self.TextArea.OnChange = function( textarea, val ) self:SetValue( self.TextArea:GetText() ) end
 	self.TextArea.DoClick = function()
-		self.m_bMute = !self.m_bMute
+		self.m_bMute = not self.m_bMute
 		if self.m_bMute then
 			self.TextArea:SetText("  --")
 		else
@@ -102,7 +102,7 @@ end
 
 function PANEL:SetMin( min )
 
-	if ( !min ) then min = 0 end
+	if ( not min ) then min = 0 end
 
 	self.Scratch:SetMin( tonumber( min ) )
 	self:UpdateNotches()
@@ -110,7 +110,7 @@ end
 
 function PANEL:SetMax( max )
 
-	if ( !max ) then max = 0 end
+	if ( not max ) then max = 0 end
 
 	self.Scratch:SetMax( tonumber( max ) )
 	self:UpdateNotches()
@@ -149,7 +149,7 @@ end
 function PANEL:ValueChanged( val )
 
 	val = math.Clamp( tonumber( val ) || 0, self:GetMin(), self:GetMax() )
-	if ( self.TextArea != vgui.GetKeyboardFocus() ) then
+	if ( self.TextArea ~= vgui.GetKeyboardFocus() ) then
 		self.TextArea:SetText( self.Scratch:GetTextValue() )
 	end
 

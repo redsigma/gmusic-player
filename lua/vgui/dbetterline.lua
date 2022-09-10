@@ -61,8 +61,8 @@ function PANEL:OnMousePressed( mcode )
 	if mcode == MOUSE_RIGHT then
 		self:DoRightClick(self.m_iID, self)
 	end
-	if mcode == MOUSE_LEFT && self.m_bDoubleClicking then
-		if ( delta && SysTime() - delta < 0.2 ) then
+	if mcode == MOUSE_LEFT and self.m_bDoubleClicking then
+		if ( delta and SysTime() - delta < 0.2 ) then
 			self:DoDoubleClickInternal(self)
 			self:DoDoubleClick(self.m_iID, self)
 			return
@@ -110,7 +110,7 @@ function PANEL:SetColumnText( i, strText )
 
 	end
 
-	if ( !IsValid( self.Columns[ i ] ) ) then
+	if ( not IsValid( self.Columns[ i ] ) ) then
 
 		self.Columns[ i ] = vgui.Create( "DPureLabel", self )
 		self.Columns[ i ]:SetWide(self:GetWide())
@@ -126,7 +126,7 @@ function PANEL:SetColumnText( i, strText )
 end
 
 function PANEL:GetColumnText( i )
-	if ( !self.Columns[ i ] ) then return "" end
+	if ( not self.Columns[ i ] ) then return "" end
 	return self.Columns[ i ].Value
 
 end

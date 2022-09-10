@@ -121,7 +121,7 @@ function PANEL:AddColumn( strName )
 	pColumn:SetTextColor(Color(255, 255, 255))
 	pColumn:SetContentAlignment( 5 )
 	pColumn.DoClick = function(panel)
-		self.sort = !self.sort
+		self.sort = not self.sort
 		self:SetDirty(true)
 	end
 	pColumn:Dock(TOP)
@@ -147,7 +147,7 @@ end
 
 function PANEL:ColumnWidth( i )
 	local ctrl = self.Columns[ i ]
-	if ( !ctrl ) then return 0 end
+	if ( not ctrl ) then return 0 end
 
 	return ctrl:GetWide()
 
@@ -263,7 +263,7 @@ function PANEL:AddLine( strLine )
 end
 
 function PANEL:OnMouseWheeled( dlta )
-	if ( !IsValid( self.VBar ) ) then return end
+	if ( not IsValid( self.VBar ) ) then return end
 	return self.VBar:OnMouseWheeled( dlta )
 end
 

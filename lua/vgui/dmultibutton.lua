@@ -42,7 +42,7 @@ function PANEL:SetTSS( bool )
 end
 
 function PANEL:SetEnabled(bool)
-	self:SetDisabled(!bool)
+	self:SetDisabled( not bool)
 end
 
 function PANEL:SizeToContents()
@@ -77,7 +77,7 @@ function PANEL:SetTitle( title )
 	if isbool(title) then
 		title = "gMusic Player"
 		self.seek:SetVisible(false)
-	elseif !self.seek:IsVisible() then
+	elseif not self.seek:IsVisible() then
 		self.seek:SetVisible(true)
 	end
 	self.title:SetText(title)
@@ -132,7 +132,7 @@ end
 
 
 function PANEL:Think()	-- doesn't run if not visible
-	if !self:GetDisabled() then
+	if not self:GetDisabled() then
 		self:OnThink()
 	end
 end

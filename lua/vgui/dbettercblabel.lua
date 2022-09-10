@@ -136,13 +136,13 @@ function PANEL:ToggleOne()
 end
 
 function PANEL:Toggle()
-	if !self.box:GetDisabled() then
+	if not self.box:GetDisabled() then
 		self.box:Toggle()
 	end
 end
 
 function PANEL:SizeToContents()
-	self:InvalidateLayout( true ) -- update DLabel and the X 
+	self:InvalidateLayout( true ) -- update DLabel and the X
 	self:SetWide( self.label.x + self.label:GetWide() )
 	self:SetTall( self.box:GetTall() + 4 )
 	self:InvalidateLayout() -- update the children

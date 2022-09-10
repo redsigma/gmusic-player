@@ -38,7 +38,7 @@ function PANEL:SetTextColor( color )
 end
 
 function PANEL:UpdateFGColor()
-	if ( !self.m_colText ) then return end
+	if ( not self.m_colText ) then return end
 	self:SetFGColor( self.m_colText.r, self.m_colText.g, self.m_colText.b, self.m_colText.a )
 end
 
@@ -56,9 +56,9 @@ function PANEL:PerformLayout()
 end
 
 function PANEL:OnMousePressed( mousecode )
-	if ( mousecode == MOUSE_LEFT && !dragndrop.IsDragging() && self.m_bDoubleClicking ) then
+	if ( mousecode == MOUSE_LEFT and not dragndrop.IsDragging() and self.m_bDoubleClicking ) then
 
-		if self.LastClickTime && SysTime() - self.LastClickTime < 0.2 then
+		if self.LastClickTime and SysTime() - self.LastClickTime < 0.2 then
 
 			self:DoDoubleClickInternal()
 			self:DoDoubleClick()
@@ -78,7 +78,7 @@ end
 function PANEL:OnMouseReleased( mousecode )
 	self:MouseCapture( false )
 
-	if !self.Depressed then return end
+	if not self.Depressed then return end
 
 	self.Depressed = nil
 	self:OnReleased()
@@ -88,7 +88,7 @@ function PANEL:OnMouseReleased( mousecode )
 		return
 	end
 
-	if self:IsSelectable() && mousecode == MOUSE_LEFT then
+	if self:IsSelectable() and mousecode == MOUSE_LEFT then
 
 		local canvas = self:GetSelectionCanvas()
 		if canvas then
@@ -97,7 +97,7 @@ function PANEL:OnMouseReleased( mousecode )
 
 	end
 
-	if !self.Hovered then return end
+	if not self.Hovered then return end
 
 	self.Depressed = true
 

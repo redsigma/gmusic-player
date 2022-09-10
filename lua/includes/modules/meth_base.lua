@@ -128,7 +128,7 @@ local function init( contextMenu, contextMargin )
 	end
 
 	dermaBase.contextbutton.AfterChange = function( panel, bVal )
-		if !IsValid(g_ContextMenu) then return end
+		if not IsValid(g_ContextMenu) then return end
 
 		if bVal then getmetatable(contextMenu).DockMargin(contextMenu,0, 0, contextMargin, 0)
 		else getmetatable(contextMenu).DockMargin(contextMenu,0, 0, 0, 0)
