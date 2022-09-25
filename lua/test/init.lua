@@ -95,22 +95,6 @@ _G.create_with_dark_mode = function()
   return dermaBase, media
 end
 
-_G.call_as_admin = function(callback)
-  local previous_admin_state = _get_player_admin()
-  _set_player_admin(true)
-  callback()
-  _set_player_admin(previous_admin_state)
-end
-
-_G.init_sv_shared_settings = function()
-  _G.gmusic_sv = {}
-
-  call_as_admin(function()
-    net.Start("cl_update_cvars_from_first_admin")
-    net.Send(_LocalAdmin)
-  end)
-end
-
 _G._dermaBase = {}
 
 _G.set_derma = function(state, arguments)

@@ -22,12 +22,12 @@ insulate("sv - Autoplay server, play next from client", function()
     local cl_channel = media.cl_PlayingSong
     local vol_channel = 0
     local vol_slider = 0
-    -- _set_player_admin(true)
+    -- _.set_player_admin(true)
     dermaBase.buttonplay:DoClick(nil, 0)
     dermaBase.buttonplay:DoRightClick()
     assert.same(sv_channel.song, "sound/folder1/Example1.mp3")
 
-    -- _set_player_admin(false)
+    -- _.set_player_admin(false)
     describe("switch client", function()
       dermaBase.main:SwitchModeClient()
       _sv_channel_reach_end()

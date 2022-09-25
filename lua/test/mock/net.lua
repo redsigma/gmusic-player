@@ -6,22 +6,6 @@ local mock_net = {}
 local call_list = {}
 --------------------------------------------------------------------------------
 _G._Net = {}
-_G._Net.expected_net_msgs_with_fake_admin = {}
-
---------------------------------------------------------------------------------
-local function make_player_admin_if_needed(player)
-  local player_clone = make_copy(player)
-
-  for k, net_message in pairs(_Net.expected_net_msgs_with_fake_admin) do
-    if net_message == last_net then
-      _Net.expected_net_msgs_with_fake_admin[k] = nil
-      player_clone.is_admin = true
-      break
-    end
-  end
-
-  return player_clone
-end
 
 --------------------------------------------------------------------------------
 mock_net.Receive = function(str_name, callback)
@@ -41,22 +25,23 @@ mock_net.Start = function(net_message_name)
   end
 end
 
-local players = {}
+--[[
+  @note - simulate `players.GetAll()`
+]]
+local all_connected_players = {}
+_G.player = {}
+_G.player.GetAll = function() return __mock_all_connected_players end
+
+--[[
+  @note - remember previous player that made the .net call
+]]
+local last_net_received_player = nil
 
 mock_net.SendToServer = function()
-  local is_first_sender = last_net_received_player == nil
+  last_net_received_player = _G.LocalPlayer()
 
-  if is_first_sender then
-    last_net_received_player = _G.LocalPlayer()
-  end
-
-  players[1] = last_net_received_player
-  local expected_player = make_player_admin_if_needed(last_net_received_player)
-  call_list[last_net].callback(20, expected_player)
+  call_list[last_net].callback(20, last_net_received_player)
 end
-
-_G.player = {}
-_G.player.GetAll = function() return players end
 
 mock_net.Send = function(all_players)
   local player = all_players[1]
@@ -66,8 +51,7 @@ mock_net.Send = function(all_players)
     player = all_players
   end
 
-  local expected_player = make_player_admin_if_needed(player)
-  call_list[last_net].callback(10, expected_player)
+  call_list[last_net].callback(10, player)
 end
 
 mock_net.last_uint = {}

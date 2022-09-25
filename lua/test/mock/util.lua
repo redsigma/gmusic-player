@@ -1,5 +1,5 @@
 _G._set_checkbox_as_admin = function(panel, is_checked)
-  call_as_admin(function()
+  player_with_admin:do_action(function(self)
     panel:SetChecked(is_checked)
     panel:RefreshConVar()
   end)
@@ -56,40 +56,16 @@ _G._set_server_mode = function(is_server)
 end
 
 --------------------------------------------------------------------------------
-local the_player = {}
-_G.LocalPlayer = {}
+local player_now = {}
 
+_G.LocalPlayer = {}
 setmetatable(_G.LocalPlayer, {
   __call = function(self)
-    if the_player.IsValid == nil then
-      the_player.is_admin = _mock_is_admin
-      -- used for net.SendServer
-      the_player.is_net_admin = _all_players_are_admin
-      the_player.was_GetAll = false
-
-      for k, v in pairs(_G.Player) do
-        the_player[k] = v
-      end
-    end
-
-    return the_player
+    return player_now
   end
 })
 
 --------------------------------------------------------------------------------
--- used to set custom net.Receive players
-_G.last_net_received_player = nil
-
-_G._set_player_admin = function(bool)
-  _mock_is_admin = bool
-  the_player.is_admin = bool
-
-  if last_net_received_player == nil then
-    last_net_received_player = the_player
-  end
-
-  last_net_received_player.is_admin = bool
-end
 
 _G._set_player_connected = function(bool)
   _mock_sending_cl_info = bool
@@ -99,12 +75,93 @@ _G._get_player_admin = function() return _mock_is_admin end
 
 _G._set_net_players_admin = function(bool)
   _all_players_are_admin = bool
-  the_player.is_net_admin = bool
+  player_now.is_net_admin = bool
 end
 
+
 --------------------------------------------------------------------------------
--- the caller/sender of the given net_message gains admin access
--- used to fake admin access. The order of inserted elements matters
-_G._net_promote_sender_to_admin = function(net_message)
-  table.insert(_G._Net.expected_net_msgs_with_fake_admin, net_message)
+
+local PlayerAdmin = make_copy(Player)
+PlayerAdmin.is_admin = true
+PlayerAdmin.__internal_id = "admin"
+
+local Player1 = make_copy(Player)
+Player1.is_admin = false
+Player1.__internal_id = "player1"
+
+local Player2 = make_copy(Player)
+Player2.is_admin = false
+Player2.__internal_id = "player2"
+
+_G.__mock_all_connected_players = {}
+__mock_all_connected_players[1] = PlayerAdmin
+__mock_all_connected_players[2] = Player1
+-- __mock_all_connected_players[2] = Player2
+
+local function __set_current_player_as(player)
+  print(player)
 end
+
+_G.player_with_admin = {}
+_G.player_with_admin.property = {}
+_G.player_with_admin.property.current_admin = 0
+
+_G.player_with_no_admin = {}
+_G.player_with_no_admin.property = {}
+_G.player_with_no_admin.property.current_admin = 0
+
+_G.player_with_admin.do_action = function(self, callback)
+  player_now = PlayerAdmin
+
+  self.property.current_admin = player_now
+  callback(self.property)
+  self.property.current_admin = 0
+end
+
+_G.player_with_no_admin.do_action = function(self, callback)
+  player_now = Player1
+
+  self.property.current_admin = player_now
+  callback(self.property)
+  self.property.current_admin = 0
+end
+
+
+_G.init_sv_shared_settings = function()
+  _G.gmusic_sv = {}
+
+  player_with_admin:do_action(function(self)
+    net.Start("cl_update_cvars_from_first_admin")
+    net.Send(PlayerAdmin)
+  end)
+
+end
+
+
+--[[
+
+player_with_no_admin:do_action(function(self)
+
+end)
+
+
+----------------
+
+
+player_with_admin:do_action(function(self)
+
+end)
+
+
+-----------
+
+player_with_admin:do_action(function(self)
+  dermaBase.buttonplay:DoClick(nil, 0)
+end)
+
+player_with_no_admin:do_action(function(self)
+
+end)
+
+
+]]

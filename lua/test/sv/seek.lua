@@ -21,10 +21,10 @@ insulate("sv - Mute server audio for non admin", function()
     dermaBase.main:SwitchMode()
     local channel = media.sv_PlayingSong
     _set_checkbox_as_admin(dermaBase.cbadminaccess, true)
-    _set_player_admin(true)
+    _.set_player_admin(true)
     dermaBase.buttonplay:DoClick(nil, 0)
     channel:set_volume(0.8)
-    _set_player_admin(false)
+    _.set_player_admin(false)
     local vol_channel = 0
     local vol_slider = 0
 

@@ -111,13 +111,8 @@ assert:register("assertion", "ui_top_bar_color", ui_top_bar_color,
     Check highlight of current and previous line
     -1 stop, 0 play, 1 autoplay, 2 pause, 3 loop, 4 pause live
 --]]
-local function line_highlight(state, args)
+local function line_highlight(status, curr_line, prev_line, channel)
     local is_result_expected = true
-
-    local status = args[1]
-    local curr_line = args[2]
-    local prev_line = args[3]
-    local channel = args[4]
 
     local no_color = Color(-1, -1, -1)
     local color_bg = color.Stop
@@ -160,8 +155,10 @@ local function line_highlight(state, args)
     if channel == nil then
       channel = _dermaBase.mediaplayer:get_channel()
     end
-    if channel.song_index ~= curr_line or
-      channel.song_prev_index ~= prev_line then
+
+    local is_current_line_different = channel.song_index ~= curr_line
+    local is_previous_line_different =  channel.song_prev_index ~= prev_line
+    if is_current_line_different or is_previous_line_different then
       is_result_expected = false
     end
 
@@ -215,8 +212,71 @@ local function line_highlight(state, args)
     end
     return is_result_expected
 end
-assert:register("assertion", "line_highlight", line_highlight,
-    "msg_expect_highlight", "msg_expect_highlight")
+
+local function line_highlight_no_color(_, args)
+  local song_line = args[1]
+  local previous_line = args[2]
+  local channel = args[3]
+
+  return line_highlight(-1, song_line, previous_line, channel)
+end
+local function line_highlight_stop(_, args)
+  local song_line = args[1]
+  local previous_line = args[2]
+  local channel = args[3]
+
+  return line_highlight(0, song_line, previous_line, channel)
+end
+local function line_highlight_play(_, args)
+  local song_line = args[1]
+  local previous_line = args[2]
+  local channel = args[3]
+
+  return line_highlight(1, song_line, previous_line, channel)
+end
+local function line_highlight_autoplay(_, args)
+  local song_line = args[1]
+  local previous_line = args[2]
+  local channel = args[3]
+
+  return line_highlight(2, song_line, previous_line, channel)
+end
+local function line_highlight_pause(_, args)
+  local song_line = args[1]
+  local previous_line = args[2]
+  local channel = args[3]
+
+  return line_highlight(3, song_line, previous_line, channel)
+end
+local function line_highlight_loop(_, args)
+  local song_line = args[1]
+  local previous_line = args[2]
+  local channel = args[3]
+
+  return line_highlight(4, song_line, previous_line, channel)
+end
+local function line_highlight_autoplay_paused(_, args)
+  local song_line = args[1]
+  local previous_line = args[2]
+  local channel = args[3]
+
+  return line_highlight(5, song_line, previous_line, channel)
+end
+
+assert:register("assertion", "line_highlight_no_color", line_highlight_no_color,
+  "msg_expect_highlight", "msg_expect_highlight")
+assert:register("assertion", "line_highlight_stop", line_highlight_stop,
+"msg_expect_highlight", "msg_expect_highlight")
+assert:register("assertion", "line_highlight_play", line_highlight_play,
+"msg_expect_highlight", "msg_expect_highlight")
+assert:register("assertion", "line_highlight_autoplay", line_highlight_autoplay,
+"msg_expect_highlight", "msg_expect_highlight")
+assert:register("assertion", "line_highlight_pause", line_highlight_pause,
+"msg_expect_highlight", "msg_expect_highlight")
+assert:register("assertion", "line_highlight_loop", line_highlight_loop,
+"msg_expect_highlight", "msg_expect_highlight")
+assert:register("assertion", "line_highlight_autoplay_paused",
+  line_highlight_autoplay_paused, "msg_expect_highlight", "msg_expect_highlight")
 
 --[[
     Check theme colors

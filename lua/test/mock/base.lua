@@ -64,14 +64,15 @@ _G.HUD_PRINTCONSOLE = 2
 _G.HUD_PRINTTALK = 3
 _G.HUD_PRINTCENTER = 4
 local _mock_is_admin = false
-local _mock_sending_cl_info = false
+local _mock_sending_cl_info = true
 local _all_players_are_admin = true
 _G.Player = {}
 _G.Player.IsValid = function(self) return true end
 _G.Player.IsPlayer = function(self) return true end
 _G.Player.Nick = function(self) return "Player Nick" end
-_G.Player.IsConnected = function(self) return not _mock_sending_cl_info end
+_G.Player.IsConnected = function(self) return _mock_sending_cl_info end
 _G.Player.IsAdmin = function(self) return self.is_admin or false end
+_G.Player.__internal_id = "none"
 
 _G.Player.PrintMessage = function(self, ...)
   local args = {...}
@@ -103,9 +104,6 @@ _G.Player.PrintMessage = function(self, ...)
   print(str_result)
 end
 
-_G._LocalAdmin = _G.Player
-_G._LocalAdmin.is_admin = true
-_G._LocalAdmin.was_GetAll = false
 -- Color
 --------------------------------------------------------------------------------
 _G.Color = {}

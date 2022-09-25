@@ -4,6 +4,10 @@
 --
 -- PROBLEMS:
 -- TODO
+
+
+-- TODO IMPORANT: why this file has a lot of duplicates from test/interface.lua
+
 local files_local = {}
 
 files_local.folder1 = {"Example1.mp3", "Example2.mp3"}
@@ -37,6 +41,7 @@ local function _reset_client(channel)
   channel.AutoplayNext = false
 end
 
+
 insulate("sv - Switch to Server Mode", function()
   local dermaBase, media = create_with_dark_mode()
   init_sv_shared_settings()
@@ -50,33 +55,37 @@ insulate("sv - Switch to Server Mode", function()
 
     describe("is admin", function()
       _reset_server()
-      _set_player_admin(true)
 
       it("enable normal ui", function()
-        dermaBase.main.is_server_mode = false
-        dermaBase.main:SwitchModeServer()
-        assert.are.equal(dermaBase.cbadminaccess:GetChecked(), false)
-        assert.same(dermaBase.main.buttonMode:GetText(), "SERVER")
-        assert.same(dermaBase.buttonplay.text, "Play / AutoPlay")
-        assert.same(dermaBase.buttonpause.text, "Pause / Loop")
-        assert.are.equal(dermaBase.buttonstop:IsVisible(), true)
-        assert.are.equal(dermaBase.buttonswap:IsVisible(), false)
+
+        player_with_admin:do_action(function(self)
+          dermaBase.main.is_server_mode = false
+          dermaBase.main:SwitchModeServer()
+          assert.are.equal(dermaBase.cbadminaccess:GetChecked(), false)
+          assert.same(dermaBase.main.buttonMode:GetText(), "SERVER")
+          assert.same(dermaBase.buttonplay.text, "Play / AutoPlay")
+          assert.same(dermaBase.buttonpause.text, "Pause / Loop")
+          assert.are.equal(dermaBase.buttonstop:IsVisible(), true)
+          assert.are.equal(dermaBase.buttonswap:IsVisible(), false)
+        end)
       end)
     end)
 
     describe("not admin", function()
       _reset_server()
-      _set_player_admin(false)
 
       it("enable normal ui", function()
-        dermaBase.main.is_server_mode = false
-        dermaBase.main:SwitchModeServer()
-        assert.are.equal(dermaBase.cbadminaccess:GetChecked(), false)
-        assert.same(dermaBase.main.buttonMode:GetText(), "SERVER")
-        assert.same(dermaBase.buttonplay.text, "Play / AutoPlay")
-        assert.same(dermaBase.buttonpause.text, "Pause / Loop")
-        assert.are.equal(dermaBase.buttonstop:IsVisible(), true)
-        assert.are.equal(dermaBase.buttonswap:IsVisible(), false)
+
+        player_with_no_admin:do_action(function(self)
+          dermaBase.main.is_server_mode = false
+          dermaBase.main:SwitchModeServer()
+          assert.are.equal(dermaBase.cbadminaccess:GetChecked(), false)
+          assert.same(dermaBase.main.buttonMode:GetText(), "SERVER")
+          assert.same(dermaBase.buttonplay.text, "Play / AutoPlay")
+          assert.same(dermaBase.buttonpause.text, "Pause / Loop")
+          assert.are.equal(dermaBase.buttonstop:IsVisible(), true)
+          assert.are.equal(dermaBase.buttonswap:IsVisible(), false)
+        end)
       end)
     end)
   end)
@@ -86,41 +95,48 @@ insulate("sv - Switch to Server Mode", function()
 
     describe("is admin", function()
       _reset_server()
-      _set_player_admin(true)
 
       it("enable normal ui", function()
-        dermaBase.main.is_server_mode = false
-        dermaBase.main:SwitchModeServer()
-        assert.are.equal(dermaBase.cbadminaccess:GetChecked(), true)
-        assert.same(dermaBase.main.buttonMode:GetText(), "SERVER")
-        assert.same(dermaBase.buttonplay.text, "Play / AutoPlay")
-        assert.same(dermaBase.buttonpause.text, "Pause / Loop")
-        assert.are.equal(dermaBase.buttonstop:IsVisible(), true)
-        assert.are.equal(dermaBase.buttonswap:IsVisible(), false)
+
+        player_with_admin:do_action(function(self)
+          dermaBase.main.is_server_mode = false
+          dermaBase.main:SwitchModeServer()
+          assert.are.equal(dermaBase.cbadminaccess:GetChecked(), true)
+          assert.same(dermaBase.main.buttonMode:GetText(), "SERVER")
+          assert.same(dermaBase.buttonplay.text, "Play / AutoPlay")
+          assert.same(dermaBase.buttonpause.text, "Pause / Loop")
+          assert.are.equal(dermaBase.buttonstop:IsVisible(), true)
+          assert.are.equal(dermaBase.buttonswap:IsVisible(), false)
+        end)
       end)
     end)
 
     describe("not admin", function()
       _reset_server()
-      _set_player_admin(false)
 
       it("enable listen ui", function()
-        dermaBase.main.is_server_mode = false
-        dermaBase.main:SwitchModeServer()
-        assert.are.equal(dermaBase.cbadminaccess:GetChecked(), true)
-        assert.same(dermaBase.main.buttonMode:GetText(), "SERVER")
-        assert.same(dermaBase.buttonplay.text, "Resume Live")
-        assert.same(dermaBase.buttonpause.text, "Pause")
-        assert.are.equal(dermaBase.buttonstop:IsVisible(), false)
-        assert.are.equal(dermaBase.buttonswap:IsVisible(), true)
+
+        player_with_no_admin:do_action(function(self)
+          dermaBase.main.is_server_mode = false
+          dermaBase.main:SwitchModeServer()
+          assert.are.equal(dermaBase.cbadminaccess:GetChecked(), true)
+          assert.same(dermaBase.main.buttonMode:GetText(), "SERVER")
+          assert.same(dermaBase.buttonplay.text, "Resume Live")
+          assert.same(dermaBase.buttonpause.text, "Pause")
+          assert.are.equal(dermaBase.buttonstop:IsVisible(), false)
+          assert.are.equal(dermaBase.buttonswap:IsVisible(), true)
+        end)
       end)
     end)
   end)
 end)
 
--- -- TODO check if duplicate
+
+
+
+-- TODO check if duplicate
 -- insulate("sv - Play On Click", function()
---   _set_player_admin(true)
+--   _.set_player_admin(true)
 --   _set_audio_files("GAME", {"folder1", "folder2"}, files_local)
 --   _set_audio_files("WORKSHOP", {})
 --   local dermaBase, media = create_with_dark_mode()
@@ -155,7 +171,10 @@ end)
 --     end)
 --   end)
 -- end)
--- ------------------------------------------------------------------------------
+
+
+
+----------------------------------------------------------------------------
 insulate("sv - Play", function()
   local dermaBase, media = create_with_dark_mode()
   assert.set_derma(dermaBase)
@@ -199,15 +218,19 @@ insulate("sv - Play after autoplay", function()
     describe("is admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      sh_play_autoplay_play(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        sh_play_autoplay_play(dermaBase, media.sv_PlayingSong)
+      end)
     end)
 
     describe("not admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(false)
-      sh_play_autoplay_play(dermaBase, media.sv_PlayingSong)
+
+      player_with_no_admin:do_action(function(self)
+        sh_play_autoplay_play(dermaBase, media.sv_PlayingSong)
+      end)
     end)
   end)
 
@@ -217,21 +240,30 @@ insulate("sv - Play after autoplay", function()
     describe("is admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      sh_play_autoplay_play(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        sh_play_autoplay_play(dermaBase, media.sv_PlayingSong)
+      end)
     end)
 
     describe("not admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      dermaBase.buttonplay:DoClick(nil, 0)
-      _set_player_admin(false)
-      _net_promote_sender_to_admin("sv_play_live_seek_for_user")
-      sh_play_live_seek_no_autoplay_play_liveseek(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        dermaBase.buttonplay:DoClick(nil, 0)
+      end)
+      player_with_no_admin:do_action(function(self)
+        sh_play_live_seek_no_autoplay_play_liveseek(dermaBase, media.sv_PlayingSong)
+      end)
     end)
   end)
 end)
+
+
+
+
+
 
 insulate("sv - Play same after play", function()
   local dermaBase, media = create_with_dark_mode()
@@ -241,6 +273,12 @@ insulate("sv - Play same after play", function()
   dermaBase.main:SwitchModeServer()
   sh_play_restart(dermaBase, media.sv_PlayingSong)
 end)
+
+
+
+
+
+
 
 ------------------------------------------------------------------------------
 insulate("sv - Pause after play", function()
@@ -255,15 +293,19 @@ insulate("sv - Pause after play", function()
     describe("is admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      sh_play_pause(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        sh_play_pause(dermaBase, media.sv_PlayingSong)
+      end)
     end)
 
     describe("not admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(false)
-      sh_play_pause(dermaBase, media.sv_PlayingSong)
+
+      player_with_no_admin:do_action(function(self)
+        sh_play_pause(dermaBase, media.sv_PlayingSong)
+      end)
     end)
   end)
 
@@ -273,22 +315,27 @@ insulate("sv - Pause after play", function()
     describe("is admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      sh_play_pause(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        sh_play_pause(dermaBase, media.sv_PlayingSong)
+      end)
     end)
 
     describe("not admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      dermaBase.buttonplay:DoClick(nil, 0)
-      _set_player_admin(false)
-      -- set host as admin
-      _net_promote_sender_to_admin("sv_play_live_seek_for_user")
-      sh_play_live_seek_pause(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        dermaBase.buttonplay:DoClick(nil, 0)
+      end)
+      player_with_no_admin:do_action(function(self)
+        sh_play_live_seek_pause(dermaBase, media.sv_PlayingSong)
+      end)
     end)
   end)
 end)
+
+
 
 insulate("sv - Pause after pause", function()
   local dermaBase, media = create_with_dark_mode()
@@ -302,15 +349,19 @@ insulate("sv - Pause after pause", function()
     describe("is admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      sh_play_pause_unpause(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        sh_play_pause_unpause(dermaBase, media.sv_PlayingSong)
+      end)
     end)
 
     describe("not admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(false)
-      sh_play_pause_unpause(dermaBase, media.sv_PlayingSong)
+
+      player_with_no_admin:do_action(function(self)
+        sh_play_pause_unpause(dermaBase, media.sv_PlayingSong)
+      end)
     end)
   end)
 
@@ -320,21 +371,29 @@ insulate("sv - Pause after pause", function()
     describe("is admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      sh_play_pause_unpause(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        sh_play_pause_unpause(dermaBase, media.sv_PlayingSong)
+      end)
     end)
 
     describe("not admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      dermaBase.buttonplay:DoClick(nil, 0)
-      _set_player_admin(false)
-      _net_promote_sender_to_admin("sv_play_live_seek_for_user")
-      sh_play_live_seek_pause_unpause(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        dermaBase.buttonplay:DoClick(nil, 0)
+      end)
+      player_with_no_admin:do_action(function(self)
+        sh_play_live_seek_pause_unpause(dermaBase, media.sv_PlayingSong)
+      end)
     end)
   end)
 end)
+
+
+
+
 
 insulate("sv - Pause after loop", function()
   local dermaBase, media = create_with_dark_mode()
@@ -354,9 +413,16 @@ insulate("sv - Pause after autoplay", function()
   sh_play_autoplay_pause(dermaBase, media.sv_PlayingSong)
 end)
 
---
+
+
+
+
+
+
+
+
 -- CONTINUE HERE the below one
---
+
 insulate("sv - Unpause after loop & pause", function()
   local dermaBase, media = create_with_dark_mode()
   assert.set_derma(dermaBase)
@@ -369,16 +435,19 @@ insulate("sv - Unpause after loop & pause", function()
     describe("is admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      sh_play_loop_pause_unpause(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        sh_play_loop_pause_unpause(dermaBase, media.sv_PlayingSong)
+      end)
     end)
 
     describe("not admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(false)
-      _net_promote_sender_to_admin("sv_play_live_seek_from_host")
-      sh_play_loop_pause_unpause(dermaBase, media.sv_PlayingSong)
+
+      player_with_no_admin:do_action(function(self)
+        sh_play_loop_pause_unpause(dermaBase, media.sv_PlayingSong)
+      end)
     end)
   end)
 
@@ -388,22 +457,27 @@ insulate("sv - Unpause after loop & pause", function()
     describe("is admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      sh_play_loop_pause_unpause(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        sh_play_loop_pause_unpause(dermaBase, media.sv_PlayingSong)
+      end)
     end)
 
     describe("not admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      dermaBase.buttonplay:DoClick(nil, 0)
-      dermaBase.buttonpause:DoRightClick()
-      _set_player_admin(false)
-      _net_promote_sender_to_admin("sv_play_live_seek_for_user")
-      sh_play_live_seek_loop_pause_unpause(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        dermaBase.buttonplay:DoClick(nil, 0)
+        dermaBase.buttonpause:DoRightClick()
+      end)
+      player_with_no_admin:do_action(function(self)
+        sh_play_live_seek_loop_pause_unpause(dermaBase, media.sv_PlayingSong)
+      end)
     end)
   end)
 end)
+
 
 insulate("sv - Unpause after autoplay & pause", function()
   local dermaBase, media = create_with_dark_mode()
@@ -417,16 +491,19 @@ insulate("sv - Unpause after autoplay & pause", function()
     describe("is admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      sh_play_autoplay_pause_unpause(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        sh_play_autoplay_pause_unpause(dermaBase, media.sv_PlayingSong)
+      end)
     end)
 
     describe("not admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(false)
-      _net_promote_sender_to_admin("cl_play_live_seek_from_host")
-      sh_play_autoplay_pause_unpause(dermaBase, media.sv_PlayingSong)
+
+      player_with_no_admin:do_action(function(self)
+        sh_play_autoplay_pause_unpause(dermaBase, media.sv_PlayingSong)
+      end)
     end)
   end)
 
@@ -436,20 +513,29 @@ insulate("sv - Unpause after autoplay & pause", function()
     describe("is admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      sh_play_autoplay_pause_unpause(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        sh_play_autoplay_pause_unpause(dermaBase, media.sv_PlayingSong)
+      end)
     end)
 
     describe("not admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      dermaBase.buttonplay:DoClick(nil, 0)
-      _set_player_admin(false)
-      sh_play_live_seek_no_autoplay_pause_live_unpause_live(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        dermaBase.buttonplay:DoClick(nil, 0)
+      end)
+      player_with_no_admin:do_action(function(self)
+        sh_play_live_seek_no_autoplay_pause_live_unpause_live(dermaBase, media.sv_PlayingSong)
+      end)
     end)
   end)
 end)
+
+
+
+
 
 ------------------------------------------------------------------------------
 insulate("sv - Stop after play", function()
@@ -479,6 +565,8 @@ insulate("sv - Stop after unpause", function()
   sh_play_pause_unpause_stop(dermaBase, media.sv_PlayingSong)
 end)
 
+
+
 ------------------------------------------------------------------------------
 insulate("sv - Loop after play", function()
   local dermaBase, media = create_with_dark_mode()
@@ -498,6 +586,10 @@ insulate("sv - Loop after pause", function()
   sh_play_pause_loop(dermaBase, media.sv_PlayingSong)
 end)
 
+
+
+
+
 ------------------------------------------------------------------------------
 insulate("sv - Autoplay after play", function()
   local dermaBase, media = create_with_dark_mode()
@@ -511,15 +603,19 @@ insulate("sv - Autoplay after play", function()
     describe("is admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      sh_play_autoplay(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        sh_play_autoplay(dermaBase, media.sv_PlayingSong)
+      end)
     end)
 
     describe("not admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(false)
-      sh_play_autoplay(dermaBase, media.sv_PlayingSong)
+
+      player_with_no_admin:do_action(function(self)
+        sh_play_autoplay(dermaBase, media.sv_PlayingSong)
+      end)
     end)
   end)
 
@@ -529,21 +625,26 @@ insulate("sv - Autoplay after play", function()
     describe("is admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      sh_play_autoplay(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        sh_play_autoplay(dermaBase, media.sv_PlayingSong)
+      end)
     end)
 
     describe("not admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      dermaBase.buttonplay:DoClick(nil, 0)
-      _set_player_admin(false)
-      _net_promote_sender_to_admin("sv_play_live_seek_for_user")
-      sh_play_live_seek_no_autoplay(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        dermaBase.buttonplay:DoClick(nil, 0)
+      end)
+      player_with_no_admin:do_action(function(self)
+        sh_play_live_seek_no_autoplay(dermaBase, media.sv_PlayingSong)
+      end)
     end)
   end)
 end)
+
 
 insulate("sv - Autoplay after autoplay", function()
   local dermaBase, media = create_with_dark_mode()
@@ -557,15 +658,18 @@ insulate("sv - Autoplay after autoplay", function()
     describe("is admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      sh_play_autoplay_autoplay(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        sh_play_autoplay_autoplay(dermaBase, media.sv_PlayingSong)
+      end)
     end)
 
     describe("not admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(false)
-      sh_play_autoplay_autoplay(dermaBase, media.sv_PlayingSong)
+      player_with_no_admin:do_action(function(self)
+        sh_play_autoplay_autoplay(dermaBase, media.sv_PlayingSong)
+      end)
     end)
   end)
 
@@ -575,21 +679,27 @@ insulate("sv - Autoplay after autoplay", function()
     describe("is admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      sh_play_autoplay_autoplay(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        sh_play_autoplay_autoplay(dermaBase, media.sv_PlayingSong)
+      end)
     end)
 
     describe("not admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      dermaBase.buttonplay:DoClick(nil, 0)
-      _set_player_admin(false)
-      _net_promote_sender_to_admin("sv_play_live_seek_for_user")
-      sh_play_live_seek_no_autoplay_no_autoplay(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        dermaBase.buttonplay:DoClick(nil, 0)
+      end)
+      player_with_no_admin:do_action(function(self)
+        sh_play_live_seek_no_autoplay_no_autoplay(dermaBase, media.sv_PlayingSong)
+      end)
+
     end)
   end)
 end)
+
 
 insulate("sv - Autoplay while seek end", function()
   local dermaBase, media = create_with_dark_mode()
@@ -603,15 +713,17 @@ insulate("sv - Autoplay while seek end", function()
     describe("is admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      sh_play_autoplay_seekend(dermaBase, media.sv_PlayingSong)
+      player_with_admin:do_action(function(self)
+        sh_play_autoplay_seekend(dermaBase, media.sv_PlayingSong)
+      end)
     end)
 
     describe("not admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(false)
-      sh_play_autoplay_seekend(dermaBase, media.sv_PlayingSong)
+      player_with_no_admin:do_action(function(self)
+        sh_play_autoplay_seekend(dermaBase, media.sv_PlayingSong)
+      end)
     end)
   end)
 
@@ -621,30 +733,21 @@ insulate("sv - Autoplay while seek end", function()
     describe("is admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      sh_play_autoplay_seekend(dermaBase, media.sv_PlayingSong)
+
+      player_with_admin:do_action(function(self)
+        sh_play_autoplay_seekend(dermaBase, media.sv_PlayingSong)
+      end)
     end)
 
     describe("not admin", function()
       _reset_client(media.sv_PlayingSong)
       _reset_server()
-      _set_player_admin(true)
-      dermaBase.buttonplay:DoClick(nil, 0)
-      _set_player_admin(false)
-      _net_promote_sender_to_admin("sv_play_live_seek_for_user")
-      sh_play_live_seek_no_autoplay_no_seekend(dermaBase, media.sv_PlayingSong)
+      player_with_admin:do_action(function(self)
+        dermaBase.buttonplay:DoClick(nil, 0)
+      end)
+      player_with_no_admin:do_action(function(self)
+        sh_play_live_seek_no_autoplay_no_seekend(dermaBase, media.sv_PlayingSong)
+      end)
     end)
   end)
 end)
---------------------------------------------------------------------------------
--- TODO idea for better function readability
---  - might be worth trying this approach cuz i believe it will improve readability and also offer some nested features
--- insulate("sv - test test", function()
---   describe("test ", function()
---     local player_with_no_admin = __create_player(False)
---     local player_with_admin = __create_player(True)
---     player_with_admin:do_action(function()
---       sh_play_live_seek_no_autoplay_no_seekend(dermaBase, media.sv_PlayingSong)
---     end)
---   end)
--- end)]]
