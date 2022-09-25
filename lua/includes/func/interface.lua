@@ -2,7 +2,6 @@
 --   the_player.is_admin = _mock_is_admin
 --   -- used for net.SendServer
 --   the_player.is_net_admin = _all_players_are_admin
---   the_player.was_GetAll = false
 --   for k, v in pairs(_G.Player) do
 --     the_player[k] = v
 --   end
@@ -183,19 +182,19 @@ local function create_media_player()
   dermaBase.buttonplay.DoClick = function(self, song_path, line_index)
     if dermaBase.songlist:IsEmpty() then
       return
-    else
-      if not isnumber(line_index) then
-        local last_line_index = dermaBase.mediaplayer:get_channel():get_song_index()
+    end
+    local current_line = dermaBase.mediaplayer:get_channel():get_song_index()
 
-        if last_line_index ~= 0 then
-          line_index = last_line_index
-        else
-          line_index = 1
-        end
-      elseif line_index == 0 then
+    if not isnumber(line_index) then
+      if current_line ~= 0 then
+        line_index = current_line
+      else
         line_index = 1
       end
+    elseif line_index == 0 then
+      line_index = 1
     end
+
 
     if not isstring(song_path) then
       song_path, line_index = dermaBase.song_data:get_song(line_index)
@@ -204,7 +203,10 @@ local function create_media_player()
     if not dermaBase.main:IsServerMode() then
       dermaBase.set_server_TSS(false)
 
-      if dermaBase.mediaplayer:hasValidity() and dermaBase.mediaplayer:is_paused() then
+      local is_same_line = line_index == current_line
+      local is_valid_and_paused = dermaBase.mediaplayer:hasValidity() and dermaBase.mediaplayer:is_paused()
+
+      if is_valid_and_paused and is_same_line then
         dermaBase.mediaplayer:resume()
       else
         local is_autoplaying = dermaBase.mediaplayer:is_autoplaying()

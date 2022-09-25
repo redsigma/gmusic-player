@@ -64,7 +64,7 @@ function PANEL:IsEnabled()
 end
 
 function PANEL:RefreshConVar()
-    self.box:RefreshConVar()
+  self.box:RefreshConVar()
 end
 
 function PANEL:SetPos(x, y)

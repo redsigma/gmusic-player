@@ -2,7 +2,7 @@
     Convars that update at client side
 --]]
 local dermaBase = {}
-local player = LocalPlayer()
+
 
 local function init(baseMenu)
   dermaBase = baseMenu
@@ -28,18 +28,17 @@ end)
     Used to update the server settings from first admin that it's connected
     Must run only once for the first admin to grab the values from him
 --]]
-net.Receive("cl_update_cvars_from_first_admin", function()
-  -- local player = LocalPlayer()
-  if IsValid(player) and player:IsAdmin() then
-    local settings = {}
-    settings.admin_server_access = GetConVar("gmpl_svadminplay"):GetBool()
-    settings.admin_dir_access = GetConVar("gmpl_svadmindir"):GetBool()
-    net.Start("sv_update_cvars_from_first_admin")
-    net.WriteTable(settings)
-    net.WriteTable(dermaBase.song_data:get_left_song_list())
-    net.WriteTable(dermaBase.song_data:get_right_song_list())
-    net.SendToServer()
-  end
+net.Receive("cl_update_cvars_from_first_admin", function(length, sender)
+  if not IsValid(sender) or not sender:IsAdmin() then return end
+
+  local settings = {}
+  settings.admin_server_access = GetConVar("gmpl_svadminplay"):GetBool()
+  settings.admin_dir_access = GetConVar("gmpl_svadmindir"):GetBool()
+  net.Start("sv_update_cvars_from_first_admin")
+  net.WriteTable(settings)
+  net.WriteTable(dermaBase.song_data:get_left_song_list())
+  net.WriteTable(dermaBase.song_data:get_right_song_list())
+  net.SendToServer()
 end)
 
 --[[
