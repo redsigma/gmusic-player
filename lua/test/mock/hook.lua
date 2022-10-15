@@ -6,6 +6,11 @@ mock_hook.Add = function(str_internal, name, callback)
     setmetatable(list_hook[str_internal],
         { __call = function(self, ply) callback(ply) end })
 end
+mock_hook.Remove = function(str_internal, name)
+ -- TODO look in list and remove
+ -- check original lua for implementation details
+end
+
 mock_hook.GetTable = function()
     return {}
 end

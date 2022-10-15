@@ -74,20 +74,35 @@ _set_audio_files("GAME", {"folder1", "folder2"}, files_local)
 
 _set_audio_files("WORKSHOP", {"folder1", "folder2"}, files_workshop)
 
+--[[
+  Older version before singleton refactor
+]]
+-- _G.create_with_dark_mode = function()
+--   local dermaBase = include("includes/modules/meth_base.lua")(view_context_menu, -1)
+--   dermaBase.mediaplayer:net_init()
+--   dermaBase.painter:theme_dark(true)
+--   string._Explode_Separator("\\n")
+--   local loaded = dermaBase.song_data:load_from_disk()
+
+--   if loaded then
+--     dermaBase.song_data:populate_song_page()
+--   end
+
+--   dermaBase.create(view_context_menu)
+--   dermaBase.painter:update_colors()
+--   include("gmpl/cl_cvars.lua")(dermaBase)
+--   require("gmpl/sv_cvars")
+--   local media = dermaBase.mediaplayer
+--   dermaPanel = dermaBase
+
+--   return dermaBase, media
+-- end
+
 _G.create_with_dark_mode = function()
-  local dermaBase = include("includes/modules/meth_base.lua")(view_context_menu, -1)
-  dermaBase.mediaplayer:net_init()
+  local dermaBase = include("includes/modules/setup.lua").derma()
   dermaBase.painter:theme_dark(true)
-  string._Explode_Separator("\\n")
-  local loaded = dermaBase.song_data:load_from_disk()
 
-  if loaded then
-    dermaBase.song_data:populate_song_page()
-  end
-
-  dermaBase.create(view_context_menu)
-  dermaBase.painter:update_colors()
-  include("gmpl/cl_cvars.lua")(dermaBase)
+  include("gmpl/cl_cvars.lua")
   require("gmpl/sv_cvars")
   local media = dermaBase.mediaplayer
   dermaPanel = dermaBase

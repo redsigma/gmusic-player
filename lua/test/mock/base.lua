@@ -154,6 +154,7 @@ _G.timer.UnPause = function() end
 _G.timer.Create = function() end
 _G.timer.Start = function() end
 _G.timer.Stop = function() end
+_G.timer.Exists = function() end
 _G.surface = {}
 _G.surface.CreateFont = function(name, table) end
 _G.surface.SetDrawColor = function() end
@@ -318,7 +319,7 @@ _G.string.StripExtension = function(path)
   return path
 end
 
-_G.string.Totable = function(str)
+_G.string.ToTable = function(str)
   local tbl = {}
 
   for i = 1, string.len(str) do
@@ -689,7 +690,7 @@ end
 
 local folder_data = {}
 
-_G.file.Read = function(self)
+_G.file.Read = function(filename, path)
   folder_data = {}
 
   for folder, _ in pairs(storage["GAME"].sound) do
@@ -703,7 +704,7 @@ _G.file.Read = function(self)
   local folders = ""
 
   for folder, _ in pairs(folder_data) do
-    folders = folders .. folder .. "\\n"
+    folders = folders .. folder .. "\n"
   end
 
   return folders

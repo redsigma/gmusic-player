@@ -20,7 +20,7 @@ function play_cl_switch_sv(dermaBase)
 
     it("cl has ui highlight ", function()
       assert.ui_top_bar_color(1, "Example1")
-      assert.line_highlight(1, 1, 0)
+      assert.line_highlight_play(1, 0)
       assert.are.same(cl_line.bgcol, color.Play)
     end)
 
@@ -45,7 +45,7 @@ function play_sv_switch_cl(dermaBase)
 
     it("sv has ui highlight ", function()
       assert.ui_top_bar_color(1, "Example1")
-      assert.line_highlight(1, 1, 0)
+      assert.line_highlight_play(1, 0)
       assert.are.same(sv_line.bgcol, color.Play)
     end)
 

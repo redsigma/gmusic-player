@@ -23,7 +23,6 @@ insulate("Populate music dirs on start", function()
   end)
   describe("load from disk", function()
     dermaBase.songlist.Lines = {}
-    string._Explode_Separator("\\n")
     local loaded = dermaBase.song_data:load_from_disk()
     it("song page populated", function()
       assert.are.equal(loaded, true)

@@ -43,7 +43,7 @@ insulate("cl-sv - End server song, dont affect client", function()
 
         it("cl dont update ui", function()
           assert.ui_top_bar_color(1, "Example2")
-          assert.line_highlight(1, cl_line, 0)
+          assert.line_highlight_play(cl_line, 0)
         end)
       end)
     end)
