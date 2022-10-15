@@ -43,11 +43,11 @@ function PANEL:Init()
 
 	self.m_bInactive = false
 
-    self.label = vgui.Create( "DLabel", self )
-    self.label:SetPos(self.box:GetWide() + 8, -2 )
-    self.label:SetMouseInputEnabled( true )
-    self.label:SetWide(0)
-    self.label.DoClick = function() self:Toggle() end
+  self.label = vgui.Create( "DLabel", self )
+  self.label:SetPos(self.box:GetWide() + 8, -2 )
+  self.label:SetMouseInputEnabled( true )
+  self.label:SetWide(0)
+  self.label.DoClick = function() self:Toggle() end
 end
 
 function PANEL:SetEnabled( bEnabled )
@@ -149,11 +149,13 @@ function PANEL:SetInactive(bool)
 	if bool then
 		self.PaintOver = function(panel, w, h)
 			surface.SetDrawColor(0,0,0,150)
-			surface.DrawRect(self.box:GetWide(), 0, w + 6, self.box:GetTall() - 1)
+			surface.DrawRect(0, 0, w, self.box:GetTall())
 		end
 	else
 		self.PaintOver = function() end
 	end
+  self:SetMouseInputEnabled(not bool)
+  self:SetKeyboardInputEnabled(not bool)
 	self.m_bInactive = bool
 end
 

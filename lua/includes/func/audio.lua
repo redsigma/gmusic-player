@@ -499,6 +499,8 @@ end
 local function disableTSS()
   if dermaBase.main:IsTSSEnabled() then
     dermaBase.main:SetTSSEnabled(false)
+
+    if not dermaBase.contextmedia then return end
     dermaBase.contextmedia:SetTSS(false)
   end
 end
@@ -507,8 +509,11 @@ local function updateTitleSong(status, media)
   if media:is_stopped() then
     dermaBase.main:SetTitle(" gMusic Player")
     dermaBase.main:SetTSSEnabled(false)
-    dermaBase.contextmedia:SetTextColor(colBlack)
-    dermaBase.contextmedia:SetText(false)
+
+    if dermaBase.contextmedia then
+      dermaBase.contextmedia:SetTextColor(colBlack)
+      dermaBase.contextmedia:SetText(false)
+    end
     disableTSS()
 
     return ""
@@ -525,15 +530,19 @@ local function updateTitleSong(status, media)
     if status == false then
       media:set_missing(true)
       dermaBase.main:SetTitleBGColor(col404)
-      dermaBase.contextmedia:SetTextColor(col404)
-      dermaBase.contextmedia:SetMissing(true)
+      if dermaBase.contextmedia then
+        dermaBase.contextmedia:SetTextColor(col404)
+        dermaBase.contextmedia:SetMissing(true)
+      end
       MsgC(Color(100, 200, 200), "[gMusic Player]", Color(255, 255, 255), " Song file missing:\n> ", song_filepath, "\n")
     end
 
     if song_filepath then
       local title_song = media:get_song_name()
       dermaBase.main:SetTitle(media:get_song_prefix() .. title_song)
-      dermaBase.contextmedia:SetText(title_song)
+      if dermaBase.contextmedia then
+        dermaBase.contextmedia:SetText(title_song)
+      end
 
       return title_song
     end
@@ -655,7 +664,9 @@ local function ui_update_title_color(status, channel)
   end
 
   dermaBase.main:SetTitleBGColor(color_bg)
-  dermaBase.contextmedia:SetTextColor(color_bg)
+  if dermaBase.contextmedia then
+    dermaBase.contextmedia:SetTextColor(color_bg)
+  end
   updateTitleSong(status, channel)
 
   return color_bg, color_text
@@ -960,7 +971,9 @@ local function playSong(self, song, song_index, is_autoplay, is_loop, seek, chan
       dermaBase.sliderseek:AllowSeek(true)
       dermaBase.sliderseek:SetMax(_channel.seek_len)
       dermaBase.sliderseek:ShowSeekBarHandle(true)
-      dermaBase.contextmedia:SetSeekLength(_channel.seek_len)
+      if dermaBase.contextmedia then
+        dermaBase.contextmedia:SetSeekLength(_channel.seek_len)
+      end
       update_ui_selection(self, _channel)
     end
   end)

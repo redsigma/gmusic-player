@@ -49,7 +49,6 @@ local function init(contextMenu, contextMargin)
   dermaBase.painter = include("includes/modules/meth_paint.lua")()
   dermaBase.interface = include("includes/func/interface.lua")(dermaBase)
   dermaBase.song_data = include("includes/modules/meth_song.lua")(dermaBase)
-  dermaBase.contextmedia = vgui.Create("DMultiButton", contextMenu)
   dermaBase.main = vgui.Create("DgMPlayerFrame")
   bottom_p = vgui.Create("Panel", dermaBase.main)
   dermaBase.sliderseek = vgui.Create("DSeekBar", bottom_p)
@@ -89,18 +88,16 @@ local function init(contextMenu, contextMargin)
   dermaBase.foldersearch:Dock(FILL)
   dermaBase.settingsheet:Dock(FILL)
   dermaBase.slidervol:Dock(RIGHT)
-  dermaBase.contextmedia:SetPos(ScrW() - contextMargin, 0)
-  dermaBase.contextmedia:SetSize(ScrW() - (ScrW() - contextMargin), 30)
+
   -- Visibility
   dermaBase.main:SetVisible(false)
   dermaBase.buttonswap:SetVisible(false)
-  dermaBase.contextmedia:SetVisible(false)
+
   -- Font style
   dermaBase.slidervol:SetFont(defaultFont)
   dermaBase.songlist:SetFont(defaultFont)
   dermaBase.sliderseek:SetTextFont(defaultFont)
-  dermaBase.contextmedia:SetFont(defaultFont)
-  dermaBase.contextmedia:SetTextColor(Color(0, 0, 0))
+
   dermaBase.labelswap:SetTextColor(Color(230, 230, 230))
   dermaBase.buttonstop:SetFont(defaultFont)
   dermaBase.buttonpause:SetFont(defaultFont)
@@ -114,6 +111,9 @@ local function init(contextMenu, contextMargin)
   dermaBase.contextbutton:SetConVar("gmpl_cmenu", "0", "[gMusic Player] Disable/Enable the context menu button")
   dermaBase.hotkey:SetConVar("gmpl_nohotkey", "0", "[gMusic Player] Disable/Enable the F3 hotkey")
   dermaBase.darkmode:SetConVar("gmpl_dark", "1", "[gMusic Player] Toggle dark mode theme")
+
+  dermaBase.contextmedia = vgui.Create("DMultiButton")
+
 
   -- DO gmpl_resetsize for dumbass
   -- Do gmpl_size x y
@@ -133,6 +133,8 @@ local function init(contextMenu, contextMargin)
   dermaBase.set_server_TSS = function(bool)
     -- switch to Client/Server
     dermaBase.main:SetTitleServerState(bool)
+
+    if not dermaBase.contextmedia then return end
     dermaBase.contextmedia:SetTSS(bool)
   end
 
@@ -351,34 +353,6 @@ local function init(contextMenu, contextMargin)
     end
   end
 
-  -- print("Pause seek end, in paused")
-  -- timer.Pause("gmpl_seek_end")
-  -- Clicks M1
-  dermaBase.contextmedia.DoClick = function()
-    net.Start("sv_gmpl_show")
-    net.SendToServer()
-  end
-
-  -- Clicks M2
-  dermaBase.contextmedia.DoRightClick = function()
-    dermaBase.buttonpause.DoClick()
-  end
-
-  -- Clicks M3
-  dermaBase.contextmedia.DoMiddleClick = function()
-    dermaBase.buttonpause.DoRightClick()
-  end
-
-  -- Clicks M4
-  dermaBase.contextmedia.DoM4Click = function()
-    dermaBase.buttonpause.DoRightClick()
-  end
-
-  dermaBase.contextmedia.OnScreenSizeChanged = function(old_width, old_height)
-    dermaBase.contextmedia:SetPos(ScrW() - contextMargin, 0)
-    dermaBase.contextmedia:SetSize(ScrW() - (ScrW() - contextMargin), 30)
-  end
-
   dermaBase.cbadminaccess.AfterChange = function(panel, val)
     local bVal = tobool(val)
     net.Start("sv_settings_edit_live_access")
@@ -396,6 +370,8 @@ local function init(contextMenu, contextMargin)
   dermaBase.contextbutton.AfterChange = function(panel, val)
     if not IsValid(contextMenu) then return end
     local bVal = tobool(val)
+
+    if not dermaBase.contextmedia then return end
     dermaBase.contextmedia:SetVisible(bVal)
   end
 
@@ -506,7 +482,7 @@ local function init(contextMenu, contextMargin)
     dermaBase.settingPage:InvalidateItems()
   end
 
-  dermaBase.create = function(context_menu)
+  dermaBase.create = function()
     dermaBase.InvalidateUI()
     dermaBase.foldersearch:OnRebuild()
     dermaBase.main:SetFont(defaultFont)
@@ -529,7 +505,6 @@ local function init(contextMenu, contextMargin)
 
     dermaBase.settingPage:SetSize(200, tallOptionsPage + 40)
     dermaBase.interface.build()
-    dermaBase.interface.init_context_view(context_menu)
   end
 
   include("includes/func/net_calls_mandatory.lua")(dermaBase)

@@ -1,9 +1,10 @@
 -- local mediaplayer = nil
 local shared_settings = nil
-local dermaBase = {}
+-- local dermaBase = {}
 local view_context_menu = nil
 local contextMenuMargin = ScrW() / 5
-local view_ingame = nil
+
+local gmusic = include("includes/modules/setup.lua")
 
 surface.CreateFont("arialDefault", {
   font = "Arial",
@@ -22,10 +23,6 @@ surface.CreateFont("arialDefault", {
   additive = false,
   outline = false,
 })
-
-hook.Add("ContextMenuCreated", "create_context", function(context_menu)
-  view_context_menu = context_menu
-end)
 
 --[[-------------------------------------------------------------------------
 Runs if server not just Created
@@ -47,70 +44,16 @@ net.Receive("cl_ask_server_settings", function()
   print("DIR ACCESS IS", dir_access)
 end)
 
+
+local function initialize_music_player()
+  if not gmusic then return end
+
+  include("gmpl/cl_cvars.lua")
+  gmusic.get()
+end
+
 net.Receive("cl_gmpl_create", function()
-  dermaBase = include("includes/modules/meth_base.lua")(view_context_menu, contextMenuMargin)
-  -- needs valid context menu for callback
-  dermaBase.contextbutton:AfterChange(dermaBase.contextbutton:GetCvarInt())
-
-  while not isfunction(dermaBase.main.IsVisible) do
-    MsgC(Color(100, 200, 200), "[gMusic Player]", Color(255, 90, 90), " Failed to initialize - retrying\n")
-    dermaBase = include("includes/modules/meth_base.lua")(view_context_menu, contextMenuMargin)
-  end
-
-  --[[
-
-  DONT USE SERVER SIDE things in client
-  Instead use net.send messages to set the things
-
-  shared_settings = include("includes/func/settings.lua")
-  shared_settings:set_admin_server_access(
-    dermaBase.cbadminaccess:GetChecked())
-  shared_settings:set_admin_dir_access(
-    dermaBase.cbadmindir:GetChecked())
-]]
-  include("gmpl/cl_cvars.lua")(dermaBase)
-  -- include("includes/modules/musicplayerclass.lua")
-  -- dermaBase.mediaplayer = Media(dermaBase)
-  dermaBase.mediaplayer:net_init()
-  local loaded = dermaBase.song_data:load_from_disk()
-
-  if loaded then
-    dermaBase.song_data:populate_song_page()
-  end
-
-  dermaBase.create(view_context_menu)
-  dermaBase.painter:update_colors()
-
-  -- timer.Create("gmpl_sv_guard", 2, 0, function()
-  --     dermaBase.mediaplayer:sv_buffer_guard()
-  -- end)
-  -- timer.Stop("gmpl_sv_guard")
-  -- timer.Create("gmpl_cl_guard", 2, 0, function()
-  --     dermaBase.mediaplayer:cl_buffer_guard()
-  -- end)
-  -- timer.Stop("gmpl_cl_guard")
-  -- monitor slider seek
-  -- monitor channel seek
-  timer.Create("gmpl_seek_daemon", 0.05, 0, function()
-    dermaBase.mediaplayer:monitor_channel_seek()
-  end)
-
-  -- timer.Pause("gmpl_seek_daemon")
-  timer.Create("gmpl_realtime_seek", 0.07, 0, function()
-    dermaBase.mediaplayer:realtime_seek()
-  end)
-
-  timer.Pause("gmpl_realtime_seek")
-
-  timer.Create("gmpl_sv_seek_end", 0.06, 0, function()
-    dermaBase:MonitorSeekEnd(true) -- server
-  end)
-
-  timer.Create("gmpl_cl_seek_end", 0.2, 0, function()
-    -- needs to be slower to prevent issues
-    if dermaBase.main:IsServerMode() then return end
-    dermaBase:MonitorSeekEnd(false) -- client
-  end)
+  initialize_music_player()
 end)
 
 -- timer.Pause("gmpl_seek_end")
@@ -118,30 +61,25 @@ end)
 -- print("\nshared settings cl_gmpl:", shared_settings)
 -- PrintTable(shared_settings)
 net.Receive("cl_gmpl_show", function()
+  local gmusic_ui_lowlevel = gmusic.interface()
+  local gmusic_ui = gmusic.derma()
+
   local live_host = net.ReadType()
-  dermaBase.interface.set_song_host(live_host)
-  dermaBase.InvalidateUI()
-  dermaBase.interface.show()
+  gmusic_ui_lowlevel.set_song_host(live_host)
+  gmusic_ui.InvalidateUI()
+  gmusic_ui_lowlevel.show()
 end)
 
 concommand.Add("gmplshow", function()
-  dermaBase.InvalidateUI()
-  dermaBase.interface.show()
+  local gmusic_ui_lowlevel = gmusic.interface()
+  local gmusic_ui = gmusic.derma()
+
+  gmusic_ui.InvalidateUI()
+  gmusic_ui_lowlevel.show()
 end)
 
-cvars.AddChangeCallback("gmpl_vol", function(convar, oldValue, newValue)
-  if not istable(dermaBase.mediaplayer) then return end
 
-  if (isnumber(util.StringToType(newValue, "Float"))) then
-    -- if istable(mediaplayer) then
-    dermaBase.interface.set_volume(newValue)
-    -- end
-  elseif (isnumber(util.StringToType(oldValue, "Float"))) then
-    -- if istable(mediaplayer) then
-    dermaBase.interface.set_volume(oldValue)
-    MsgC(Color(255, 90, 90), "Only 0 - 100 value is allowed. Keeping value " .. oldValue .. "\n")
-  end
-end)
+
 -- end
 -- hook.Add("OnScreenSizeChanged", "warn_users", function(old_width, old_height)
 --     // Keep this warning to notice users of this bug

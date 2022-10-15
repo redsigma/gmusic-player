@@ -5,6 +5,7 @@ Derma_Hook( PANEL, "Paint", "Paint", "MenuBar" )
 local colorServerState = Color(255, 150, 0, 255)
 
 function PANEL:Init()
+  self:SetMouseInputEnabled(true)
 	self.missing = false
 	self:SetVisible(false)
 	self.length = ""

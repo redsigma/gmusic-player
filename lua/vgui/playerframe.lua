@@ -12,7 +12,6 @@ local isTSS = false
 
 function PANEL:Init()
   self:SetMouseInputEnabled(true)
-  self:MouseCapture(true)
   self:SetFocusTopLevel(false)
   self:SetCursor("sizeall")
   self:UpdateWindowSize()

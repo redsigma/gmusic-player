@@ -20,6 +20,8 @@ if (SERVER) then
   AddCSLuaFile("vgui/dbetterlist.lua")
   AddCSLuaFile("vgui/dmultibutton.lua")
   AddCSLuaFile("vgui/dbetterbutton.lua")
+  --- register modules
+  AddCSLuaFile("includes/modules/setup.lua")
   AddCSLuaFile("includes/modules/musicplayerclass.lua")
   AddCSLuaFile("includes/modules/meth_base.lua")
   AddCSLuaFile("includes/modules/meth_paint.lua")

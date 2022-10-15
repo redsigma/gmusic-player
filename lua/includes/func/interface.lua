@@ -6,6 +6,7 @@
 --     the_player[k] = v
 --   end
 -- end
+
 local cvarMediaVolume = CreateClientConVar("gmpl_vol", "100", true, false, "[gMusic Player] Sets the Volume of music player")
 local interface = {}
 local dermaBase = {}
@@ -28,6 +29,11 @@ local is_context_open = false
 --]]
 local anchor_parent = nil
 
+--[[
+  Constants
+]]
+local defaultFont = "arialDefault"
+
 local function update_server_channel()
   -- TODO this is a duplicate in meth_base too
   -- - i gotta fix this somehow
@@ -45,16 +51,91 @@ end
 
 local function init(baseMenu)
   dermaBase = baseMenu
-
   return interface
 end
 
-local function create_media_player()
+local function get_contextmenu_panel()
+  if not IsValid(g_ContextMenu) then return {} end
+
+  local is_panel_context_menu =
+    g_ContextMenu:GetClassName() == "LuaEditablePanel"
+
+    if is_panel_context_menu then return g_ContextMenu end
+    return {}
+end
+
+--[[
+    Used to parent the music player to context menu or ingame
+--]]
+local function prepare_parent_panels(context_menu)
+  view_ingame = dermaBase.main:GetParent()
+  view_context_menu = get_contextmenu_panel()
+end
+
+local function build_button_contextmedia()
+  if not dermaBase.contextmedia then return end
+
+  if not view_context_menu then
+    dermaBase.contextbutton:SetInactive(true)
+    dermaBase.contextmedia:Remove()
+    dermaBase.contextmedia = nil
+    return
+  end
+
+  local full_width = ScrW()
+  local width = full_width / 5
+
+  dermaBase.contextmedia:SetParent(view_context_menu)
+  dermaBase.contextmedia:Init()
+  dermaBase.contextmedia:SetText(false)
+  dermaBase.contextmedia:SetVisible(true)
+  dermaBase.contextmedia:SetPos(full_width - width, 0)
+  dermaBase.contextmedia:SetSize(full_width - (full_width - width), 30)
+  dermaBase.contextmedia:SetFont(defaultFont)
+  dermaBase.contextmedia:SetTextColor(Color(0, 0, 0))
+
+  dermaBase.contextmedia.OnThink = function(panel)
+    if dermaBase.mediaplayer:hasValidity() and dermaBase.mediaplayer:hasState() == GMOD_CHANNEL_PLAYING then
+      panel:SetSeekTime(dermaBase.sliderseek:GetTime())
+    elseif panel:IsMissing() then
+      panel:SetSeekEnabled(false)
+    end
+  end
+
+  -- Clicks M1
+  dermaBase.contextmedia.DoClick = function()
+    interface.show()
+  end
+
+  -- Clicks M2
+  dermaBase.contextmedia.DoRightClick = function()
+    dermaBase.buttonpause.DoClick()
+  end
+
+  -- Clicks M3
+  dermaBase.contextmedia.DoMiddleClick = function()
+    dermaBase.buttonpause.DoRightClick()
+  end
+
+  -- Clicks M4
+  dermaBase.contextmedia.DoM4Click = function()
+    dermaBase.buttonpause.DoRightClick()
+  end
+
+  dermaBase.contextmedia.OnScreenSizeChanged = function(old_width, old_height)
+    dermaBase.contextmedia:SetPos(ScrW() - contextMargin, 0)
+    dermaBase.contextmedia:SetSize(ScrW() - (ScrW() - contextMargin), 30)
+  end
+end
+
+
+local function create_mediaplayer_ui_logic()
+  prepare_parent_panels()
+
   dermaBase.main:SetPos(16, 36)
   dermaBase.main:SetTitle(" gMusic Player")
   dermaBase.main:SetDraggable(true)
   dermaBase.main:SetSizable(true)
-  dermaBase.contextmedia:SetText(false)
   local mainX, mainY = dermaBase.main:GetSize()
   dermaBase.musicsheet:SetPos(0, 20)
   dermaBase.musicsheet.sidebar:Dock(RIGHT)
@@ -366,21 +447,8 @@ local function create_media_player()
     dermaBase.settingPage:RefreshCategoryLayout(dermaBase.main:GetWide() - wide)
   end
 
-  dermaBase.contextmedia.OnThink = function(panel)
-    if dermaBase.mediaplayer:hasValidity() and dermaBase.mediaplayer:hasState() == GMOD_CHANNEL_PLAYING then
-      panel:SetSeekTime(dermaBase.sliderseek:GetTime())
-    elseif panel:IsMissing() then
-      panel:SetSeekEnabled(false)
-    end
-  end
-end
+  build_button_contextmedia()
 
---[[
-    Used to parent the music player in context menu or ingame
---]]
-local function init_context_view(context_menu)
-  view_ingame = dermaBase.main:GetParent()
-  view_context_menu = context_menu
 end
 
 local function show()
@@ -408,11 +476,16 @@ local function show()
     end
 
     if not dermaBase.mediaplayer:sv_is_autoplay() and not dermaBase.mediaplayer:cl_is_autoplay() then
+
+      -- TODO try to move this logic in another place
+      --  - this seems to pause disable the constant seeking when autoplay is
+      --    off
       timer.Pause("gmpl_realtime_seek")
     end
   else
     if is_context_open then
       -- open in context area
+      RememberCursorPosition()
       gui.EnableScreenClicker(false)
       anchor_parent = view_context_menu
     else
@@ -426,7 +499,9 @@ local function show()
   end
 
   RestoreCursorPosition()
-  dermaBase.main:SetParent(anchor_parent)
+  if IsValid(anchor_parent) then
+    dermaBase.main:SetParent(anchor_parent)
+  end
 end
 
 local function set_volume(var)
@@ -455,6 +530,8 @@ local function toggle_normal_ui(self)
   local length = dermaBase.mediaplayer:get_length()
   dermaBase.sliderseek:SetSeekText(0)
   dermaBase.sliderseek:SetMax(length)
+
+  if not dermaBase.contextmedia then return end
   dermaBase.contextmedia:SetSeekLength(length)
 end
 
@@ -466,6 +543,8 @@ local function toggle_listen_ui(self)
   local length = dermaBase.mediaplayer:get_length()
   dermaBase.sliderseek:SetSeekText(0)
   dermaBase.sliderseek:SetMax(length)
+
+  if not dermaBase.contextmedia then return end
   dermaBase.contextmedia:SetSeekLength(length)
 end
 
@@ -487,8 +566,7 @@ hook.Add('OnContextMenuClose', 'gmpl_context_close', function()
 end)
 
 ------------------------------------------------------------------------------
-interface.build = create_media_player
-interface.init_context_view = init_context_view
+interface.build = create_mediaplayer_ui_logic
 interface.set_volume = set_volume
 interface.show = show
 interface.set_song_host = set_song_host
