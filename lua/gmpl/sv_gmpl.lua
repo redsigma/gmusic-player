@@ -506,25 +506,6 @@ net.Receive("sv_play_live_seek", function(length, sender)
   net.Send(sender)
 end)
 
-net.Receive("sv_refresh_song_state", function(length, ply)
-  if not is_player_valid(ply) then return end
-  -- ply:PrintMessage(HUD_PRINTCONSOLE, "---[SERVER] Song live:" .. liveSong)
-  net.Start("cl_refresh_song_state")
-  net.WriteBool(server_host.isPaused)
-  net.WriteBool(server_host.isAutoPlayed)
-  net.WriteBool(server_host.isLooped)
-  net.WriteDouble(server_host.liveSeek)
-  net.WriteString(server_host.liveSong)
-  net.WriteUInt(server_host.liveSongIndex, 16)
-
-  if isentity(server_host.player) then
-    ply:PrintMessage(HUD_PRINTCONSOLE, "---[SERVER] Writing server_host.player")
-    net.WriteEntity(server_host.player)
-  end
-
-  net.Send(ply)
-end)
-
 -- print("\n---- [request] user request song state")
 net.Receive("sv_update_song_state", function(length, sender)
   -- if not validate_settings() then return end

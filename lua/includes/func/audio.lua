@@ -1,3 +1,7 @@
+local callbacks = include("includes/events/audio.lua")
+local callbacks_interface = include("includes/events/interface.lua")
+require("delegate")
+
 local colPlay = Color(0, 150, 0)
 local colAPlay = Color(70, 190, 180)
 local colPause = Color(255, 150, 0)
@@ -45,6 +49,8 @@ GMPL_AUDIO = {}
 GMPL_AUDIO.new = function(self, channel_mode)
   local channel = {}
 
+
+
   local methods = {
     attrs = {
       -- 0 client, 1 server
@@ -76,6 +82,20 @@ GMPL_AUDIO.new = function(self, channel_mode)
       -- seeking when autoplaying on server
       keep_seek_alive = false,
     },
+    delegate = {
+      on_begin_play = Delegate:new(),
+      on_play_ui_update = Delegate:new(),
+      on_pause_ui_update = Delegate:new(),
+      on_loop_ui_update = Delegate:new(),
+      on_autoplay_ui_update = Delegate:new(),
+      on_revert_ui_update = Delegate:new(),
+      on_stop_ui_update = Delegate:new(),
+      on_missing_ui_update = Delegate:new(),
+    },
+
+
+
+
     get = function(self) return channel end,
     get_song_name = function(self) return self.title_song end,
     set_song_name = function(self, song_name)
@@ -232,7 +252,7 @@ GMPL_AUDIO.new = function(self, channel_mode)
 
       return -1
     end,
-    play = function(self, song, song_index, is_autoplay, is_loop, seek, callback)
+    play = function(self, song, song_index, is_autoplay, is_loop, seek)
       if not isstring(song) then return end
       self:silent_stop()
       if not self.isStopped then return end
@@ -243,8 +263,8 @@ GMPL_AUDIO.new = function(self, channel_mode)
 
         if not is_audio_valid then
           self.error = true
-          callback(self, is_audio_valid)
-
+          self.delegate.on_begin_play(self, is_audio_valid)
+          self.delegate.on_missing_ui_update(channel)
           return
         end
 
@@ -290,8 +310,14 @@ GMPL_AUDIO.new = function(self, channel_mode)
         self.think = true
         self.error = false
 
-        if callback ~= nil then
-          callback(self, is_audio_valid)
+        self.delegate.on_begin_play(self, is_audio_valid)
+
+        if self.isAutoPlaying then
+          self.delegate.on_autoplay_ui_update(channel)
+        elseif self.isLooped then
+          self.delegate.on_loop_ui_update(channel)
+        else
+          self.delegate.on_play_ui_update(channel)
         end
       end)
     end,
@@ -406,6 +432,23 @@ GMPL_AUDIO.new = function(self, channel_mode)
       end
     end,
   }
+
+
+  methods.delegate.on_begin_play:add(callbacks.on_begin_play)
+  methods.delegate.on_play_ui_update:add(callbacks_interface.on_play_ui_update)
+
+  methods.delegate.on_pause_ui_update:add(
+    callbacks_interface.on_pause_ui_update)
+
+  methods.delegate.on_loop_ui_update:add(callbacks_interface.on_loop_ui_update)
+
+  methods.delegate.on_autoplay_ui_update:add(
+    callbacks_interface.on_autoplay_ui_update)
+
+  methods.delegate.on_revert_ui_update:add(
+    callbacks_interface.on_revert_ui_update)
+
+  methods.delegate.on_stop_ui_update:add(callbacks_interface.on_stop_ui_update)
 
   setmetatable(methods, mt)
 
@@ -603,74 +646,77 @@ local function ui_clear_previous_mode_highlight(channel)
   dermaBase.songlist:HighlightReset(songlist_highlights[previous_mode])
 end
 
-local function ui_update_list_selection(channel, color, textcolor)
-  local song_index = channel:get_song_index()
-  local prev_song_index = channel:get_song_prev_index()
-  ui_clear_previous_mode_highlight(channel)
+-- local function ui_update_list_selection(channel, color, textcolor)
+--   local song_index = channel:get_song_index()
+--   local prev_song_index = channel:get_song_prev_index()
+--   ui_clear_previous_mode_highlight(channel)
 
-  -- if it cant find the song number then better not bother coloring
-  if textcolor == false or color == false then
-    textcolor = dermaBase.songlist:GetDefaultTextColor()
-  end
+--   -- if it cant find the song number then better not bother coloring
+--   if textcolor == false or color == false then
+--     textcolor = dermaBase.songlist:GetDefaultTextColor()
+--   end
 
-  local song_list = dermaBase.songlist:GetLines()
+--   local song_list = dermaBase.songlist:GetLines()
 
-  if IsValid(song_list[song_index]) then
-    dermaBase.songlist:HighlightLine(song_index, color, textcolor)
-    songlist_highlights[channel.mode] = song_index
-  end
+--   if IsValid(song_list[song_index]) then
+--     dermaBase.songlist:HighlightLine(song_index, color, textcolor)
+--     songlist_highlights[channel.mode] = song_index
+--   end
 
-  if IsValid(song_list[prev_song_index]) then
-    dermaBase.songlist:HighlightReset(prev_song_index)
-  end
-end
+--   if IsValid(song_list[prev_song_index]) then
+--     dermaBase.songlist:HighlightReset(prev_song_index)
+--   end
+-- end
 
-local function ui_update_title_color(status, channel)
-  local is_server_mode = dermaBase.main:IsServerMode()
-  local color_bg = Color(150, 150, 150)
-  local color_text = colWhite
-  local is_auto_playing = channel:is_autoplayed()
 
-  if status == 1 then
-    if is_auto_playing then
-      channel:set_song_prefix(" Auto Playing: ")
-      color_bg = colAPlay
-      color_text = colBlack
-    else
-      channel:set_song_prefix(" Playing: ")
-      color_bg = colPlay
-      color_text = colWhite
-    end
-  else
-    if status == 2 then
-      channel:set_song_prefix(" Paused: ")
-      color_bg = colPause
-      color_text = colBlack
-    elseif status == 3 then
-      channel:set_song_prefix(" Looping: ")
-      color_bg = colLoop
-      color_text = colBlack
-    elseif status == 4 then
-      channel:set_song_prefix(" Muted: ")
-      color_bg = colAPause
-      color_text = colBlack
-    end
-  end
 
-  if status == false or (status == 1 and not is_auto_playing) then
-    dermaBase.main:SetTitleColor(colWhiteTitle)
-  else
-    dermaBase.main:SetTitleColor(color_text)
-  end
 
-  dermaBase.main:SetTitleBGColor(color_bg)
-  if dermaBase.contextmedia then
-    dermaBase.contextmedia:SetTextColor(color_bg)
-  end
-  updateTitleSong(status, channel)
+-- local function ui_update_title_color(status, channel)
+--   local is_server_mode = dermaBase.main:IsServerMode()
+--   local color_bg = Color(150, 150, 150)
+--   local color_text = colWhite
+--   local is_auto_playing = channel:is_autoplayed()
 
-  return color_bg, color_text
-end
+--   if status == 1 then
+--     if is_auto_playing then
+--       channel:set_song_prefix(" Auto Playing: ")
+--       color_bg = colAPlay
+--       color_text = colBlack
+--     else
+--       channel:set_song_prefix(" Playing: ")
+--       color_bg = colPlay
+--       color_text = colWhite
+--     end
+--   else
+--     if status == 2 then
+--       channel:set_song_prefix(" Paused: ")
+--       color_bg = colPause
+--       color_text = colBlack
+--     elseif status == 3 then
+--       channel:set_song_prefix(" Looping: ")
+--       color_bg = colLoop
+--       color_text = colBlack
+--     elseif status == 4 then
+--       channel:set_song_prefix(" Muted: ")
+--       color_bg = colAPause
+--       color_text = colBlack
+--     end
+--   end
+
+--   if status == false or (status == 1 and not is_auto_playing) then
+--     dermaBase.main:SetTitleColor(colWhiteTitle)
+--   else
+--     dermaBase.main:SetTitleColor(color_text)
+--   end
+
+--   dermaBase.main:SetTitleBGColor(color_bg)
+--   if dermaBase.contextmedia then
+--     dermaBase.contextmedia:SetTextColor(color_bg)
+--   end
+--   updateTitleSong(status, channel)
+
+--   return color_bg, color_text
+-- end
 
 --[[
     Server audio object needs to live for autoplay to work
@@ -875,71 +921,33 @@ local function sv_mute(self, bool)
   return self.sv_PlayingSong:is_playing()
 end
 
-local function uiPause(self)
-  local channel = get_audio_channel(self)
-  if not IsValid(channel) then return end
-  ui_update_title_color(2, channel)
-end
-
-local function uiLoop(self)
-  local channel = get_audio_channel(self)
-  ui_update_title_color(3, channel)
-end
-
-local function sv_tss_refresh(self)
-  if self.sv_PlayingSong:is_paused() then
-    ui_update_title_color(2, self.sv_PlayingSong)
-  elseif self.sv_PlayingSong:is_paused_live() then
-    ui_update_title_color(4, self.sv_PlayingSong)
-  elseif self.sv_PlayingSong:is_looped() then
-    ui_update_title_color(3, self.sv_PlayingSong)
-  else
-    ui_update_title_color(1, self.sv_PlayingSong)
-  end
-end
-
-local function uiTitle(self, song_path)
-  updateTitleSong(true, self)
-end
-
-local function uiAPlay(self)
-  if not isCurrentMediaValid(self) then return end
-  local channel = get_audio_channel(self)
-
-  if channel:is_playing() then
-    ui_update_title_color(1, channel)
-  elseif channel:is_paused() then
-    ui_update_title_color(2, channel)
-  end
-end
-
 -- TODO might need to change where this is used to remove unneeded code
-local function update_ui_selection(self, channel)
-  if channel == nil then
-    channel = get_audio_channel(self)
-  end
+-- local function update_ui_selection(self, channel)
+--   if channel == nil then
+--     channel = get_audio_channel(self)
+--   end
 
-  local color_bg, color_text = {}, {}
-  local color_state = 0
+--   local color_bg, color_text = {}, {}
+--   local color_state = 0
 
-  if channel:is_paused() then
-    color_state = 2
-  elseif channel:is_paused_live() then
-    color_state = 4
-  elseif channel:is_looped() then
-    color_state = 3
-  elseif channel:is_playing() then
-    color_state = 1
-  elseif channel:is_stopped() then
-    color_bg, color_text = ui_update_title_color(false, channel)
-    ui_update_list_selection(channel, false, false)
+--   if channel:is_paused() then
+--     color_state = 2
+--   elseif channel:is_paused_live() then
+--     color_state = 4
+--   elseif channel:is_looped() then
+--     color_state = 3
+--   elseif channel:is_playing() then
+--     color_state = 1
+--   elseif channel:is_stopped() then
+--     color_bg, color_text = ui_update_title_color(false, channel)
+--     ui_update_list_selection(channel, false, false)
 
-    return
-  end
+--     return
+--   end
 
-  color_bg, color_text = ui_update_title_color(color_state, channel)
-  ui_update_list_selection(channel, color_bg, color_text)
-end
+--   color_bg, color_text = ui_update_title_color(color_state, channel)
+--   ui_update_list_selection(channel, color_bg, color_text)
+-- end
 
 local function playSong(self, song, song_index, is_autoplay, is_loop, seek, channel)
   if channel == nil then
@@ -948,35 +956,43 @@ local function playSong(self, song, song_index, is_autoplay, is_loop, seek, chan
 
   if channel == nil then return end
 
-  channel:play(song, song_index, is_autoplay, is_loop, seek, function(_channel, is_valid)
-    local on_server_mode = _channel:is_server_channel() and dermaBase.main:IsServerMode()
-    local on_client_mode = not _channel:is_server_channel() and not dermaBase.main:IsServerMode()
+  channel:play(song, song_index, is_autoplay, is_loop, seek)
 
-    -- if _channel:is_server_channel() then
-    -- if _channel.title_song ~= nil or #_channel.title_song > 0 then
-    -- chat.AddText(Color(0, 220, 220), "[gMusic Player] Playing: " .. _channel.title_song)
-    -- end
-    -- end
-    if not dermaBase.main:IsServerMode() then
-      dermaBase.mediaplayer:sv_mute(true)
-    end
+  -- channel:play(song, song_index, is_autoplay, is_loop, seek, function(_channel, is_valid)
+  --   local on_server_mode = _channel:is_server_channel() and dermaBase.main:IsServerMode()
+  --   local on_client_mode = not _channel:is_server_channel() and not dermaBase.main:IsServerMode()
 
-    if on_server_mode or on_client_mode then
-      if not is_valid then
-        dermaBase.sliderseek:ResetValue()
+  --   -- if _channel:is_server_channel() then
+  --   -- if _channel.title_song ~= nil or #_channel.title_song > 0 then
+  --   -- chat.AddText(Color(0, 220, 220), "[gMusic Player] Playing: " .. _channel.title_song)
+  --   -- end
+  --   -- end
+  --   if not dermaBase.main:IsServerMode() then
+  --     dermaBase.mediaplayer:sv_mute(true)
+  --   end
 
-        return
-      end
+  --   if on_server_mode or on_client_mode then
+  --     if not is_valid then
+  --       dermaBase.sliderseek:ResetValue()
 
-      dermaBase.sliderseek:AllowSeek(true)
-      dermaBase.sliderseek:SetMax(_channel.seek_len)
-      dermaBase.sliderseek:ShowSeekBarHandle(true)
-      if dermaBase.contextmedia then
-        dermaBase.contextmedia:SetSeekLength(_channel.seek_len)
-      end
-      update_ui_selection(self, _channel)
-    end
-  end)
+  --       return
+  --     end
+
+  --     dermaBase.sliderseek:AllowSeek(true)
+  --     dermaBase.sliderseek:SetMax(_channel.seek_len)
+  --     dermaBase.sliderseek:ShowSeekBarHandle(true)
+  --     if dermaBase.contextmedia then
+  --       dermaBase.contextmedia:SetSeekLength(_channel.seek_len)
+  --     end
+  --     if is_autoplay then
+  --       _channel.delegate.on_autoplay_ui_update(_channel)
+  --     elseif is_loop then
+  --       _channel.delegate.on_loop_ui_update(_channel)
+  --     else
+  --       _channel.delegate.on_play_ui_update(_channel)
+  --     end
+  --   end
+  -- end)
 
   return song_name
 end
@@ -1010,60 +1026,79 @@ end
 local function resumeSong(self)
   local channel = get_audio_channel(self)
   channel:resume()
-  update_ui_selection(self, channel)
+  channel.delegate.on_revert_ui_update(channel)
+  -- update_ui_selection(self, channel)
 end
 
 -- TODO EDIT to simplify reset_ui , update_ui_selection,  updateListSelection2
 -- and updateListSelection. ALSO might move them to interface file
-local function reset_ui(self, channel)
-  dermaBase.sliderseek:ResetValue()
-  dermaBase.sliderseek:AllowSeek(false)
-  ui_update_title_color(false, channel)
-  ui_update_list_selection(channel, false, false)
-end
+-- local function reset_ui(self, channel)
+--   dermaBase.sliderseek:ResetValue()
+--   dermaBase.sliderseek:AllowSeek(false)
+--   ui_update_title_color(false, channel)
+--   ui_update_list_selection(channel, false, false)
+-- end
 
-local function action_sv_pause(self, bool_pause)
+local function action_sv_pause(self, explicit_pause)
   local channel = self.sv_PlayingSong
   if not IsValid(channel) then return end
   if channel:is_stopped() then return end
-  channel:pause(bool_pause)
+  channel:pause(explicit_pause)
 
-  if dermaBase.main:IsServerMode() then
-    update_ui_selection(self, channel)
+  if not dermaBase.main:IsServerMode() then return end
+
+  if channel:is_paused() then
+    channel.delegate.on_pause_ui_update(channel)
+  else
+    channel.delegate.on_revert_ui_update(channel)
   end
 end
 
-local function action_cl_pause(self, bool_pause)
+local function action_cl_pause(self, explicit_pause)
   local channel = self.cl_PlayingSong
   if not IsValid(channel) then return end
   if channel:is_stopped() then return end
-  channel:pause(bool_pause)
+  channel:pause(explicit_pause)
 
-  if not dermaBase.main:IsServerMode() then
-    update_ui_selection(self, channel)
+  if dermaBase.main:IsServerMode() then return end
+
+  if channel:is_paused() then
+    channel.delegate.on_pause_ui_update(channel)
+  else
+    channel.delegate.on_revert_ui_update(channel)
+  end
+    -- update_ui_selection(self, channel)
     -- OnClientAudioChange(channel)
-  end
+
 end
 
-local function action_sv_loop(self, bool_loop)
+local function action_sv_loop(self, explicit_loop)
   local channel = self.sv_PlayingSong
   if not IsValid(channel) then return end
   if channel:is_stopped() then return end
-  channel:set_loop(bool_loop)
+  channel:set_loop(explicit_loop)
 
-  if dermaBase.main:IsServerMode() then
-    update_ui_selection(self, channel)
+  if not dermaBase.main:IsServerMode() then return end
+
+  if channel:is_looped() then
+    channel.delegate.on_loop_ui_update(channel)
+  else
+    channel.delegate.on_revert_ui_update(channel)
   end
 end
 
-local function action_cl_loop(self, bool_loop)
+local function action_cl_loop(self, explicit_loop)
   local channel = self.cl_PlayingSong
   if not IsValid(channel) then return end
   if channel:is_stopped() then return end
-  channel:set_loop(bool_loop)
+  channel:set_loop(explicit_loop)
 
-  if dermaBase.main:IsServerMode() then
-    update_ui_selection(self, channel)
+  if dermaBase.main:IsServerMode() then return end
+
+  if channel:is_looped() then
+    channel.delegate.on_loop_ui_update(channel)
+  else
+    channel.delegate.on_revert_ui_update(channel)
   end
 end
 
@@ -1072,31 +1107,69 @@ local function actionPauseL(self)
   if not IsValid(channel) then return end
   if channel:is_stopped() then return end
   channel:pause()
-  update_ui_selection(self, channel)
+  channel.delegate.on_pause_ui_update(channel)
+  -- update_ui_selection(self, channel)
   -- OnClientAudioChange(channel)
 end
 
 local function pause_live(self)
-  if not IsValid(self.sv_PlayingSong) then return end
+  local channel = self.sv_PlayingSong
+  if not IsValid(channel) then return end
   self.sv_PlayingSong:mute_live()
-  update_ui_selection(self, self.sv_PlayingSong)
+  channel.delegate.on_pause_ui_update(channel)
+  -- update_ui_selection(self, self.sv_PlayingSong)
+end
+
+local function action_sv_autoplay(self, explicit_autoplay)
+  local channel = self.sv_PlayingSong
+  if not IsValid(channel) then return end
+  if channel:is_stopped() then return end
+  channel:set_autoplay(explicit_autoplay)
+
+  if not dermaBase.main:IsServerMode() then return end
+
+  if channel:is_autoplayed() then
+    channel.delegate.on_autoplay_ui_update(channel)
+  else
+    channel.delegate.on_revert_ui_update(channel)
+  end
+end
+
+local function action_cl_autoplay(self, explicit_autoplay)
+  local channel = self.cl_PlayingSong
+  if not IsValid(channel) then return end
+  if channel:is_stopped() then return end
+  channel:set_autoplay(explicit_autoplay)
+
+  if dermaBase.main:IsServerMode() then return end
+
+  if channel:is_autoplayed() then
+    channel.delegate.on_autoplay_ui_update(channel)
+  else
+    channel.delegate.on_revert_ui_update(channel)
+  end
 end
 
 local function action_sv_stop(self)
-  self.sv_PlayingSong:stop()
+  local channel = self.sv_PlayingSong
   local is_server = dermaBase.main:IsServerMode()
+  channel:stop()
 
-  if self.sv_PlayingSong:is_stopped() and is_server then
-    reset_ui(self, self.sv_PlayingSong)
+
+  if channel:is_stopped() and is_server then
+    channel.delegate.on_stop_ui_update(channel)
+    -- reset_ui(self, self.sv_PlayingSong)
   end
 end
 
 local function action_cl_stop(self)
-  self.cl_PlayingSong:stop()
+  local channel = self.cl_PlayingSong
   local is_client = not dermaBase.main:IsServerMode()
 
-  if self.cl_PlayingSong:is_stopped() and is_client then
-    reset_ui(self, self.cl_PlayingSong)
+  channel:stop()
+  if channel:is_stopped() and is_client then
+    channel.delegate.on_stop_ui_update(channel)
+    -- reset_ui(self, self.cl_PlayingSong)
   end
 end
 
@@ -1104,7 +1177,8 @@ local function actionPauseR(self)
   local channel = get_audio_channel(self)
   if channel:is_stopped() then return end
   channel:set_loop()
-  update_ui_selection(self, channel)
+  channel.delegate.on_pause_ui_update(channel)
+  -- update_ui_selection(self, channel)
   -- OnClientAudioChange(self.cl_PlayingSong)
 end
 
@@ -1112,7 +1186,8 @@ local function autoplay(self, bool)
   local channel = get_audio_channel(self)
   if channel:is_stopped() then return end
   channel:set_autoplay(bool)
-  update_ui_selection(self, channel)
+  channel.delegate.on_autoplay_ui_update(channel)
+  -- update_ui_selection(self, channel)
   -- OnClientAudioChange(channel)
 end
 
@@ -1139,6 +1214,8 @@ return function(baseMenu, media_callbacks)
   action.cl_loop = action_cl_loop
   action.sv_stop = action_sv_stop
   action.cl_stop = action_cl_stop
+  action.sv_autoplay = action_sv_autoplay
+  action.cl_autoplay = action_cl_autoplay
   action.play_next = play_next_song
   action.sv_play_next = sv_play_next_song
   action.pause_live = pause_live
@@ -1177,16 +1254,7 @@ return function(baseMenu, media_callbacks)
   action.cl_is_pause = cl_is_pause
   action.is_paused = songPaused
   action.is_paused_live = is_paused_live
-  -- think about these. Better get rid of them
-  action.uiPause = uiPause
-  action.uiAutoPlay = uiAPlay
-  action.uiLoop = uiLoop
-  action.sv_uiRefresh = sv_tss_refresh
-  action.uiTitle = uiTitle
-  action.colorLoop = colLoop
-  action.colorPause = colPause
-  action.colorPlay = colPlay
-  action.colorMissing = col404
+
   action.isThinking = isThinking
   action.monitor_channel_seek = monitor_channel_seek
   action.cl_PlayingSong = GMPL_AUDIO:new(SIDE_CLIENT)

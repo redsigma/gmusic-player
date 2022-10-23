@@ -22,12 +22,16 @@ if (SERVER) then
   AddCSLuaFile("vgui/dbetterbutton.lua")
   --- register modules
   AddCSLuaFile("includes/modules/setup.lua")
+  AddCSLuaFile("includes/modules/delegate.lua")
   AddCSLuaFile("includes/modules/musicplayerclass.lua")
   AddCSLuaFile("includes/modules/meth_base.lua")
   AddCSLuaFile("includes/modules/meth_paint.lua")
   AddCSLuaFile("includes/modules/meth_song.lua")
   AddCSLuaFile("includes/func/interface.lua")
   AddCSLuaFile("includes/func/audio.lua")
+  -- register delegate calls
+  AddCSLuaFile("includes/events/audio.lua")
+  AddCSLuaFile("includes/events/interface.lua")
   --- register client only
   AddCSLuaFile("includes/func/net_calls_mandatory.lua")
   AddCSLuaFile("includes/func/net_calls_audio.lua")

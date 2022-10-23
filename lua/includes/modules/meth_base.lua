@@ -304,7 +304,7 @@ local function init(contextMenu, contextMargin)
     if dermaBase.mediaplayer:is_paused() then return end
 
     if not dermaBase.main:IsServerMode() then
-      dermaBase.mediaplayer:loop()
+      dermaBase.mediaplayer:cl_loop()
 
       return
     end
@@ -321,7 +321,7 @@ local function init(contextMenu, contextMargin)
     -- else
     -- dermaBase.mediaplayer:loop()
     if dermaBase.main:IsServerMode() then
-      dermaBase.mediaplayer:loop()
+      dermaBase.mediaplayer:sv_loop()
     end
 
     update_server_side_channel()
@@ -414,10 +414,6 @@ local function init(contextMenu, contextMargin)
     self:paintHoverList(dermaBase.songlist)
     self:paintScroll(dermaBase.songlist, Color(120, 120, 120))
     self:paintText(dermaBase.songlist)
-
-    if dermaBase.mediaplayer:hasValidity() and dermaBase.mediaplayer:is_looped() then
-      dermaBase.mediaplayer:uiLoop()
-    end
 
     self:paintText(dermaBase.foldersearch)
     self:paintList(dermaBase.foldersearch)

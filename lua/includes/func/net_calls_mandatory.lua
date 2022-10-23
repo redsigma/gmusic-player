@@ -51,7 +51,7 @@ net.Receive("cl_ask_live_channel_data", function()
 
   if data.is_paused then
     dermaBase.mediaplayer:sv_pause(data.is_paused)
-    dermaBase.mediaplayer:sv_uiRefresh()
+    -- dermaBase.mediaplayer:sv_uiRefresh()
   end
 end)
 

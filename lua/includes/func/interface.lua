@@ -200,7 +200,7 @@ local function create_mediaplayer_ui_logic()
 
     if not dermaBase.main:IsServerMode() then
       -- dermaBase.set_server_TSS(false)
-      dermaBase.mediaplayer:pause()
+      dermaBase.mediaplayer:cl_pause()
 
       return
     end
@@ -230,36 +230,6 @@ local function create_mediaplayer_ui_logic()
     net.SendToServer()
   end
 
-  -- print("[cl_pause] when in control but not paused")
-  -- -- reset control if was playing on the other mode
-  -- if playingFromOtherMode then
-  --     -- print("[cl_pause] control disabled cuz switched from ohter mode")
-  --     -- Media.clientControl(false)
-  -- end
-  -- if not Media.hasValidity() then
-  --     if not Media.clientHasControl() then
-  --         net.Start("sv_refresh_song_state")
-  --         net.SendToServer()
-  --         Media.clientControl(true)
-  --         Media.uiPause()
-  --         return
-  --     end
-  -- elseif playingFromOtherMode then
-  --     print("[sv_pause] play from another mode -------------")
-  --     net.Start("sv_refresh_song_state")
-  --     net.SendToServer()
-  -- end
-  -- dermaBase.mediaplayer:clientControl(not dermaBase.mediaplayer:clientHasControl())
-  -- if dermaBase.mediaplayer:clientHasControl() then
-  -- Media.pauseOnPlay()
-  -- Media.kill(true)
-  -- dermaBase.mediaplayer:uiPause()
-  -- else
-  -- dermaBase.buttonplay.DoClick()
-  -- net.Start("sv_play_live_seek_from_host")
-  -- net.SendToServer()
-  -- end
-  -- print("[cl_pause] control:", Media.clientHasControl())
   dermaBase.buttonplay.DoClick = function(self, song_path, line_index)
     if dermaBase.songlist:IsEmpty() then
       return
@@ -339,7 +309,7 @@ local function create_mediaplayer_ui_logic()
       -- if dermaBase.mediaplayer:hasState() == GMOD_CHANNEL_PAUSED then
       --     dermaBase.mediaplayer:resume(songFile)
       -- else
-      dermaBase.mediaplayer:autoplay()
+      dermaBase.mediaplayer:cl_autoplay()
       -- end
       -- end
 
@@ -355,7 +325,7 @@ local function create_mediaplayer_ui_logic()
     end
 
     if dermaBase.main:IsServerMode() then
-      dermaBase.mediaplayer:autoplay()
+      dermaBase.mediaplayer:sv_autoplay()
     end
 
     -- dermaBase.mediaplayer:autoplay()

@@ -87,6 +87,7 @@ local function create_gmusic(super)
   obj._interface = {}
   obj._mediaplayer = {}
   obj._ingame_viewport = {}
+  obj._main = {}
 
   --[[
     Private
@@ -112,6 +113,7 @@ local function create_gmusic(super)
     configure_cvars(ui_gmusic)
 
     obj._derma = ui_gmusic
+    obj._main = ui_gmusic.main
     obj._interface = ui_gmusic.interface
     obj._mediaplayer = ui_gmusic.mediaplayer
     obj._ingame_viewport = ingame_screen
@@ -131,6 +133,10 @@ local function create_gmusic(super)
 
   function obj.media(...)
      return obj.get()._mediaplayer
+  end
+
+  function obj.main(...)
+    return obj.get()._main
   end
 
   function obj.parent(...)
