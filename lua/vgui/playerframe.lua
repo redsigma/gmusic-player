@@ -53,10 +53,35 @@ function PANEL:Init()
     end
   end
 
-  self.buttonSettings = vgui.Create("DButton", self)
-  self.buttonSettings:SetText("")
+  -- self.frame = vgui.Create("DPanel", self)
+  -- self.frame:SetSize(600, 300)
+
+
+  -- self.container = vgui.Create("DPanel", self)
+
+  -- self.CustomButton = vgui.Create("DButtonSwitch2State", self)
+  -- self.CustomButton:SetText("MEhaaaaaaaaaaa")
+
+
+  -- self.CustomButton2 = vgui.Create("DButtonSwitch2State", self)
+  -- self.CustomButton2:SetText("AMeZ")
+
+
+  -- -- local w, h = self.container:GetContentSize()
+  -- -- print("Content Sizeaaa", w ,h)
+
+
+
+
+
+
+  self.buttonSettings = vgui.Create("DImageButton", self)
+  self.buttonSettings:SetKeepAspect(true)
+  self.buttonSettings:SetStretchToFit(false)
+
+  -- self.buttonSettings:SetText("")
   self.buttonSettings:SetImage("icon16/cog.png")
-  self.buttonSettings:SetSize(22, 20)
+  -- self.buttonSettings:SetSize(22, 20)
 
   self.buttonSettings.DoClick = function(button)
     self:Settings()
@@ -89,6 +114,15 @@ function PANEL:Init()
       surface.DrawRect(0, 0, w, h)
     end
   end
+
+
+  self.hbox_right = vgui.Create("DHBox", self)
+  self.hbox_right:Add(self.buttonMode)
+  self.hbox_right:Add(self.buttonSettings)
+  self.hbox_right:Add(self.buttonClose)
+
+
+
 
   titleMargin = self.buttonMode:GetWide() + self.buttonSettings:GetWide() + self.buttonClose:GetWide()
   self.title_color = {}
@@ -204,6 +238,11 @@ end
 function PANEL:SwitchModeServer()
   self.is_server_mode = true
   self.buttonMode:SetText("SERVER")
+  self.buttonMode:SizeToContents()
+
+  self.hbox_right:SizeToContentsX()
+
+
 
   self.buttonMode.Paint = function(panel, w, h)
     surface.SetDrawColor(20, 150, 240, 255)
@@ -216,6 +255,9 @@ end
 function PANEL:SwitchModeClient()
   self.is_server_mode = false
   self.buttonMode:SetText("CLIENT")
+  -- self.buttonMode:SizeToContents()
+  -- self.hbox_right:SizeToContentsX()
+
   self.buttonMode.Paint = function() end
   self:OnClientMode()
 end
@@ -387,11 +429,18 @@ function PANEL:OnLayoutChange()
 end
 
 function PANEL:PerformLayout()
-  self.buttonMode:SetPos(self:GetWide() - self.buttonMode:GetWide() - self.buttonSettings:GetWide() - self.buttonClose:GetWide(), 0)
-  self.buttonSettings:SetPos(self:GetWide() - self.buttonSettings:GetWide() - self.buttonClose:GetWide(), 0)
-  self.buttonClose:SetPos(self:GetWide() - self.buttonClose:GetWide(), 0)
   self.labelTitle:SetSize(self:GetWide(), 20)
+  self:update_right_buttons()
+
   self:OnLayoutChange()
 end
+
+------------------------------------------------------------------------------
+
+function PANEL:update_right_buttons()
+  self.hbox_right:SetPos(self:GetWide() - self.hbox_right:GetWide(), 0)
+end
+
+
 
 derma.DefineControl("DgMPlayerFrame", "Music Player", PANEL, "EditablePanel")

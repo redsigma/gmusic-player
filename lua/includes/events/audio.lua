@@ -30,13 +30,15 @@ local function on_begin_play(channel, is_audio_valid)
 
     slider_seek:AllowSeek(true)
     slider_seek:SetMax(channel.seek_len)
-    slider_seek:ShowSeekBarHandle(true)
+    slider_seek:ShowSeekBarIndicator(true)
     if context_button then
       context_button:SetSeekLength(channel.seek_len)
     end
   end
 end
 
+
+-------------------------------------------------------------------------------
 Callbacks.on_begin_play = on_begin_play
 
 return Callbacks

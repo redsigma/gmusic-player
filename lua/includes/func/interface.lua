@@ -252,7 +252,7 @@ local function create_mediaplayer_ui_logic()
     end
 
     if not dermaBase.main:IsServerMode() then
-      dermaBase.set_server_TSS(false)
+      -- dermaBase.set_server_TSS(false)
 
       local is_same_line = line_index == current_line
       local is_valid_and_paused = dermaBase.mediaplayer:hasValidity() and dermaBase.mediaplayer:is_paused()
@@ -269,7 +269,7 @@ local function create_mediaplayer_ui_logic()
       return
     end
 
-    dermaBase.set_server_TSS(true)
+    -- dermaBase.set_server_TSS(true)
 
     if player_requires_admin_but_not_admin() then
       net.Start("sv_play_live_seek_from_host")

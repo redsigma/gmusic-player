@@ -17,11 +17,11 @@ callbacks.OnClientAudioChange = function(media) end
 -- elseif media:is_stopped() or media:is_missing() then
 --   print("Pause seek end in stopped")
 ---- timer.Pause("gmpl_seek_end")
---   dermaBase.sliderseek:ShowSeekBarHandle(false)
+--   dermaBase.sliderseek:ShowSeekBarIndicator(false)
 -- elseif media:is_playing() then
 --   print("Unpause seek end")
 ---- timer.UnPause("gmpl_seek_end")
---   dermaBase.sliderseek:ShowSeekBarHandle(true)
+--   dermaBase.sliderseek:ShowSeekBarIndicator(true)
 -- end
 local function update_server_side_channel()
   local server_channel_attributes = dermaBase.mediaplayer.sv_PlayingSong.attrs
@@ -44,6 +44,8 @@ local function init(contextMenu, contextMargin)
     cl_seek = 0,
     sv_seek = 0
   }
+
+  local callbacks_main_ui = include("includes/events/base.lua")
 
   dermaBase.mediaplayer = include("includes/modules/musicplayerclass.lua")(dermaBase, callbacks)
   dermaBase.painter = include("includes/modules/meth_paint.lua")()
@@ -130,13 +132,14 @@ local function init(contextMenu, contextMargin)
   -- it shows no host even though somebody was the host.. fix
   -- pause the song serverside if admin pause
   -- seekbar prevent stopping the sound if you still hold on the click. If you seeked to the end
-  dermaBase.set_server_TSS = function(bool)
-    -- switch to Client/Server
-    dermaBase.main:SetTitleServerState(bool)
 
-    if not dermaBase.contextmedia then return end
-    dermaBase.contextmedia:SetTSS(bool)
-  end
+  -- dermaBase.set_server_TSS = function(bool)
+  --   -- switch to Client/Server
+  --   dermaBase.main:SetTitleServerState(bool)
+
+  --   if not dermaBase.contextmedia then return end
+  --   dermaBase.contextmedia:SetTSS(bool)
+  -- end
 
   dermaBase.painter.OnUpdateUI = function(self)
     dermaBase.songlist:SetDefaultTextColor(self.colors.text)
@@ -184,28 +187,28 @@ local function init(contextMenu, contextMargin)
     end
   end
 
-  dermaBase.main.OnSettingsClick = function(panel)
-    dermaBase.musicsheet:ToggleSideBar()
-  end
+  -- dermaBase.main.OnSettingsClick = function(panel)
+  --   dermaBase.musicsheet:ToggleSideBar()
+  -- end
 
-  dermaBase.main.OnClientMode = function(self)
-    dermaBase.interface:toggle_normal_ui()
-    local is_playing = dermaBase.mediaplayer:cl_mute(false)
-    dermaBase.mediaplayer:sv_mute(true)
-    dermaBase.mediaplayer:update_ui_highlight()
-    dermaBase.sliderseek:ShowSeekBarHandle(is_playing)
-    dermaBase.set_server_TSS(false)
-  end
+  -- dermaBase.main.OnClientMode = function(self)
+  --   dermaBase.interface:toggle_normal_ui()
+  --   local is_playing = dermaBase.mediaplayer:cl_mute(false)
+  --   dermaBase.mediaplayer:sv_mute(true)
+  --   dermaBase.mediaplayer:update_ui_highlight()
+  --   dermaBase.sliderseek:ShowSeekBarIndicator(is_playing)
+  --   dermaBase.set_server_TSS(false)
+  -- end
 
-  dermaBase.main.OnServerMode = function(self)
-    dermaBase.interface:toggle_bottom_ui()
-    dermaBase.mediaplayer:cl_mute(true)
-    local is_playing = dermaBase.mediaplayer:sv_mute(false)
-    dermaBase.mediaplayer:update_ui_highlight()
-    dermaBase.sliderseek:ShowSeekBarHandle(is_playing)
-    dermaBase.set_server_TSS(true)
-    update_server_mode_with_live_song()
-  end
+  -- dermaBase.main.OnServerMode = function(self)
+  --   dermaBase.interface:toggle_bottom_ui()
+  --   dermaBase.mediaplayer:cl_mute(true)
+  --   local is_playing = dermaBase.mediaplayer:sv_mute(false)
+  --   dermaBase.mediaplayer:update_ui_highlight()
+  --   dermaBase.sliderseek:ShowSeekBarIndicator(is_playing)
+  --   dermaBase.set_server_TSS(true)
+  --   update_server_mode_with_live_song()
+  -- end
 
   dermaBase.sliderseek.seek_val.Slider.OnMousePressed = function(self, mcode)
     if dermaBase.main:IsServerMode() and player_requires_admin_but_not_admin() then return end

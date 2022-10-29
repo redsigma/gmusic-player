@@ -108,7 +108,7 @@ function PANEL:ShowSeekBar(bool)
 	self.seek_val:SetVisible(bool)
 end
 
-function PANEL:ShowSeekBarHandle(bool)
+function PANEL:ShowSeekBarIndicator(bool)
   self.seek_val.Slider.Knob:SetVisible(bool)
 end
 

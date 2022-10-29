@@ -5,6 +5,8 @@ if (SERVER) then
   include("includes/func/settings.lua")
   include("gmpl/sv_gmpl.lua")
   --
+  AddCSLuaFile("vgui/dhorizontalbox.lua")
+  AddCSLuaFile("vgui/dbuttonswitch2.lua")
   AddCSLuaFile("vgui/seekbarclicklayer.lua")
   AddCSLuaFile("vgui/seekbar.lua")
   AddCSLuaFile("vgui/volumebar.lua")
@@ -30,6 +32,7 @@ if (SERVER) then
   AddCSLuaFile("includes/func/interface.lua")
   AddCSLuaFile("includes/func/audio.lua")
   -- register delegate calls
+  AddCSLuaFile("includes/events/base.lua")
   AddCSLuaFile("includes/events/audio.lua")
   AddCSLuaFile("includes/events/interface.lua")
   --- register client only

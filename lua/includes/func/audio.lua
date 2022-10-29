@@ -313,11 +313,11 @@ GMPL_AUDIO.new = function(self, channel_mode)
         self.delegate.on_begin_play(self, is_audio_valid)
 
         if self.isAutoPlaying then
-          self.delegate.on_autoplay_ui_update(channel)
+          self.delegate.on_autoplay_ui_update(self)
         elseif self.isLooped then
-          self.delegate.on_loop_ui_update(channel)
+          self.delegate.on_loop_ui_update(self)
         else
-          self.delegate.on_play_ui_update(channel)
+          self.delegate.on_play_ui_update(self)
         end
       end)
     end,
@@ -533,66 +533,66 @@ local function isThinking(self)
   end
 end
 
-local function enableTSS()
-  if not dermaBase.main:IsTSSEnabled() then
-    dermaBase.main:SetTSSEnabled(true)
-  end
-end
+-- local function enableTSS()
+--   if not dermaBase.main:IsTSSEnabled() then
+--     dermaBase.main:SetTSSEnabled(true)
+--   end
+-- end
 
-local function disableTSS()
-  if dermaBase.main:IsTSSEnabled() then
-    dermaBase.main:SetTSSEnabled(false)
+-- local function disableTSS()
+--   if dermaBase.main:IsTSSEnabled() then
+--     dermaBase.main:SetTSSEnabled(false)
 
-    if not dermaBase.contextmedia then return end
-    dermaBase.contextmedia:SetTSS(false)
-  end
-end
+--     if not dermaBase.contextmedia then return end
+--     dermaBase.contextmedia:SetTSS(false)
+--   end
+-- end
 
-local function updateTitleSong(status, media)
-  if media:is_stopped() then
-    dermaBase.main:SetTitle(" gMusic Player")
-    dermaBase.main:SetTSSEnabled(false)
+-- local function updateTitleSong(status, media)
+--   if media:is_stopped() then
+--     dermaBase.main:SetTitle(" gMusic Player")
+--     dermaBase.main:SetTSSEnabled(false)
 
-    if dermaBase.contextmedia then
-      dermaBase.contextmedia:SetTextColor(colBlack)
-      dermaBase.contextmedia:SetText(false)
-    end
-    disableTSS()
+--     if dermaBase.contextmedia then
+--       dermaBase.contextmedia:SetTextColor(colBlack)
+--       dermaBase.contextmedia:SetText(false)
+--     end
+--     disableTSS()
 
-    return ""
-  else
-    enableTSS()
-    local song_filepath = media:get_song_path()
+--     return ""
+--   else
+--     enableTSS()
+--     local song_filepath = media:get_song_path()
 
-    -- local media = 0
-    -- if dermaBase.main:IsServerMode() then
-    --     media = gmpl_audio.sv_PlayingSong
-    -- else
-    --     media = gmpl_audio.cl_PlayingSong
-    -- end
-    if status == false then
-      media:set_missing(true)
-      dermaBase.main:SetTitleBGColor(col404)
-      if dermaBase.contextmedia then
-        dermaBase.contextmedia:SetTextColor(col404)
-        dermaBase.contextmedia:SetMissing(true)
-      end
-      MsgC(Color(100, 200, 200), "[gMusic Player]", Color(255, 255, 255), " Song file missing:\n> ", song_filepath, "\n")
-    end
+--     -- local media = 0
+--     -- if dermaBase.main:IsServerMode() then
+--     --     media = gmpl_audio.sv_PlayingSong
+--     -- else
+--     --     media = gmpl_audio.cl_PlayingSong
+--     -- end
+--     if status == false then
+--       media:set_missing(true)
+--       dermaBase.main:SetTitleBGColor(col404)
+--       if dermaBase.contextmedia then
+--         dermaBase.contextmedia:SetTextColor(col404)
+--         dermaBase.contextmedia:SetMissing(true)
+--       end
+--       MsgC(Color(100, 200, 200), "[gMusic Player]", Color(255, 255, 255), " Song file missing:\n> ", song_filepath, "\n")
+--     end
 
-    if song_filepath then
-      local title_song = media:get_song_name()
-      dermaBase.main:SetTitle(media:get_song_prefix() .. title_song)
-      if dermaBase.contextmedia then
-        dermaBase.contextmedia:SetText(title_song)
-      end
+--     if song_filepath then
+--       local title_song = media:get_song_name()
+--       dermaBase.main:SetTitle(media:get_song_prefix() .. title_song)
+--       if dermaBase.contextmedia then
+--         dermaBase.contextmedia:SetText(title_song)
+--       end
 
-      return title_song
-    end
+--       return title_song
+--     end
 
-    return media:get_song_name()
-  end
-end
+--     return media:get_song_name()
+--   end
+-- end
 
 -- REMOVE it WHEN sure there is no problem with highlight selection
 -- local function updateListSelection(color, textcolor, media)
@@ -980,7 +980,7 @@ local function playSong(self, song, song_index, is_autoplay, is_loop, seek, chan
 
   --     dermaBase.sliderseek:AllowSeek(true)
   --     dermaBase.sliderseek:SetMax(_channel.seek_len)
-  --     dermaBase.sliderseek:ShowSeekBarHandle(true)
+  --     dermaBase.sliderseek:ShowSeekBarIndicator(true)
   --     if dermaBase.contextmedia then
   --       dermaBase.contextmedia:SetSeekLength(_channel.seek_len)
   --     end
