@@ -59,6 +59,29 @@ _G.SortedPairsByValue = function(pTable, Desc)
   }
 end
 
+_G.SortedPairsByMemberValue = function(pTable, pValueName, Desc)
+  local sortedTbl = toKeyValues( pTable )
+
+  for k,v in pairs( sortedTbl ) do
+    v.member = v.val[pValueName]
+  end
+
+  table.SortByMember( sortedTbl, "member", not Desc )
+  return keyValuePairs, { Index = 0, KeyValues = sortedTbl }
+end
+
+_G.SortedPairs = function(pTable, Desc)
+	local sortedTbl = toKeyValues(pTable)
+
+	if Desc then
+		table.sort( sortedTbl, function( a, b ) return a.key > b.key end )
+	else
+		table.sort( sortedTbl, function( a, b ) return a.key < b.key end )
+	end
+
+	return keyValuePairs, { Index = 0, KeyValues = sortedTbl }
+end
+
 _G.HUD_PRINTNOTIFY = 1
 _G.HUD_PRINTCONSOLE = 2
 _G.HUD_PRINTTALK = 3
@@ -266,6 +289,14 @@ end
 
 _G.concommand = {}
 _G.concommand.Add = function(cmd_name, callback) end
+
+--------------------------------------------------------------------------------
+-- gui
+--------------------------------------------------------------------------------
+_G.gui = {}
+_G.gui.EnableScreenClicker = function(bool) end
+_G.RestoreCursorPosition = function() end
+
 --------------------------------------------------------------------------------
 -- Math
 --------------------------------------------------------------------------------
@@ -572,6 +603,39 @@ _G.table.Add = function(table_dest, table_src)
 
   return table_dest
 end
+
+_G.table.SortByMember = function(Table, MemberName, bAsc)
+
+	local TableMemberSort = function(a, b, MemberName, bReverse )
+
+		--
+		-- All this error checking kind of sucks, but really is needed
+		--
+		if ( not istable( a ) ) then return not bReverse end
+		if ( not istable( b ) ) then return bReverse end
+		if ( not a[ MemberName ] ) then return not bReverse end
+		if ( not b[ MemberName ] ) then return bReverse end
+
+		if isstring(a[MemberName]) then
+
+			if ( bReverse ) then
+				return a[ MemberName ]:lower() < b[ MemberName ]:lower()
+			else
+				return a[ MemberName ]:lower() > b[ MemberName ]:lower()
+			end
+
+		end
+
+		if bReverse then
+			return a[ MemberName ] < b[ MemberName ]
+		else
+			return a[ MemberName ] > b[ MemberName ]
+		end
+	end
+
+	table.sort( Table, function( a, b ) return TableMemberSort( a, b, MemberName, bAsc or false ) end )
+end
+
 
 local storage = {}
 storage = {}

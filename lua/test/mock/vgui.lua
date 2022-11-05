@@ -126,6 +126,11 @@ BASE.SetPaintBorderEnabled = function(self) end
 BASE.SetConVar = function(self, str_cvar) self.cvar = str_cvar end
 derma.DefineControl("Panel", "Panel Mock", BASE, "")
 
+MDPANEL = {}
+MDPANEL.Init = function() end
+MDPANEL.SetBackgroundColor = function(color) end
+derma.DefineControl("DPanel", "DPanel Mock", MDPANEL, BASE.NAME)
+
 MBASELABEL = {}
 MBASELABEL.Init = function() end
 derma.DefineControl("Label", "Label Mock", MBASELABEL, BASE.NAME)
@@ -145,6 +150,16 @@ MBUTTON = {}
 MBUTTON.Init = function() end
 MBUTTON.SetImage = function(self) end
 derma.DefineControl("DButton", "DButton Mock", MBUTTON, MLABEL.NAME)
+
+MBUTTONIMAGE = {}
+MBUTTONIMAGE.Init = function(self)
+  self.w = -1
+  self.h = -1
+end
+MBUTTONIMAGE.SetImage = function(self) end
+MBUTTONIMAGE.SetKeepAspect = function(bool) end
+MBUTTONIMAGE.SetStretchToFit = function(bool) end
+derma.DefineControl("DImageButton", "DImageButton Mock", MBUTTONIMAGE, MLABEL.NAME)
 
 MLISTVIEW = {}
 MLISTVIEW.Init = function(self)
@@ -251,6 +266,11 @@ MTEXTENTRY.SetValue = function(self, text) self.val = text end
 MTEXTENTRY.GetValue = function(self) return self.val end
 MTEXTENTRY.SetFont = function(self) end
 derma.DefineControl("DTextEntry", "DTextEntry Mock", MTEXTENTRY, BASE.NAME)
+
+MBOXHORIZONTAL = {}
+MBOXHORIZONTAL.Init = function(self) self.val = 0 end
+MBOXHORIZONTAL.Add = function(panel) end
+derma.DefineControl("DHBox", "DHBox Mock", MBOXHORIZONTAL, BASE.NAME)
 -------------------------------------------------------------------------------
 _G.Derma_Hook = function(panel, func_name, hook_name, type)
 end

@@ -27,17 +27,23 @@ end
 -- require("includes/modules/observer")
 
 insulate("sv - Autoplay while seek end", function()
-  local dermaBase, media = create_with_dark_mode()
-  assert.set_derma(dermaBase)
-  init_sv_shared_settings()
-  dermaBase.main:SwitchModeServer()
+  local entrypoint = include("includes/modules/mvvm_entrypoint.lua")
 
-  describe("admin access off", function()
-    -- _set_checkbox_as_admin(dermaBase.cbadminaccess, false)
-    print("asd")
-    player_with_admin:do_action(function(self)
-      dermaBase.buttonplay:DoClick(nil, 0)
-    end)
-  end)
+
+  entrypoint.show_user_interface()
+
+
+  local dermaBase, media = create_with_dark_mode()
+  -- assert.set_derma(dermaBase)
+  -- init_sv_shared_settings()
+  -- dermaBase.main:SwitchModeServer()
+
+  -- describe("admin access off", function()
+  --   -- _set_checkbox_as_admin(dermaBase.cbadminaccess, false)
+  --   print("asd")
+  --   player_with_admin:do_action(function(self)
+  --     dermaBase.buttonplay:DoClick(nil, 0)
+  --   end)
+  -- end)
 
 end)
