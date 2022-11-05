@@ -5,6 +5,7 @@ local view_context_menu = nil
 local contextMenuMargin = ScrW() / 5
 
 local gmusic = include("includes/modules/setup.lua")
+local entrypoint = include("includes/modules/mvvm_entrypoint.lua")
 
 surface.CreateFont("arialDefault", {
   font = "Arial",
@@ -49,7 +50,8 @@ local function initialize_music_player()
   if not gmusic then return end
 
   include("gmpl/cl_cvars.lua")
-  gmusic.get()
+  -- gmusic.get()
+  entrypoint.show_user_interface()
 end
 
 net.Receive("cl_gmpl_create", function()

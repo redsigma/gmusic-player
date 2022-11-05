@@ -22,6 +22,19 @@ if (SERVER) then
   AddCSLuaFile("vgui/dbetterlist.lua")
   AddCSLuaFile("vgui/dmultibutton.lua")
   AddCSLuaFile("vgui/dbetterbutton.lua")
+  --- register modules WIP mvvm
+  AddCSLuaFile("includes/modules/mvvm_entrypoint.lua")
+  AddCSLuaFile("includes/modules/meth_base_wip_mvvm.lua")
+  AddCSLuaFile("includes/modules/meth_song_wip_mvvm.lua")
+  AddCSLuaFile("includes/modules/model/song.lua")
+
+  AddCSLuaFile("includes/modules/model/song_list.lua")
+  AddCSLuaFile("includes/modules/view/song_list.lua")
+  AddCSLuaFile("includes/modules/viewmodel/song_list.lua")
+
+  AddCSLuaFile("includes/modules/model/main_frame.lua")
+  AddCSLuaFile("includes/modules/view/main_frame.lua")
+  AddCSLuaFile("includes/modules/viewmodel/main_frame.lua")
   --- register modules
   AddCSLuaFile("includes/modules/setup.lua")
   AddCSLuaFile("includes/modules/delegate.lua")

@@ -122,7 +122,9 @@ function PANEL:Init()
   self.hbox_right:Add(self.buttonClose)
 
 
-
+  local a1 = self.buttonMode:GetWide()
+  local a2 = self.buttonSettings:GetWide()
+  local a3 = self.buttonClose:GetWide()
 
   titleMargin = self.buttonMode:GetWide() + self.buttonSettings:GetWide() + self.buttonClose:GetWide()
   self.title_color = {}
