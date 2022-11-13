@@ -23,6 +23,7 @@ function view_model_main_frame:ctor(view)
 end
 
 function view_model_main_frame:show_interface()
+  gui.EnableScreenClicker(true)
 end
 
 

@@ -24,12 +24,14 @@ function view_main_frame:ctor()
 
   self.derma = {}
   self.derma.main = vgui.Create("DgMPlayerFrame")
+
+  -- self.derma.top = vgui.Create("DHBox", self.derma.main)
+
 end
 
 function view_main_frame:show()
-  self.derma.main:SetSize(1000,400)
   self.derma.main:SetVisible(true)
-  -- self.viewmodel:show_interface()
+  self.viewmodel:show_interface()
 end
 
 function view_main_frame:get_panel()

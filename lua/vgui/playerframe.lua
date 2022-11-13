@@ -74,7 +74,6 @@ function PANEL:Init()
 
 
 
-
   self.buttonSettings = vgui.Create("DImageButton", self)
   self.buttonSettings:SetKeepAspect(true)
   self.buttonSettings:SetStretchToFit(false)
@@ -115,6 +114,8 @@ function PANEL:Init()
     end
   end
 
+  self.hbox_left = vgui.Create("DHBox", self)
+  self.hbox_left:Add(self.labelTitle)
 
   self.hbox_right = vgui.Create("DHBox", self)
   self.hbox_right:Add(self.buttonMode)
@@ -122,11 +123,36 @@ function PANEL:Init()
   self.hbox_right:Add(self.buttonClose)
 
 
-  local a1 = self.buttonMode:GetWide()
-  local a2 = self.buttonSettings:GetWide()
-  local a3 = self.buttonClose:GetWide()
+
+
+  self.hbox_center = vgui.Create("DHBox", self)
+  self.hbox_center:SetSize(self:GetWide(), 20)
+
+  self.hbox_center:Add(self.hbox_left, 0.8)
+  self.hbox_center:Add(self.hbox_right)
+
+
+  self.hbox_center:UpdateLayout()
+
+
+
+  self:SetTitle("MMMMMAMCCCCCCCCCCCCCCCCCCCa")
+
+
+
+
+  self.hbox_center:__debug_panel(255,0,0)
+  self.hbox_left:__debug_panel(0,0,255)
+  self.hbox_right:__debug_panel(0, 255, 0)
+
+
+
+
+
+
 
   titleMargin = self.buttonMode:GetWide() + self.buttonSettings:GetWide() + self.buttonClose:GetWide()
+
   self.title_color = {}
   self.is_server_mode = false
   self:SetDraggable(true)
@@ -135,6 +161,7 @@ function PANEL:Init()
   self:SetText("Window")
   self:SetMinWidth(320)
   self:SetMinHeight(300)
+
   -- This turns off the engine drawing
   self:SetPaintBackgroundEnabled(false)
   self:SetPaintBorderEnabled(false)
@@ -218,6 +245,7 @@ end
 
 function PANEL:SetTitle(strTitle)
   self.labelTitle:SetText(strTitle)
+  self.labelTitle:SizeToContents()
 end
 
 function PANEL:GetTitleColor()
@@ -431,17 +459,14 @@ function PANEL:OnLayoutChange()
 end
 
 function PANEL:PerformLayout()
-  self.labelTitle:SetSize(self:GetWide(), 20)
-  self:update_right_buttons()
+  self.hbox_center:SetSize(self:GetWide(), 20)
+  self.hbox_center:UpdateSizeContents()
 
   self:OnLayoutChange()
 end
 
 ------------------------------------------------------------------------------
 
-function PANEL:update_right_buttons()
-  self.hbox_right:SetPos(self:GetWide() - self.hbox_right:GetWide(), 0)
-end
 
 
 

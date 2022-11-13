@@ -340,13 +340,14 @@ local function create_gmusic(super)
 
     local view_main_frame = include("includes/modules/view/main_frame.lua")
 
-    local view_song_list = include("includes/modules/view/song_list.lua")
-    if not view_song_list then return end
+    -- local view_song_list = include("includes/modules/view/song_list.lua")
+    -- if not view_song_list then return end
 
     view_main_frame:show()
 
-    view_song_list:parent_to(view_main_frame:get_panel())
-    view_song_list:show()
+    -- view_song_list:parent_to(view_main_frame:get_panel())
+    -- view_song_list:show()
+
 
     -- view:setup_song_list()
 
