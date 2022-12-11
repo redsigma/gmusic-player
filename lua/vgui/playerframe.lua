@@ -5,117 +5,130 @@ AccessorFunc(PANEL, "m_bSizable", "Sizable", FORCE_BOOL)
 AccessorFunc(PANEL, "m_bScreenLock", "ScreenLock", FORCE_BOOL)
 AccessorFunc(PANEL, "m_iMinWidth", "MinWidth")
 AccessorFunc(PANEL, "m_iMinHeight", "MinHeight")
-local titleMargin
 local last_mode = false
 local colorServerState = Color(255, 150, 0, 255)
 local isTSS = false
+
+
+local function ui_make_play_indicator(parent)
+  local title_server_status = vgui.Create("Panel", parent)
+  title_server_status:SetMouseInputEnabled(false)
+  title_server_status:SetVisible(true)
+  title_server_status:SetSize(10, 20)
+
+  title_server_status.Paint = function(panel, w, h)
+    surface.SetDrawColor(colorServerState)
+    surface.DrawRect(0, 0, w, h)
+  end
+
+  return title_server_status
+end
+
+local function ui_make_title(parent)
+  local text_title = vgui.Create("DLabel", parent)
+  text_title:SetPos(0, 0)
+  text_title:SetFont("default")
+  text_title:SetTextColor(Color(255, 255, 255))
+
+  text_title.Paint = function(panel, w, h)
+    surface.SetDrawColor(150, 150, 150, 255)
+    surface.DrawRect(0, 0, w, h)
+  end
+
+  return text_title
+end
+
+local function ui_make_switch_mode(parent)
+  local button_server_client = vgui.Create("DButton", parent)
+  button_server_client:SetFont("default")
+  button_server_client:SetTextColor(Color(255, 255, 255))
+  button_server_client:SetText("CLIENT")
+  button_server_client:SetSize(60, 20)
+
+  button_server_client.Paint = function()
+  end
+
+  button_server_client.PaintOver = function(panel, w, h)
+    if button_server_client:IsHovered() then
+      surface.SetDrawColor(255, 255, 255, 30)
+      surface.DrawRect(0, 0, w, h)
+    end
+  end
+
+  return button_server_client
+end
+
+local function ui_make_settings(parent)
+  local button_settings = vgui.Create("DImageButton", parent)
+  button_settings:SetKeepAspect(true)
+  button_settings:SetStretchToFit(false)
+
+  -- self.buttonSettings:SetText("")
+  button_settings:SetImage("icon16/cog.png")
+  -- self.buttonSettings:SetSize(22, 20)
+
+  button_settings.Paint = function() end
+
+  button_settings.PaintOver = function(panel, w, h)
+    if button_settings:IsHovered() then
+      surface.SetDrawColor(255, 255, 255, 30)
+      surface.DrawRect(0, 0, w, h)
+    end
+  end
+
+  return button_settings
+end
+
+local function ui_make_exit(parent)
+  local button_close = vgui.Create("DButton", parent)
+  button_close:SetFont("default")
+  button_close:SetText("X")
+  button_close:SetSize(20, 20)
+  button_close:SetTextColor(Color(255, 255, 255))
+
+  button_close.DoClick = function(button)
+    self:Close()
+  end
+
+  button_close.Paint = function() end
+
+  button_close.PaintOver = function(panel, w, h)
+    if button_close:IsHovered() then
+      surface.SetDrawColor(255, 255, 255, 30)
+      surface.DrawRect(0, 0, w, h)
+    end
+  end
+
+  return button_close
+end
+
+
 
 function PANEL:Init()
   self:SetMouseInputEnabled(true)
   self:SetFocusTopLevel(false)
   self:SetCursor("sizeall")
   self:UpdateWindowSize()
-  self.TSS = vgui.Create("Panel", self)
-  self.TSS:SetVisible(false)
-  self.TSS:SetSize(10, 20)
 
-  self.TSS.Paint = function(panel, w, h)
-    surface.SetDrawColor(colorServerState)
-    surface.DrawRect(0, 0, w, h)
-  end
+  self.TSS = ui_make_play_indicator(self)
 
-  self.labelTitle = vgui.Create("DLabel", self)
-  self.labelTitle:SetPos(0, 0)
-  self.labelTitle:SetFont("default")
-  self.labelTitle:SetTextColor(Color(255, 255, 255))
+  self.labelTitle = ui_make_title(self)
+  self.labelTitle:SetX(self.TSS:GetWide())
 
-  self.labelTitle.Paint = function(panel, w, h)
-    surface.SetDrawColor(150, 150, 150, 255)
-    surface.DrawRect(0, 0, w, h)
-  end
-
-  self.buttonMode = vgui.Create("DButton", self)
-  self.buttonMode:SetFont("default")
-  self.buttonMode:SetTextColor(Color(255, 255, 255))
-  self.buttonMode:SetText("CLIENT")
-  self.buttonMode:SetSize(60, 20)
-
+  self.buttonMode = ui_make_switch_mode()
   self.buttonMode.DoClick = function(button)
     self:SwitchMode()
   end
 
-  self.buttonMode.Paint = function() end
-
-  self.buttonMode.PaintOver = function(panel, w, h)
-    if self.buttonMode:IsHovered() then
-      surface.SetDrawColor(255, 255, 255, 30)
-      surface.DrawRect(0, 0, w, h)
-    end
-  end
-
-  -- self.frame = vgui.Create("DPanel", self)
-  -- self.frame:SetSize(600, 300)
-
-
-  -- self.container = vgui.Create("DPanel", self)
-
-  -- self.CustomButton = vgui.Create("DButtonSwitch2State", self)
-  -- self.CustomButton:SetText("MEhaaaaaaaaaaa")
-
-
-  -- self.CustomButton2 = vgui.Create("DButtonSwitch2State", self)
-  -- self.CustomButton2:SetText("AMeZ")
-
-
-  -- -- local w, h = self.container:GetContentSize()
-  -- -- print("Content Sizeaaa", w ,h)
-
-
-
-
-
-  self.buttonSettings = vgui.Create("DImageButton", self)
-  self.buttonSettings:SetKeepAspect(true)
-  self.buttonSettings:SetStretchToFit(false)
-
-  -- self.buttonSettings:SetText("")
-  self.buttonSettings:SetImage("icon16/cog.png")
-  -- self.buttonSettings:SetSize(22, 20)
-
+  self.buttonSettings = ui_make_settings()
   self.buttonSettings.DoClick = function(button)
     self:Settings()
   end
 
-  self.buttonSettings.Paint = function() end
-
-  self.buttonSettings.PaintOver = function(panel, w, h)
-    if self.buttonSettings:IsHovered() then
-      surface.SetDrawColor(255, 255, 255, 30)
-      surface.DrawRect(0, 0, w, h)
-    end
-  end
-
-  self.buttonClose = vgui.Create("DButton", self)
-  self.buttonClose:SetFont("default")
-  self.buttonClose:SetText("X")
-  self.buttonClose:SetSize(20, 20)
-  self.buttonClose:SetTextColor(Color(255, 255, 255))
-
+  self.buttonClose = ui_make_exit()
   self.buttonClose.DoClick = function(button)
     self:Close()
   end
-
-  self.buttonClose.Paint = function() end
-
-  self.buttonClose.PaintOver = function(panel, w, h)
-    if self.buttonClose:IsHovered() then
-      surface.SetDrawColor(255, 255, 255, 30)
-      surface.DrawRect(0, 0, w, h)
-    end
-  end
-
-  self.hbox_left = vgui.Create("DHBox", self)
-  self.hbox_left:Add(self.labelTitle)
 
   self.hbox_right = vgui.Create("DHBox", self)
   self.hbox_right:Add(self.buttonMode)
@@ -124,43 +137,25 @@ function PANEL:Init()
 
 
 
-
-  self.hbox_center = vgui.Create("DHBox", self)
-  self.hbox_center:SetSize(self:GetWide(), 20)
-
-  self.hbox_center:Add(self.hbox_left, 0.8)
-  self.hbox_center:Add(self.hbox_right)
+  -- TODO: not sure if i need this
+  -- self.hbox_center:UpdateLayout()
 
 
-  self.hbox_center:UpdateLayout()
+  self:SetTitle("MMMMMAMCCCCCCCCCCCCCCCCCCCaMMMMMAMCCCCCCCCCCCCCCCCCCCaMMMMMAMCCCCCCCCCCCCCCCCCCCaMMMMMAMCCCCCCCCCCCCCCCCCCCaMMMMMAMCCCCCCCCCCCCCCCCCCCabbb")
 
-
-
-  self:SetTitle("MMMMMAMCCCCCCCCCCCCCCCCCCCa")
-
-
-
-
-  self.hbox_center:__debug_panel(255,0,0)
-  self.hbox_left:__debug_panel(0,0,255)
   self.hbox_right:__debug_panel(0, 255, 0)
 
 
-
-
-
-
-
-  titleMargin = self.buttonMode:GetWide() + self.buttonSettings:GetWide() + self.buttonClose:GetWide()
-
   self.title_color = {}
   self.is_server_mode = false
+
   self:SetDraggable(true)
   self:SetSizable(true)
   self:SetScreenLock(false)
   self:SetText("Window")
-  self:SetMinWidth(320)
+  self:SetMinWidth(500)
   self:SetMinHeight(300)
+  self:SetPos(20, 20)
 
   -- This turns off the engine drawing
   self:SetPaintBackgroundEnabled(false)
@@ -246,6 +241,8 @@ end
 function PANEL:SetTitle(strTitle)
   self.labelTitle:SetText(strTitle)
   self.labelTitle:SizeToContents()
+
+  self.hbox_right:SetPosNearPanel(self.labelTitle)
 end
 
 function PANEL:GetTitleColor()
@@ -354,7 +351,7 @@ function PANEL:Think()
 
     -- Lock to screen bounds if screenlock is enabled
     if (self:GetScreenLock()) then
-      x = math.Clamp(x, 0, ScrW() - self:GetWide()) - titleMargin
+      x = math.Clamp(x, 0, ScrW() - self:GetWide())
       y = math.Clamp(y, 0, ScrH() - self:GetTall())
     end
 
@@ -459,8 +456,8 @@ function PANEL:OnLayoutChange()
 end
 
 function PANEL:PerformLayout()
-  self.hbox_center:SetSize(self:GetWide(), 20)
-  self.hbox_center:UpdateSizeContents()
+  self.hbox_right:SetSizeWithPanel(self:GetWide(), 20)
+  self.hbox_right:UpdateSizeContents()
 
   self:OnLayoutChange()
 end

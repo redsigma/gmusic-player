@@ -1,7 +1,8 @@
 local PANEL = {}
 
-
 function PANEL:Init()
+  self:MouseCapture(false)
+  self:SetSize(0, 0)
 
   self.boxes = {}
   self.nonboxes = {}
@@ -10,14 +11,14 @@ function PANEL:Init()
   -- workaround for clipping
   self.minimum_width_initial = 0
 
-  self:SetSize(0, 0)
+  -- keep ref to panel to get its pos
+  self.panel_ref = nil
 
   -- This turns off the engine drawing
   self:SetPaintBackgroundEnabled(false)
   self:SetPaintBorderEnabled(false)
   self:DockPadding(0, 0, 0, 0)
 end
-
 
 -- TODO remove cuz i dont think you need this
 function PANEL:ResizeWithPanel(width_panel, height_panel)
@@ -47,6 +48,7 @@ function PANEL:SizeToContentsX()
 end
 
 function PANEL:Add(item_panel, minimum_size_to_cover)
+
   item_panel:SetParent(self)
   item_panel:Dock(LEFT)
 
@@ -83,6 +85,30 @@ function PANEL:SortBoxesBySize()
     end
     return false
   end)
+end
+
+function PANEL:SetSizeWithPanel(new_width, new_height)
+
+  if not self.panel_ref then
+    return
+  end
+
+  local size_fill_multiplier = 0.3
+  local size_to_fill = new_width * size_fill_multiplier
+  local remaining_size = new_width - size_to_fill
+
+  local new_pos = remaining_size + self.panel_ref:GetX()
+
+  self:SetSize(size_to_fill, new_height)
+  self:SetX(new_pos)
+
+  if self.panel_ref then
+    self.panel_ref:SetWidth(remaining_size)
+  end
+end
+
+function PANEL:SetPosNearPanel(panel)
+  self.panel_ref = panel
 end
 
 function PANEL:UpdateLayout()
@@ -155,7 +181,6 @@ function PANEL:UpdateSizeContents()
       end
     end
 
-
     subpanel:SetSize(panel_width, height)
     subpanel:UpdateSizeContents()
 
@@ -170,11 +195,10 @@ function PANEL:UpdateSizeContents()
     remaining_width = remaining_width - panel_width
 
     subpanel:SetSize(panel_width, height)
+
   end
 
-
 end
-
 
 
 function PANEL:__debug_panel(r, g, b)
